@@ -152,19 +152,32 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
 
   useEffect(() => {
     fetch("/api/work-orders")
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setOrders(data); })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (Array.isArray(data) && data.length >= 0) {
+          setOrders(data);
+          // API 성공 시 localStorage도 동기화
+          localStorage.setItem("workOrders", JSON.stringify(data));
+        } else {
+          throw new Error("invalid");
+        }
+      })
       .catch(() => {
-        // 오프라인 폴백: localStorage
+        // API 실패 시 localStorage 사용
         const raw = localStorage.getItem("workOrders");
         if (raw) setOrders(JSON.parse(raw));
       });
   }, []);
 
+  function syncLocal(list: WorkOrder[]) {
+    localStorage.setItem("workOrders", JSON.stringify(list));
+  }
+
   async function deleteOrder(id: string) {
     if (!confirm("삭제하시겠습니까?")) return;
     const next = orders.filter((o) => o.id !== id);
     setOrders(next);
+    syncLocal(next);
     await fetch(`/api/work-orders/${id}`, { method: "DELETE" }).catch(() => null);
   }
 
@@ -181,6 +194,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
       }
     );
     setOrders(next);
+    syncLocal(next);
     await fetch(`/api/work-orders/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -194,6 +208,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
       o.id !== id ? o : { ...o, ...patch }
     );
     setOrders(next);
+    syncLocal(next);
     await fetch(`/api/work-orders/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
