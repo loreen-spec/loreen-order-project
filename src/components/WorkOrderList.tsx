@@ -150,28 +150,32 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
   const [editingDirector, setEditingDirector] = useState(false);
   const [directorInput, setDirectorInput]     = useState("");
 
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
   useEffect(() => {
-    // 1) localStorage 즉시 표시 (0ms)
-    const raw = localStorage.getItem("workOrders");
-    if (raw) {
-      try { setOrders(JSON.parse(raw)); } catch {}
-    }
+    // localStorage 캐시로 즉시 표시 (로딩 중 빈 화면 방지)
+    try {
+      const raw = localStorage.getItem("workOrders");
+      if (raw) setOrders(JSON.parse(raw));
+    } catch {}
 
-    // 2) Supabase API 백그라운드 동기화 (설정된 경우에만)
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000); // 5초 내 응답 없으면 포기
-    fetch("/api/work-orders", { signal: controller.signal })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setOrders(data);
-          localStorage.setItem("workOrders", JSON.stringify(data));
-        }
+    // Supabase에서 최신 데이터 로드 (메인)
+    fetch("/api/work-orders")
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
       })
-      .catch(() => null) // 실패해도 무시 (localStorage로 이미 표시 중)
-      .finally(() => clearTimeout(timer));
-
-    return () => { controller.abort(); clearTimeout(timer); };
+      .then(data => {
+        if (Array.isArray(data)) {
+          setOrders(data);
+          // localStorage 캐시 갱신
+          try { localStorage.setItem("workOrders", JSON.stringify(data)); } catch {}
+        }
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, []);
 
   function syncLocal(list: WorkOrder[]) {
@@ -256,6 +260,13 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
 
   return (
     <div className="space-y-5">
+      {/* Supabase 연결 오류 배너 */}
+      {loadError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center gap-2">
+          ⚠️ 서버 저장소 연결 실패 — Vercel 환경변수(SUPABASE_URL, SUPABASE_ANON_KEY)를 확인해주세요. 현재 로컬 캐시를 표시 중입니다.
+        </div>
+      )}
+
       {/* 상단 요약 카드 */}
       <div className="grid grid-cols-4 gap-4">
         {[

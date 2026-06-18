@@ -159,19 +159,26 @@ function WorkOrderSection({ initialPage }: { initialPage: "list" | "new" }) {
   const [previewing, setPreview] = useState<WorkOrder | null>(null);
 
   async function handleSave(wo: WorkOrder) {
-    // localStorage 항상 저장 (즉시, 오프라인에서도 동작)
-    const raw = localStorage.getItem("workOrders");
-    const all: WorkOrder[] = raw ? JSON.parse(raw) : [];
-    const idx = all.findIndex((o) => o.id === wo.id);
-    if (idx >= 0) all[idx] = wo; else all.unshift(wo);
-    localStorage.setItem("workOrders", JSON.stringify(all));
-
-    // Supabase에도 백그라운드 동기화 (설정된 경우)
-    fetch("/api/work-orders", {
+    // Supabase 저장 (메인 저장소)
+    const res = await fetch("/api/work-orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(wo),
-    }).catch(() => null);
+    });
+
+    if (!res.ok) {
+      alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    // localStorage는 캐시로만 업데이트
+    try {
+      const raw = localStorage.getItem("workOrders");
+      const all: WorkOrder[] = raw ? JSON.parse(raw) : [];
+      const idx = all.findIndex((o) => o.id === wo.id);
+      if (idx >= 0) all[idx] = wo; else all.unshift(wo);
+      localStorage.setItem("workOrders", JSON.stringify(all));
+    } catch {}
 
     setView("list");
     setEditing(null);
