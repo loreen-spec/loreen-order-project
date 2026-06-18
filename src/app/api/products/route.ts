@@ -1,93 +1,119 @@
+// 10분 캐시: Notion API 호출 횟수 줄이고 로딩 속도 대폭 향상
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 export const runtime = 'nodejs';
 
 import { NextResponse } from "next/server";
 import { Client } from "@notionhq/client";
 
-export async function GET() {
-  try {
-    const notion = new Client({ auth: process.env.NOTION_API_KEY });
-    const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
+const CACHE_TTL = 10 * 60 * 1000; // 10분
+const g = globalThis as any;
+if (!g._productsCache) g._productsCache = null;
 
-    const today = new Date();
-    const from = new Date(today); from.setMonth(from.getMonth() - 3);
-    const to   = new Date(today); to.setMonth(to.getMonth() + 6);
-    const fmt  = (d: Date) => d.toISOString().split("T")[0];
+function getCache() { return g._productsCache as { data: any[]; ts: number } | null; }
+function setCache(data: any[]) { g._productsCache = { data, ts: Date.now() }; }
 
-    const allResults: any[] = [];
-    let cursor: string | undefined;
-    do {
-      const res: any = await notion.databases.query({
-        database_id: DATABASE_ID,
-        filter: {
-          and: [
-            { property: "입고일", date: { on_or_after: fmt(from) } },
-            { property: "입고일", date: { on_or_before: fmt(to) } },
-          ],
-        },
-        sorts: [{ property: "입고일", direction: "ascending" }],
-        start_cursor: cursor,
-        page_size: 100,
-      });
-      allResults.push(...res.results);
-      cursor = res.has_more ? res.next_cursor : undefined;
-    } while (cursor);
+async function fetchFromNotion() {
+  const notion = new Client({ auth: process.env.NOTION_API_KEY });
+  const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
 
-    const getText = (prop: any): string => {
-      if (!prop) return "";
-      if (prop.type === "title")        return prop.title?.map((t: any) => t.plain_text).join("") ?? "";
-      if (prop.type === "rich_text")    return prop.rich_text?.map((t: any) => t.plain_text).join("") ?? "";
-      if (prop.type === "select")       return prop.select?.name ?? "";
-      if (prop.type === "status")       return prop.status?.name ?? "";
-      if (prop.type === "date")         return prop.date?.start ?? "";
-      if (prop.type === "multi_select") return prop.multi_select?.map((s: any) => s.name).join(", ") ?? "";
-      if (prop.type === "people")       return prop.people?.map((pp: any) => pp.name).join(", ") ?? "";
-      return "";
-    };
+  const today = new Date();
+  const from  = new Date(today); from.setMonth(from.getMonth() - 3);
+  const to    = new Date(today); to.setMonth(to.getMonth() + 6);
+  const fmt   = (d: Date) => d.toISOString().split("T")[0];
 
-    const products = allResults.map((page: any) => {
-      const p = page.properties;
-      const statusRaw = getText(p["진행상태"]);
-
-      let status = "scheduled";
-      if (statusRaw.includes("지연"))                                          status = "delayed";
-      else if (statusRaw.includes("입고완료") || statusRaw.includes("완료"))  status = "arrived";
-      else if (statusRaw.includes("생산중") || statusRaw.includes("운송") || statusRaw.includes("선적")) status = "in_transit";
-
-      // 입고수량 → 미니멈 수량 → MOQ 순으로 폴백
-      const qty =
-        (p["입고수량"]?.number ?? null) ??
-        (p["미니멈 수량"]?.number ?? null) ??
-        (p["MOQ"]?.number ?? null) ??
-        0;
-
-      return {
-        id: page.id,
-        notionPageId: page.id,
-        name:          getText(p["제품명"]),
-        category:      getText(p["복종"]),
-        board:         getText(p["의류/슈즈/잡화"]) || "의류",  // 의류/슈즈/잡화
-        vendor:        getText(p["생산공장"]),
-        arrivalDate:   getText(p["입고일"]),
-        orderQuantity: qty,
-        status,
-        statusLabel:   statusRaw,
-        season:        getText(p["시즌"]),
-        brand:         getText(p["브랜드"]),
-        team:          getText(p["담당팀"]),
-        manager:       getText(p["담당자"]),
-        imageUrl:
-          page.cover?.external?.url ??
-          page.cover?.file?.url ??
-          p["대표이미지"]?.files?.[0]?.file?.url ??
-          p["대표이미지"]?.files?.[0]?.external?.url,
-      };
+  const allResults: any[] = [];
+  let cursor: string | undefined;
+  do {
+    const res: any = await notion.databases.query({
+      database_id: DATABASE_ID,
+      filter: {
+        and: [
+          { property: "입고일", date: { on_or_after: fmt(from) } },
+          { property: "입고일", date: { on_or_before: fmt(to) } },
+        ],
+      },
+      sorts: [{ property: "입고일", direction: "ascending" }],
+      start_cursor: cursor,
+      page_size: 100,
     });
+    allResults.push(...res.results);
+    cursor = res.has_more ? res.next_cursor : undefined;
+  } while (cursor);
 
-    return NextResponse.json(products);
+  const getText = (prop: any): string => {
+    if (!prop) return "";
+    if (prop.type === "title")        return prop.title?.map((t: any) => t.plain_text).join("") ?? "";
+    if (prop.type === "rich_text")    return prop.rich_text?.map((t: any) => t.plain_text).join("") ?? "";
+    if (prop.type === "select")       return prop.select?.name ?? "";
+    if (prop.type === "status")       return prop.status?.name ?? "";
+    if (prop.type === "date")         return prop.date?.start ?? "";
+    if (prop.type === "multi_select") return prop.multi_select?.map((s: any) => s.name).join(", ") ?? "";
+    if (prop.type === "people")       return prop.people?.map((pp: any) => pp.name).join(", ") ?? "";
+    return "";
+  };
+
+  return allResults.map((page: any) => {
+    const p = page.properties;
+    const statusRaw = getText(p["진행상태"]);
+
+    let status = "scheduled";
+    if (statusRaw.includes("지연"))                                           status = "delayed";
+    else if (statusRaw.includes("입고완료") || statusRaw.includes("완료"))   status = "arrived";
+    else if (statusRaw.includes("생산중") || statusRaw.includes("운송") || statusRaw.includes("선적")) status = "in_transit";
+
+    const qty =
+      (p["입고수량"]?.number ?? null) ??
+      (p["미니멈 수량"]?.number ?? null) ??
+      (p["MOQ"]?.number ?? null) ??
+      0;
+
+    return {
+      id:            page.id,
+      notionPageId:  page.id,
+      name:          getText(p["제품명"]),
+      category:      getText(p["복종"]),
+      board:         getText(p["의류/슈즈/잡화"]) || "의류",
+      vendor:        getText(p["생산공장"]),
+      arrivalDate:   getText(p["입고일"]),
+      orderQuantity: qty,
+      status,
+      statusLabel:   statusRaw,
+      season:        getText(p["시즌"]),
+      brand:         getText(p["브랜드"]),
+      team:          getText(p["담당팀"]),
+      manager:       getText(p["담당자"]),
+      imageUrl:
+        page.cover?.external?.url ??
+        page.cover?.file?.url ??
+        p["대표이미지"]?.files?.[0]?.file?.url ??
+        p["대표이미지"]?.files?.[0]?.external?.url,
+    };
+  });
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const bust = searchParams.get("bust"); // ?bust=1 로 강제 갱신
+
+  // 캐시 유효하면 즉시 반환 (강제 갱신 요청 아닐 때)
+  if (!bust) {
+    const cached = getCache();
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      return NextResponse.json(cached.data, {
+        headers: { "X-Cache": "HIT", "X-Cache-Age": String(Math.floor((Date.now() - cached.ts) / 1000)) },
+      });
+    }
+  }
+
+  try {
+    const data = await fetchFromNotion();
+    setCache(data);
+    return NextResponse.json(data, { headers: { "X-Cache": "MISS" } });
   } catch (error: any) {
-    console.error("API Error:", error?.message ?? error);
+    console.error("Products API Error:", error?.message ?? error);
+    // 에러 시 만료된 캐시라도 반환
+    const stale = getCache();
+    if (stale) return NextResponse.json(stale.data, { headers: { "X-Cache": "STALE" } });
     return NextResponse.json([], { status: 200 });
   }
 }

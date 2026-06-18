@@ -1380,13 +1380,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   {wo.measurements.map((m, idx) => m.isHeader ? (
                     // ── 구분 헤더 행 ──
                     <tr key={idx}
-                      draggable
-                      onDragStart={() => onMDragStart(idx)}
                       onDragEnter={() => onMDragEnter(idx)}
-                      onDragEnd={onMDragEnd}
                       onDragOver={(e) => e.preventDefault()}
                       className={`bg-indigo-50 border-t-2 border-indigo-200${mDragOver === idx ? " opacity-50" : ""}`}>
-                      <td className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
+                      <td draggable
+                        onDragStart={() => onMDragStart(idx)}
+                        onDragEnd={onMDragEnd}
+                        className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
                       <td colSpan={wo.sizes.length + 2} className="border border-gray-200 p-1">
                         <input value={m.item}
                           onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
@@ -1401,13 +1401,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   ) : (
                     // ── 일반 측정 행 ──
                     <tr key={idx}
-                      draggable
-                      onDragStart={() => onMDragStart(idx)}
                       onDragEnter={() => onMDragEnter(idx)}
-                      onDragEnd={onMDragEnd}
                       onDragOver={(e) => e.preventDefault()}
                       className={`${idx % 2 === 0 ? "" : "bg-gray-50/50"}${mDragOver === idx ? " opacity-50" : ""}`}>
-                      <td className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
+                      <td draggable
+                        onDragStart={() => onMDragStart(idx)}
+                        onDragEnd={onMDragEnd}
+                        className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
                       <td className="border border-gray-200 p-1">
                         <input value={m.item}
                           onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
@@ -1487,11 +1487,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <tbody>
                     {wo.materials.map((m, idx) => (
                       <tr key={m.id}
-                        draggable
-                        onDragStart={() => onDragStart(idx)}
                         onDragEnter={() => onDragEnter(idx)}
                         onDragOver={(e) => e.preventDefault()}
-                        onDragEnd={onDragEnd}
                         className={`transition-colors ${
                           dragOver === idx
                             ? "bg-indigo-50 border-t-2 border-t-indigo-400"
@@ -1500,8 +1497,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             : ""
                         }`}
                       >
-                        {/* 드래그 핸들 */}
-                        <td className="border border-gray-200 p-1 text-center cursor-grab active:cursor-grabbing select-none">
+                        {/* 드래그 핸들만 draggable */}
+                        <td draggable
+                          onDragStart={() => onDragStart(idx)}
+                          onDragEnd={onDragEnd}
+                          className="border border-gray-200 p-1 text-center cursor-grab active:cursor-grabbing select-none">
                           <span className="text-gray-300 hover:text-gray-500 text-xs leading-none" title="드래그하여 순서 변경">
                             ⠿
                           </span>
