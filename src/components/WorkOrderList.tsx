@@ -151,22 +151,27 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
   const [directorInput, setDirectorInput]     = useState("");
 
   useEffect(() => {
-    fetch("/api/work-orders")
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    // 1) localStorage 즉시 표시 (0ms)
+    const raw = localStorage.getItem("workOrders");
+    if (raw) {
+      try { setOrders(JSON.parse(raw)); } catch {}
+    }
+
+    // 2) Supabase API 백그라운드 동기화 (설정된 경우에만)
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000); // 5초 내 응답 없으면 포기
+    fetch("/api/work-orders", { signal: controller.signal })
+      .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => {
-        if (Array.isArray(data) && data.length >= 0) {
+        if (Array.isArray(data) && data.length > 0) {
           setOrders(data);
-          // API 성공 시 localStorage도 동기화
           localStorage.setItem("workOrders", JSON.stringify(data));
-        } else {
-          throw new Error("invalid");
         }
       })
-      .catch(() => {
-        // API 실패 시 localStorage 사용
-        const raw = localStorage.getItem("workOrders");
-        if (raw) setOrders(JSON.parse(raw));
-      });
+      .catch(() => null) // 실패해도 무시 (localStorage로 이미 표시 중)
+      .finally(() => clearTimeout(timer));
+
+    return () => { controller.abort(); clearTimeout(timer); };
   }, []);
 
   function syncLocal(list: WorkOrder[]) {
