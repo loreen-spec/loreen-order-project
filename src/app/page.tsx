@@ -39,14 +39,6 @@ function WorkOrderSection({ initialPage }: { initialPage: "list" | "new" }) {
       return;
     }
 
-    try {
-      const raw = localStorage.getItem("workOrders");
-      const all: WorkOrder[] = raw ? JSON.parse(raw) : [];
-      const idx = all.findIndex((o) => o.id === wo.id);
-      if (idx >= 0) all[idx] = wo; else all.unshift(wo);
-      localStorage.setItem("workOrders", JSON.stringify(all));
-    } catch {}
-
     setView("list");
     setEditing(null);
   }
