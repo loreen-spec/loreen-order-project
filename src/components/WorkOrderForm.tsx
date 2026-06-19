@@ -735,12 +735,14 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const dragIdx = useRef<number | null>(null);
   const dragOverIdx = useRef<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
-  // 품목 드롭다운 열림 상태 (materialId)
+  // 품목 드롭다운
   const [catOpen, setCatOpen] = useState<string | null>(null);
+  const [catPos, setCatPos]   = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 140 });
   // 단위 직접입력 모드 (materialId)
   const [unitDirect, setUnitDirect] = useState<Record<string, boolean>>({});
-  // 자재명 드롭다운 열림 상태 (materialId)
+  // 자재명 드롭다운
   const [nameOpen, setNameOpen] = useState<string | null>(null);
+  const [namePos, setNamePos]   = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 150 });
 
   function onDragStart(idx: number) {
     dragIdx.current = idx;
@@ -882,10 +884,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       materials: w.materials.map((m) => {
         if (m.id !== id) return m;
         const updated = { ...m, [key]: value };
-        // 패턴비 선택 시 자동 입력 (기존 값이 없을 때만)
+        // 패턴비 선택 시 자동 입력 (항상 강제)
         if (key === "category" && value === "패턴비") {
-          if (!updated.yield)     updated.yield     = "1";
-          if (!updated.yieldUnit) updated.yieldUnit = "EA";
+          updated.yield     = "1";
+          updated.yieldUnit = "EA";
           if (!updated.unitPrice) updated.unitPrice = "300";
         }
         return updated;
@@ -1596,66 +1598,59 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             ⠿
                           </span>
                         </td>
-                        {/* 품목 — 커스텀 드롭다운 (항상 전체 리스트 표시) */}
-                        <td className="border border-gray-200 p-1 min-w-[120px] relative">
+                        {/* 품목 — fixed 드롭다운 (overflow 컨테이너 탈출) */}
+                        <td className="border border-gray-200 p-1 min-w-[120px]">
                           <div className="flex items-center gap-0.5">
                             <input
                               value={m.category}
                               onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
-                              onFocus={() => setCatOpen(m.id)}
+                              onFocus={(e) => {
+                                const r = e.currentTarget.getBoundingClientRect();
+                                setCatPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width + 24, 160) });
+                                setCatOpen(m.id);
+                              }}
                               onBlur={() => setTimeout(() => setCatOpen(null), 150)}
                               className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
                               placeholder="-- 선택 또는 입력 --"
                             />
                             <button type="button" tabIndex={-1}
-                              onMouseDown={(e) => { e.preventDefault(); setCatOpen(v => v === m.id ? null : m.id); }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const r = e.currentTarget.getBoundingClientRect();
+                                setCatPos({ top: r.bottom + 2, left: r.left - 130, width: 160 });
+                                setCatOpen(v => v === m.id ? null : m.id);
+                              }}
                               className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
                               <ChevronDown size={11} />
                             </button>
                           </div>
-                          {catOpen === m.id && (
-                            <div className="absolute left-0 top-full z-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[140px] max-h-48 overflow-y-auto">
-                              {MATERIAL_CATEGORIES.map((c) => (
-                                <button key={c} type="button"
-                                  onMouseDown={() => { updateMaterial(m.id, "category", c); setCatOpen(null); }}
-                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${m.category === c ? "font-semibold text-indigo-600 bg-indigo-50" : "text-gray-700"}`}>
-                                  {c}
-                                </button>
-                              ))}
-                            </div>
-                          )}
                         </td>
-                        {/* 자재명 — 안감 계열이면 프리셋 드롭다운 */}
-                        <td className="border border-gray-200 p-1 relative min-w-[110px]">
+                        {/* 자재명 — 안감 계열이면 fixed 드롭다운 */}
+                        <td className="border border-gray-200 p-1 min-w-[110px]">
                           {m.category.includes("안감") ? (
                             <div className="flex items-center gap-0.5">
                               <input value={m.name}
                                 onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
-                                onFocus={() => setNameOpen(m.id)}
+                                onFocus={(e) => {
+                                  const r = e.currentTarget.getBoundingClientRect();
+                                  setNamePos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width + 24, 160) });
+                                  setNameOpen(m.id);
+                                }}
                                 onBlur={() => setTimeout(() => setNameOpen(null), 150)}
                                 onKeyDown={handleMatKeyDown}
                                 className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
                                 placeholder="자재명"
                               />
                               <button type="button" tabIndex={-1}
-                                onMouseDown={(e) => { e.preventDefault(); setNameOpen(v => v === m.id ? null : m.id); }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  const r = e.currentTarget.getBoundingClientRect();
+                                  setNamePos({ top: r.bottom + 2, left: r.left - 140, width: 160 });
+                                  setNameOpen(v => v === m.id ? null : m.id);
+                                }}
                                 className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
                                 <ChevronDown size={11} />
                               </button>
-                              {nameOpen === m.id && (
-                                <div className="absolute left-0 top-full z-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[150px]">
-                                  {LINING_NAMES.map((n) => (
-                                    <button key={n} type="button"
-                                      onMouseDown={() => {
-                                        if (n !== "직접입력") updateMaterial(m.id, "name", n);
-                                        setNameOpen(null);
-                                      }}
-                                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${n === "직접입력" ? "text-indigo-500 font-semibold border-t border-gray-100" : m.name === n ? "font-semibold text-indigo-600 bg-indigo-50" : "text-gray-700"}`}>
-                                      {n}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
                             </div>
                           ) : (
                             <input value={m.name}
@@ -1906,6 +1901,43 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           </div>
         )}
       </div>
+
+      {/* 품목 fixed 드롭다운 */}
+      {catOpen && (
+        <div
+          style={{ position: "fixed", top: catPos.top, left: catPos.left, width: catPos.width, zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-lg py-1 max-h-56 overflow-y-auto"
+        >
+          {MATERIAL_CATEGORIES.map((c) => (
+            <button key={c} type="button"
+              onMouseDown={() => { updateMaterial(catOpen, "category", c); setCatOpen(null); }}
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors text-gray-700">
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 안감 자재명 fixed 드롭다운 */}
+      {nameOpen && (
+        <div
+          style={{ position: "fixed", top: namePos.top, left: namePos.left, width: namePos.width, zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto"
+        >
+          {LINING_NAMES.map((n) => (
+            <button key={n} type="button"
+              onMouseDown={() => {
+                if (n !== "직접입력") updateMaterial(nameOpen, "name", n);
+                setNameOpen(null);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${
+                n === "직접입력" ? "text-indigo-500 font-semibold border-t border-gray-100" : "text-gray-700"
+              }`}>
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 하단 저장 버튼 */}
       <div className="flex items-center justify-end gap-3 pb-6">
