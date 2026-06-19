@@ -314,8 +314,8 @@ function readClientCache(): OrderProduct[] | null {
 
 // ── 메인
 export default function OrderManagement() {
-  const [orders, setOrders]     = useState<OrderProduct[]>(() => readClientCache() ?? []);
-  const [loading, setLoading]   = useState(() => readClientCache() === null);
+  const [orders, setOrders]     = useState<OrderProduct[]>([]);
+  const [loading, setLoading]   = useState(true);
   const [fetching, setFetching] = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);

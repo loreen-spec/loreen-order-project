@@ -1,5 +1,5 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { X, Printer } from "lucide-react";
 import type { WorkOrder } from "@/types";
 
@@ -70,17 +70,20 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const sizes = wo.sizes || [];
   const colTotal = (sz: string) => wo.colorSizeTable.reduce((s, r) => s + (r.sizes[sz] || 0), 0);
 
-  // 선택된 라벨 다이어그램 이미지 로드
-  const selectedLabelImages: { name: string; group: string; imageData: string }[] = (() => {
+  // 선택된 라벨 다이어그램 이미지 로드 (브라우저에서만)
+  const [selectedLabelImages, setSelectedLabelImages] = useState<{ name: string; group: string; imageData: string }[]>([]);
+  useEffect(() => {
     try {
       const raw = localStorage.getItem("labelDiagramPresets");
       const presets: LabelPreset[] = raw ? JSON.parse(raw) : [];
       const selected = wo.labelDiagramSelected ?? [];
-      return presets
-        .filter(p => selected.includes(p.id) && p.imageData)
-        .map(p => ({ name: p.name, group: p.group, imageData: p.imageData! }));
-    } catch { return []; }
-  })();
+      setSelectedLabelImages(
+        presets
+          .filter(p => selected.includes(p.id) && p.imageData)
+          .map(p => ({ name: p.name, group: p.group, imageData: p.imageData! }))
+      );
+    } catch {}
+  }, [wo.labelDiagramSelected]);
 
   function handlePrint() {
     const node = sheetRef.current;
