@@ -405,6 +405,7 @@ const LABEL_PRESET_DEFAULT: LabelDiagramPreset[] = [
 ];
 
 function loadPresets(): LabelDiagramPreset[] {
+  if (typeof window === "undefined") return LABEL_PRESET_DEFAULT;
   try {
     const raw = localStorage.getItem(LABEL_PRESET_KEY);
     if (raw) return JSON.parse(raw);
@@ -412,7 +413,8 @@ function loadPresets(): LabelDiagramPreset[] {
   return LABEL_PRESET_DEFAULT;
 }
 function savePresets(presets: LabelDiagramPreset[]) {
-  localStorage.setItem(LABEL_PRESET_KEY, JSON.stringify(presets));
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(LABEL_PRESET_KEY, JSON.stringify(presets)); } catch {}
 }
 
 const LABEL_GROUPS = ["케어라벨", "메인라벨", "포인트라벨"] as const;
@@ -428,7 +430,11 @@ function LabelDiagramSection({
   selected: string[];
   onChange: (ids: string[]) => void;
 }) {
-  const [presets, setPresets] = useState<LabelDiagramPreset[]>(() => loadPresets());
+  const [presets, setPresets] = useState<LabelDiagramPreset[]>(LABEL_PRESET_DEFAULT);
+
+  useEffect(() => {
+    setPresets(loadPresets());
+  }, []);
   const [addingGroup, setAddingGroup] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});

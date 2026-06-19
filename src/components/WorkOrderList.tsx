@@ -109,44 +109,39 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
   const CACHE_KEY = "notion_map_cache";
   const CACHE_TTL = 60 * 60 * 1000; // 1시간
 
-  const [notionMap, setNotionMap] = useState<Record<string, string>>(() => {
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (raw) {
-        const { ts, map } = JSON.parse(raw);
-        if (Date.now() - ts < CACHE_TTL) return map;
-      }
-    } catch {}
-    return {};
-  });
-  const [notionLoading, setNotionLoading] = useState(() => {
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (raw) {
-        const { ts, map } = JSON.parse(raw);
-        // 캐시가 유효하고 데이터가 있을 때만 스킵
-        if (Date.now() - ts < CACHE_TTL && Object.keys(map).length > 0) return false;
-      }
-    } catch {}
-    return true;
-  });
+  const [notionMap, setNotionMap] = useState<Record<string, string>>({});
+  const [notionLoading, setNotionLoading] = useState(true);
 
   useEffect(() => {
-    if (!notionLoading) return;
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const { ts, map } = JSON.parse(raw);
+        if (Date.now() - ts < CACHE_TTL) {
+          setNotionMap(map);
+          if (Object.keys(map).length > 0) { setNotionLoading(false); return; }
+        }
+      }
+    } catch {}
     fetch("/api/notion-search")
       .then((r) => r.json())
       .then((map: Record<string, string>) => {
         setNotionMap(map);
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), map }));
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), map })); } catch {}
       })
       .catch(() => {})
       .finally(() => setNotionLoading(false));
   }, []);
 
   // 실장 승인자 이름 (설정값, 변경 가능)
-  const [directorName, setDirectorName] = useState<string>(() =>
-    localStorage.getItem("setting_directorName") || "임은영(ANNA)"
-  );
+  const [directorName, setDirectorName] = useState<string>("임은영(ANNA)");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("setting_directorName");
+      if (saved) setDirectorName(saved);
+    } catch {}
+  }, []);
   const [editingDirector, setEditingDirector] = useState(false);
   const [directorInput, setDirectorInput]     = useState("");
 
