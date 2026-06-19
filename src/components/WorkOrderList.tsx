@@ -443,6 +443,15 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                           src={o.productImage}
                           alt={o.productName}
                           className="w-10 h-12 object-cover rounded-lg border border-gray-100"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            if (!o.notionProductId || img.dataset.retried) return;
+                            img.dataset.retried = "1";
+                            fetch(`/api/notion-image?pageId=${o.notionProductId}`)
+                              .then(r => r.json())
+                              .then(({ url }) => { if (url) img.src = url; })
+                              .catch(() => {});
+                          }}
                         />
                       ) : (
                         <div className="w-10 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
