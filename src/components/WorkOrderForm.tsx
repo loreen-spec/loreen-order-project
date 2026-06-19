@@ -25,6 +25,7 @@ const DEFAULT_SIZES = ["100", "110", "120", "130", "140"];
 
 const MATERIAL_CATEGORIES = [
   "주원단A", "안감A", "안감B", "안감C",
+  "배색B", "배색C", "테이프",
   "웰론(몸판)", "웰론(소매)", "지퍼", "슬라이더", "와펜",
   "E/BAND", "아일렛", "스트링", "스토퍼", "재봉사", "패턴비",
   "완사입가(VAT+)", "기타",
@@ -132,7 +133,7 @@ async function parsePatternExcel(file: File): Promise<{
 }
 
 // ─── 탭 타입 ───────────────────────────────────────────────
-const TABS = ["기본정보", "사이즈스펙", "원부자재", "발주수량", "라벨·기타", "첨부파일"] as const;
+const TABS = ["기본정보", "사이즈스펙", "원부자재", "라벨·기타", "첨부파일"] as const;
 type Tab = (typeof TABS)[number];
 
 interface Props {
@@ -1161,6 +1162,86 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               </Field>
             </div>
 
+            {/* ── 발주수량 (기본정보 내) ── */}
+            <div className="border-t border-gray-100 pt-5">
+              <div className="flex items-center justify-between mb-4">
+                <SectionHeader title="컬러 × 사이즈 발주 수량표" sub="컬러별, 사이즈별 발주 수량을 입력하세요" />
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="text-gray-500">총</span>
+                    <span className="font-bold text-indigo-700 text-lg">{wo.totalQuantity.toLocaleString()}</span>
+                    <span className="text-gray-500">장</span>
+                  </div>
+                  <button onClick={addColorRow}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors">
+                    <Plus size={14} />컬러 추가
+                  </button>
+                </div>
+              </div>
+              {wo.colorSizeTable.length === 0 ? (
+                <div className="border-2 border-dashed border-gray-200 rounded-2xl py-10 flex flex-col items-center text-center">
+                  <div className="text-gray-300 text-3xl mb-3">🎨</div>
+                  <div className="text-sm text-gray-400 mb-4">발주 수량표가 비어 있습니다</div>
+                  <button onClick={addColorRow}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors">
+                    <Plus size={14} />컬러 추가
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border border-gray-200 px-4 py-2.5 text-left text-xs font-semibold text-gray-600 min-w-[120px]">컬러</th>
+                        {wo.sizes.map((s) => (
+                          <th key={s} className="border border-gray-200 px-4 py-2.5 text-center text-xs font-semibold text-gray-600 min-w-[70px]">{s}</th>
+                        ))}
+                        <th className="border border-gray-200 px-4 py-2.5 text-center text-xs font-semibold text-indigo-600 min-w-[70px]">합계</th>
+                        <th className="border border-gray-200 px-2 py-2 w-8"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {wo.colorSizeTable.map((row, idx) => (
+                        <tr key={idx}>
+                          <td className="border border-gray-200 p-1">
+                            <input value={row.color}
+                              onChange={(e) => updateColorSize(idx, "color", e.target.value)}
+                              placeholder="퍼플, 핑크…"
+                              className="w-full px-3 py-1.5 text-sm rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent" />
+                          </td>
+                          {wo.sizes.map((s) => (
+                            <td key={s} className="border border-gray-200 p-1">
+                              <input type="number" min={0}
+                                value={row.sizes[s] || ""}
+                                onChange={(e) => updateColorSize(idx, s, e.target.value)}
+                                className="w-full px-2 py-1.5 text-sm text-center rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent" />
+                            </td>
+                          ))}
+                          <td className="border border-gray-200 p-1 text-center font-bold text-indigo-700">{row.total}</td>
+                          <td className="border border-gray-200 p-1 text-center">
+                            <button onClick={() => removeColorRow(idx)}
+                              className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-indigo-50">
+                        <td className="border border-gray-200 px-4 py-2 font-bold text-xs text-gray-600">TOTAL</td>
+                        {wo.sizes.map((s) => (
+                          <td key={s} className="border border-gray-200 px-4 py-2 text-center font-bold text-xs text-gray-700">
+                            {wo.colorSizeTable.reduce((sum, r) => sum + (r.sizes[s] || 0), 0)}
+                          </td>
+                        ))}
+                        <td className="border border-gray-200 px-4 py-2 text-center font-bold text-indigo-700">{wo.totalQuantity}</td>
+                        <td className="border border-gray-200"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+
             <div className="border-t border-gray-100 pt-5">
               <SectionHeader title="담당자 & 일정" />
               <div className="grid grid-cols-3 gap-4">
@@ -1514,16 +1595,18 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             ⠿
                           </span>
                         </td>
-                        {/* 품목 — 빈칸 클릭 시 드롭다운 */}
-                        <td className="border border-gray-200 p-1 min-w-[110px]">
-                          <select
+                        {/* 품목 — 드롭다운 선택 + 직접 수정 가능 */}
+                        <td className="border border-gray-200 p-1 min-w-[120px]">
+                          <input
+                            list={`mat-cat-${m.id}`}
                             value={m.category}
                             onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
-                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent cursor-pointer"
-                          >
-                            <option value="">-- 선택 --</option>
-                            {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                          </select>
+                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent cursor-text"
+                            placeholder="-- 선택 또는 입력 --"
+                          />
+                          <datalist id={`mat-cat-${m.id}`}>
+                            {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c} />)}
+                          </datalist>
                         </td>
                         {/* 자재명, 색상, 규격 */}
                         {(["name","color","spec"] as const).map((f) => (
@@ -1568,19 +1651,30 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             )}
                           </div>
                         </td>
-                        {/* 단위 드롭다운 */}
-                        <td className="border border-gray-200 p-1 min-w-[80px]">
-                          {(m.yieldUnit === "직접입력") ? (
-                            <input
-                              value=""
-                              onChange={(e) => updateMaterial(m.id, "yieldUnit", e.target.value)}
-                              placeholder="단위"
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
-                            />
+                        {/* 단위 — 드롭다운 또는 직접입력 */}
+                        <td className="border border-gray-200 p-1 min-w-[90px]">
+                          {(!["YD","M","EA"].includes(m.yieldUnit || "YD")) ? (
+                            <div className="flex items-center gap-0.5">
+                              <input
+                                value={m.yieldUnit}
+                                onChange={(e) => updateMaterial(m.id, "yieldUnit", e.target.value)}
+                                placeholder="단위"
+                                autoFocus
+                                className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
+                              />
+                              <button type="button" onClick={() => updateMaterial(m.id, "yieldUnit", "YD")}
+                                className="flex-shrink-0 text-gray-300 hover:text-gray-500 text-[10px] leading-none px-0.5" title="목록으로">✕</button>
+                            </div>
                           ) : (
                             <select
                               value={m.yieldUnit || "YD"}
-                              onChange={(e) => updateMaterial(m.id, "yieldUnit", e.target.value)}
+                              onChange={(e) => {
+                                if (e.target.value === "직접입력") {
+                                  updateMaterial(m.id, "yieldUnit", "");
+                                } else {
+                                  updateMaterial(m.id, "yieldUnit", e.target.value);
+                                }
+                              }}
                               className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent cursor-pointer"
                             >
                               {YIELD_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
@@ -1611,90 +1705,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           </div>
         )}
 
-        {/* ── 4. 발주수량 ── */}
-        {tab === "발주수량" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <SectionHeader title="컬러 × 사이즈 발주 수량표" sub="컬러별, 사이즈별 발주 수량을 입력하세요" />
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">총</span>
-                  <span className="font-bold text-indigo-700 text-lg">{wo.totalQuantity.toLocaleString()}</span>
-                  <span className="text-gray-500">장</span>
-                </div>
-                <button onClick={addColorRow}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors">
-                  <Plus size={14} />컬러 추가
-                </button>
-              </div>
-            </div>
-
-            {wo.colorSizeTable.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-200 rounded-2xl py-16 flex flex-col items-center text-center">
-                <div className="text-gray-300 text-3xl mb-3">🎨</div>
-                <div className="text-sm text-gray-400 mb-4">발주 수량표가 비어 있습니다</div>
-                <button onClick={addColorRow}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors">
-                  <Plus size={14} />컬러 추가
-                </button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-200 px-4 py-2.5 text-left text-xs font-semibold text-gray-600 min-w-[120px]">컬러</th>
-                      {wo.sizes.map((s) => (
-                        <th key={s} className="border border-gray-200 px-4 py-2.5 text-center text-xs font-semibold text-gray-600 min-w-[70px]">{s}</th>
-                      ))}
-                      <th className="border border-gray-200 px-4 py-2.5 text-center text-xs font-semibold text-indigo-600 min-w-[70px]">합계</th>
-                      <th className="border border-gray-200 px-2 py-2 w-8"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {wo.colorSizeTable.map((row, idx) => (
-                      <tr key={idx}>
-                        <td className="border border-gray-200 p-1">
-                          <input value={row.color}
-                            onChange={(e) => updateColorSize(idx, "color", e.target.value)}
-                            placeholder="퍼플, 핑크…"
-                            className="w-full px-3 py-1.5 text-sm rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent" />
-                        </td>
-                        {wo.sizes.map((s) => (
-                          <td key={s} className="border border-gray-200 p-1">
-                            <input type="number" min={0}
-                              value={row.sizes[s] || ""}
-                              onChange={(e) => updateColorSize(idx, s, e.target.value)}
-                              className="w-full px-2 py-1.5 text-sm text-center rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent" />
-                          </td>
-                        ))}
-                        <td className="border border-gray-200 p-1 text-center font-bold text-indigo-700">{row.total}</td>
-                        <td className="border border-gray-200 p-1 text-center">
-                          <button onClick={() => removeColorRow(idx)}
-                            className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-indigo-50">
-                      <td className="border border-gray-200 px-4 py-2 font-bold text-xs text-gray-600">TOTAL</td>
-                      {wo.sizes.map((s) => (
-                        <td key={s} className="border border-gray-200 px-4 py-2 text-center font-bold text-xs text-gray-700">
-                          {wo.colorSizeTable.reduce((sum, r) => sum + (r.sizes[s] || 0), 0)}
-                        </td>
-                      ))}
-                      <td className="border border-gray-200 px-4 py-2 text-center font-bold text-indigo-700">{wo.totalQuantity}</td>
-                      <td className="border border-gray-200"></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── 5. 라벨·기타 ── */}
+        {/* ── 4. 라벨·기타 ── */}
         {tab === "라벨·기타" && (
           <div className="space-y-6">
 
