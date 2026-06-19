@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import {
-  ChevronLeft, Save, Printer, Plus, Trash2,
+  ChevronLeft, Save, Printer, Plus, Trash2, Edit3,
   Upload, FileSpreadsheet, CheckCircle2, AlertCircle,
   ImagePlus, X, ChevronDown, Check,
   Image as ImageIcon, Link as LinkIcon, Paperclip, ExternalLink,
