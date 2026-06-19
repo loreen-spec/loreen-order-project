@@ -34,6 +34,8 @@ const MATERIAL_CATEGORIES = [
 const YIELD_UNITS = ["YD", "M", "EA", "직접입력"] as const;
 type YieldUnit = typeof YIELD_UNITS[number];
 
+const LINING_NAMES = ["폴리트윌", "T/C", "단면폴라폴리스", "양면폴라폴리스", "직접입력"];
+
 const SEASONS = ["봄", "여름", "가을", "겨울", "사계절"];
 const YEARS   = ["2024", "2025", "2026", "2027"];
 
@@ -737,6 +739,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const [catOpen, setCatOpen] = useState<string | null>(null);
   // 단위 직접입력 모드 (materialId)
   const [unitDirect, setUnitDirect] = useState<Record<string, boolean>>({});
+  // 자재명 드롭다운 열림 상태 (materialId)
+  const [nameOpen, setNameOpen] = useState<string | null>(null);
 
   function onDragStart(idx: number) {
     dragIdx.current = idx;
@@ -1160,7 +1164,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             {/* ── 발주수량 (기본정보 내) ── */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <div className="flex items-center justify-between mb-4">
                 <SectionHeader title="컬러 × 사이즈 발주 수량표" sub="컬러별, 사이즈별 발주 수량을 입력하세요" />
                 <div className="flex items-center gap-3">
@@ -1239,7 +1243,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               )}
             </div>
 
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <SectionHeader title="담당자 & 일정" />
               <div className="grid grid-cols-3 gap-4">
                 <Field label="담당자">
@@ -1265,7 +1269,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               </div>
             </div>
 
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <SectionHeader title="원가 정보" sub="참고용 원가 및 판매가" />
               <div className="grid grid-cols-2 gap-4">
                 <Field label="원가 (VAT 포함)">
@@ -1278,7 +1282,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             {/* ── 이미지 업로드 ── */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <SectionHeader title="이미지" sub="도식화와 제품 사진을 등록하세요 — PDF에 자동 삽입됩니다" />
               <div className="grid grid-cols-2 gap-5">
 
@@ -1621,14 +1625,55 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             </div>
                           )}
                         </td>
-                        {/* 자재명, 색상, 규격 */}
-                        {(["name","color","spec"] as const).map((f) => (
+                        {/* 자재명 — 안감 계열이면 프리셋 드롭다운 */}
+                        <td className="border border-gray-200 p-1 relative min-w-[110px]">
+                          {m.category.includes("안감") ? (
+                            <div className="flex items-center gap-0.5">
+                              <input value={m.name}
+                                onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
+                                onFocus={() => setNameOpen(m.id)}
+                                onBlur={() => setTimeout(() => setNameOpen(null), 150)}
+                                onKeyDown={handleMatKeyDown}
+                                className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
+                                placeholder="자재명"
+                              />
+                              <button type="button" tabIndex={-1}
+                                onMouseDown={(e) => { e.preventDefault(); setNameOpen(v => v === m.id ? null : m.id); }}
+                                className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
+                                <ChevronDown size={11} />
+                              </button>
+                              {nameOpen === m.id && (
+                                <div className="absolute left-0 top-full z-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[150px]">
+                                  {LINING_NAMES.map((n) => (
+                                    <button key={n} type="button"
+                                      onMouseDown={() => {
+                                        if (n !== "직접입력") updateMaterial(m.id, "name", n);
+                                        setNameOpen(null);
+                                      }}
+                                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${n === "직접입력" ? "text-indigo-500 font-semibold border-t border-gray-100" : m.name === n ? "font-semibold text-indigo-600 bg-indigo-50" : "text-gray-700"}`}>
+                                      {n}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <input value={m.name}
+                              onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
+                              onKeyDown={handleMatKeyDown}
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
+                              placeholder="반사우본"
+                            />
+                          )}
+                        </td>
+                        {/* 색상, 규격 */}
+                        {(["color","spec"] as const).map((f) => (
                           <td key={f} className="border border-gray-200 p-1">
                             <input value={m[f]}
                               onChange={(e) => updateMaterial(m.id, f, e.target.value)}
                               onKeyDown={handleMatKeyDown}
                               className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent min-w-[80px]"
-                              placeholder={f === "name" ? "반사우본" : f === "color" ? "BLACK" : "60\""}
+                              placeholder={f === "color" ? "BLACK" : "60\""}
                             />
                           </td>
                         ))}
@@ -1784,7 +1829,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             {/* 라벨 위치 다이어그램 프리셋 */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <SectionHeader
                 title="라벨 위치 다이어그램"
                 sub="체크한 항목만 PDF에 삽입됩니다. 이미지에 마우스를 올려 업로드하세요."
@@ -1796,7 +1841,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             {/* 비고/기타 작성란 */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <SectionHeader title="비고 / 기타 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 비고란" />
               <textarea value={wo.productionNotes}
                 onChange={(e) => set("productionNotes", e.target.value)}
@@ -1807,7 +1852,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             {/* 고정값 문구 (순수사항) */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <SectionHeader title="고정값 문구 (순수사항)" sub="PDF 하단 좌측 하단 — 매 작업지시서에 공통으로 들어가는 문구" />
               <textarea value={wo.fixedNotes}
                 onChange={(e) => set("fixedNotes", e.target.value)}
@@ -1817,7 +1862,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             {/* 원부자재 업체 */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t-2 border-gray-200 pt-5">
               <SectionHeader title="원부자재 업체 정보" sub="PDF 우측 하단 — 거래 업체명, 연락처 등" />
               <textarea value={wo.vendorNotes}
                 onChange={(e) => set("vendorNotes", e.target.value)}
