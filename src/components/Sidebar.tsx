@@ -2,12 +2,11 @@
 import { useState } from "react";
 import {
   LayoutDashboard, ChevronDown, ChevronRight,
-  ClipboardList, FilePlus, History, CalendarDays,
-  Package, FileText, Archive, PlusSquare
+  ClipboardList, FilePlus, History,
+  FileText, Archive, PlusSquare
 } from "lucide-react";
 
 export type SidebarPage =
-  | "입고캘린더"
   | "발주관리"
   | "발주서작성"
   | "발주이력"
@@ -20,13 +19,6 @@ interface Props {
 }
 
 const NAV = [
-  {
-    group: "ORDER",
-    icon: Package,
-    items: [
-      { key: "입고캘린더" as SidebarPage, label: "입고 캘린더", icon: CalendarDays },
-    ],
-  },
   {
     group: "WORK ORDER",
     icon: FileText,
