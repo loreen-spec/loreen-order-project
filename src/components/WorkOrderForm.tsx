@@ -24,12 +24,14 @@ const DEFAULT_MEASUREMENTS: WorkOrderMeasurement[] = [
 const DEFAULT_SIZES = ["100", "110", "120", "130", "140"];
 
 const MATERIAL_CATEGORIES = [
-  "주원단A", "주원단B", "배색원단", "안감A", "안감B", "안감C",
+  "주원단A", "안감A", "안감B", "안감C",
   "웰론(몸판)", "웰론(소매)", "지퍼", "슬라이더", "와펜",
   "E/BAND", "아일렛", "스트링", "스토퍼", "재봉사", "패턴비",
-  "완사입가(VAT+)", "메인라벨", "케어라벨", "취급주의라벨",
-  "가격택", "품질보증택", "폴리백", "기타",
+  "완사입가(VAT+)", "기타",
 ];
+
+const YIELD_UNITS = ["YD", "M", "EA", "직접입력"] as const;
+type YieldUnit = typeof YIELD_UNITS[number];
 
 const SEASONS = ["봄", "여름", "가을", "겨울", "사계절"];
 const YEARS   = ["2024", "2025", "2026", "2027"];
@@ -876,8 +878,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   function addMaterial() {
     const m: WorkOrderMaterial = {
       id: Date.now().toString(),
-      category: "주원단A", name: "", color: "", spec: "",
-      yield: "", unitPrice: "", orderUnit: "", notes: "",
+      category: "", name: "", color: "", spec: "",
+      yield: "", yieldUnit: "YD", unitPrice: "", orderUnit: "", notes: "",
     };
     setWo((w) => ({ ...w, materials: [...w.materials, m] }));
   }
@@ -1485,7 +1487,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="border border-gray-200 w-7" />
-                      {["품목", "자재명", "색상", "규격", "요척", "단가", "단발주", "비고", ""].map((h) => (
+                      {["품목", "자재명", "색상", "규격", "요척", "단위", "단가", "단발주", "비고", ""].map((h) => (
                         <th key={h} className="border border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                       ))}
                     </tr>
@@ -1512,26 +1514,87 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             ⠿
                           </span>
                         </td>
-                        <td className="border border-gray-200 p-1 min-w-[120px]">
-                          <input
-                            list={`mat-cat-${m.id}`}
+                        {/* 품목 — 빈칸 클릭 시 드롭다운 */}
+                        <td className="border border-gray-200 p-1 min-w-[110px]">
+                          <select
                             value={m.category}
                             onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
-                            onKeyDown={handleMatKeyDown}
-                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
-                            placeholder="품목 입력"
-                          />
-                          <datalist id={`mat-cat-${m.id}`}>
-                            {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c} />)}
-                          </datalist>
+                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent cursor-pointer"
+                          >
+                            <option value="">-- 선택 --</option>
+                            {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                          </select>
                         </td>
-                        {(["name","color","spec","yield","unitPrice","orderUnit","notes"] as const).map((f) => (
+                        {/* 자재명, 색상, 규격 */}
+                        {(["name","color","spec"] as const).map((f) => (
                           <td key={f} className="border border-gray-200 p-1">
                             <input value={m[f]}
                               onChange={(e) => updateMaterial(m.id, f, e.target.value)}
                               onKeyDown={handleMatKeyDown}
                               className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent min-w-[80px]"
-                              placeholder={f === "name" ? "반사우본" : f === "color" ? "BLACK" : f === "spec" ? "60\"" : f === "yield" ? "1.184YD" : f === "unitPrice" ? "단가" : f === "orderUnit" ? "1EA" : ""}
+                              placeholder={f === "name" ? "반사우본" : f === "color" ? "BLACK" : "60\""}
+                            />
+                          </td>
+                        ))}
+                        {/* 요척 숫자 + YD→M 변환 버튼 */}
+                        <td className="border border-gray-200 p-1 min-w-[90px]">
+                          <div className="flex items-center gap-0.5">
+                            <input value={m.yield}
+                              onChange={(e) => updateMaterial(m.id, "yield", e.target.value)}
+                              onKeyDown={handleMatKeyDown}
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
+                              placeholder="1.5"
+                            />
+                            {/* YD↔M 변환 버튼 */}
+                            {(m.yieldUnit === "YD" || m.yieldUnit === "M") && (
+                              <button
+                                type="button"
+                                title={m.yieldUnit === "YD" ? "YD → M 변환" : "M → YD 변환"}
+                                onClick={() => {
+                                  const n = parseFloat(m.yield);
+                                  if (isNaN(n)) return;
+                                  if (m.yieldUnit === "YD") {
+                                    updateMaterial(m.id, "yield", (n * 0.9144).toFixed(3));
+                                    updateMaterial(m.id, "yieldUnit", "M");
+                                  } else {
+                                    updateMaterial(m.id, "yield", (n / 0.9144).toFixed(3));
+                                    updateMaterial(m.id, "yieldUnit", "YD");
+                                  }
+                                }}
+                                className="flex-shrink-0 px-1 py-0.5 text-[9px] font-bold rounded bg-indigo-50 text-indigo-500 hover:bg-indigo-100 whitespace-nowrap leading-none"
+                              >
+                                {m.yieldUnit === "YD" ? "→M" : "→YD"}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        {/* 단위 드롭다운 */}
+                        <td className="border border-gray-200 p-1 min-w-[80px]">
+                          {(m.yieldUnit === "직접입력") ? (
+                            <input
+                              value=""
+                              onChange={(e) => updateMaterial(m.id, "yieldUnit", e.target.value)}
+                              placeholder="단위"
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
+                            />
+                          ) : (
+                            <select
+                              value={m.yieldUnit || "YD"}
+                              onChange={(e) => updateMaterial(m.id, "yieldUnit", e.target.value)}
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent cursor-pointer"
+                            >
+                              {YIELD_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                            </select>
+                          )}
+                        </td>
+                        {/* 단가, 단발주, 비고 */}
+                        {(["unitPrice","orderUnit","notes"] as const).map((f) => (
+                          <td key={f} className="border border-gray-200 p-1">
+                            <input value={m[f]}
+                              onChange={(e) => updateMaterial(m.id, f, e.target.value)}
+                              onKeyDown={handleMatKeyDown}
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent min-w-[70px]"
+                              placeholder={f === "unitPrice" ? "단가" : f === "orderUnit" ? "1EA" : ""}
                             />
                           </td>
                         ))}

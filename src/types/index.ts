@@ -12,7 +12,8 @@ export interface WorkOrderMaterial {
   name: string;       // 자재명
   color: string;
   spec: string;       // 규격 (60", 5호 etc.)
-  yield: string;      // 요척
+  yield: string;      // 요척 숫자
+  yieldUnit: string;  // YD | M | EA | 직접입력
   unitPrice: string;
   orderUnit: string;  // 단발주 (1EA, 0.3YD etc.)
   notes: string;
