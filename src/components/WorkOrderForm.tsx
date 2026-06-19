@@ -733,6 +733,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const dragIdx = useRef<number | null>(null);
   const dragOverIdx = useRef<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  // 품목 드롭다운 열림 상태 (materialId)
+  const [catOpen, setCatOpen] = useState<string | null>(null);
+  // 단위 직접입력 모드 (materialId)
+  const [unitDirect, setUnitDirect] = useState<Record<string, boolean>>({});
 
   function onDragStart(idx: number) {
     dragIdx.current = idx;
@@ -871,7 +875,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   function updateMaterial(id: string, key: keyof WorkOrderMaterial, value: string) {
     setWo((w) => ({
       ...w,
-      materials: w.materials.map((m) => m.id === id ? { ...m, [key]: value } : m),
+      materials: w.materials.map((m) => {
+        if (m.id !== id) return m;
+        const updated = { ...m, [key]: value };
+        // 패턴비 선택 시 자동 입력 (기존 값이 없을 때만)
+        if (key === "category" && value === "패턴비") {
+          if (!updated.yield)     updated.yield     = "1";
+          if (!updated.yieldUnit) updated.yieldUnit = "EA";
+          if (!updated.unitPrice) updated.unitPrice = "300";
+        }
+        return updated;
+      }),
     }));
   }
 
@@ -1578,19 +1592,34 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             ⠿
                           </span>
                         </td>
-                        {/* 품목 — 클릭하면 전체선택 → datalist 리스트 항상 뜸 */}
-                        <td className="border border-gray-200 p-1 min-w-[120px]">
-                          <input
-                            list={`mat-cat-${m.id}`}
-                            value={m.category}
-                            onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
-                            onClick={(e) => (e.target as HTMLInputElement).select()}
-                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent cursor-text"
-                            placeholder="-- 선택 또는 입력 --"
-                          />
-                          <datalist id={`mat-cat-${m.id}`}>
-                            {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c} />)}
-                          </datalist>
+                        {/* 품목 — 커스텀 드롭다운 (항상 전체 리스트 표시) */}
+                        <td className="border border-gray-200 p-1 min-w-[120px] relative">
+                          <div className="flex items-center gap-0.5">
+                            <input
+                              value={m.category}
+                              onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
+                              onFocus={() => setCatOpen(m.id)}
+                              onBlur={() => setTimeout(() => setCatOpen(null), 150)}
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
+                              placeholder="-- 선택 또는 입력 --"
+                            />
+                            <button type="button" tabIndex={-1}
+                              onMouseDown={(e) => { e.preventDefault(); setCatOpen(v => v === m.id ? null : m.id); }}
+                              className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
+                              <ChevronDown size={11} />
+                            </button>
+                          </div>
+                          {catOpen === m.id && (
+                            <div className="absolute left-0 top-full z-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[140px] max-h-48 overflow-y-auto">
+                              {MATERIAL_CATEGORIES.map((c) => (
+                                <button key={c} type="button"
+                                  onMouseDown={() => { updateMaterial(m.id, "category", c); setCatOpen(null); }}
+                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${m.category === c ? "font-semibold text-indigo-600 bg-indigo-50" : "text-gray-700"}`}>
+                                  {c}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         {/* 자재명, 색상, 규격 */}
                         {(["name","color","spec"] as const).map((f) => (
@@ -1637,16 +1666,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         </td>
                         {/* 단위 — 드롭다운 또는 직접입력 */}
                         <td className="border border-gray-200 p-1 min-w-[90px]">
-                          {(!["YD","M","EA"].includes(m.yieldUnit || "YD")) ? (
+                          {unitDirect[m.id] ? (
                             <div className="flex items-center gap-0.5">
                               <input
                                 value={m.yieldUnit}
                                 onChange={(e) => updateMaterial(m.id, "yieldUnit", e.target.value)}
-                                placeholder="단위"
+                                placeholder="단위 입력"
                                 autoFocus
                                 className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
                               />
-                              <button type="button" onClick={() => updateMaterial(m.id, "yieldUnit", "YD")}
+                              <button type="button"
+                                onClick={() => { setUnitDirect(p => ({ ...p, [m.id]: false })); updateMaterial(m.id, "yieldUnit", "YD"); }}
                                 className="flex-shrink-0 text-gray-300 hover:text-gray-500 text-[10px] leading-none px-0.5" title="목록으로">✕</button>
                             </div>
                           ) : (
@@ -1654,6 +1684,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                               value={m.yieldUnit || "YD"}
                               onChange={(e) => {
                                 if (e.target.value === "직접입력") {
+                                  setUnitDirect(p => ({ ...p, [m.id]: true }));
                                   updateMaterial(m.id, "yieldUnit", "");
                                 } else {
                                   updateMaterial(m.id, "yieldUnit", e.target.value);
