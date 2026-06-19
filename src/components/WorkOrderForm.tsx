@@ -153,19 +153,19 @@ function MaterialAttachList({
   attachments: Attachment[];
   onChange: (atts: Attachment[]) => void;
 }) {
-  // 자재별 "올리기 폼 열림 여부" + 임시 입력값
   const [openForms, setOpenForms] = useState<Record<string, boolean>>({});
   const [drafts, setDrafts] = useState<Record<string, {
     imageFile?: File; imagePreview?: string;
-    link: string; linkTitle: string; memo: string;
+    link: string; memo: string;
   }>>({});
-  // 저장 완료 피드백
   const [savedIds, setSavedIds] = useState<Record<string, boolean>>({});
-  // 라이트박스
   const [lightbox, setLightbox] = useState<string | null>(null);
+  // 수정 중인 첨부 ID → 편집 중 값
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ link: string; memo: string }>({ link: "", memo: "" });
 
   function getDraft(matId: string) {
-    return drafts[matId] ?? { link: "", linkTitle: "", memo: "" };
+    return drafts[matId] ?? { link: "", memo: "" };
   }
   function setDraft(matId: string, patch: object) {
     setDrafts(prev => ({ ...prev, [matId]: { ...getDraft(matId), ...patch } }));
@@ -182,7 +182,6 @@ function MaterialAttachList({
   function saveEntry(matId: string) {
     const d = getDraft(matId);
     const newAtts: Attachment[] = [];
-
     if (d.imagePreview) {
       newAtts.push({
         id: crypto.randomUUID(), materialId: matId, type: "image",
@@ -192,7 +191,7 @@ function MaterialAttachList({
     if (d.link.trim()) {
       newAtts.push({
         id: crypto.randomUUID(), materialId: matId, type: "link",
-        name: d.linkTitle.trim() || d.link, value: d.link.trim(), memo: d.memo,
+        name: d.link.trim(), value: d.link.trim(), memo: d.memo,
       });
     }
     if (newAtts.length === 0 && d.memo.trim()) {
@@ -202,7 +201,6 @@ function MaterialAttachList({
       });
     }
     if (newAtts.length === 0) return;
-
     onChange([...attachments, ...newAtts]);
     setSavedIds(prev => ({ ...prev, [matId]: true }));
     closeForm(matId);
@@ -213,24 +211,23 @@ function MaterialAttachList({
     onChange(attachments.filter(a => a.id !== id));
   }
 
+  function startEdit(att: Attachment) {
+    setEditingId(att.id);
+    setEditDraft({ link: att.value || "", memo: att.memo || "" });
+  }
+  function saveEdit(id: string) {
+    onChange(attachments.map(a => a.id !== id ? a : {
+      ...a, value: editDraft.link, name: editDraft.link || a.name, memo: editDraft.memo,
+    }));
+    setEditingId(null);
+  }
+
   return (
     <>
-    {/* 라이트박스 */}
     {lightbox && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-        onClick={() => setLightbox(null)}
-      >
-        <button
-          className="absolute top-4 right-4 w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-colors"
-          onClick={() => setLightbox(null)}
-        ><X size={18} /></button>
-        <img
-          src={lightbox}
-          alt="확대 이미지"
-          className="max-w-[90vw] max-h-[90vh] rounded-xl object-contain shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setLightbox(null)}>
+        <button className="absolute top-4 right-4 w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-colors" onClick={() => setLightbox(null)}><X size={18} /></button>
+        <img src={lightbox} alt="확대" className="max-w-[90vw] max-h-[90vh] rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
       </div>
     )}
     <div className="space-y-3">
@@ -248,18 +245,10 @@ function MaterialAttachList({
               <span className="text-sm font-bold text-gray-800">{mat.name || "자재명 없음"}</span>
               {mat.color && <span className="text-xs text-gray-400">{mat.color}</span>}
               <div className="ml-auto flex items-center gap-2">
-                {saved && (
-                  <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                    <Check size={12} />저장됨
-                  </span>
-                )}
+                {saved && <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={12} />저장됨</span>}
                 <button
                   onClick={() => isOpen ? closeForm(mat.id) : openForm(mat.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                    isOpen
-                      ? "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${isOpen ? "bg-gray-200 text-gray-600 hover:bg-gray-300" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
                 >
                   <Plus size={12} />{isOpen ? "취소" : "올리기"}
                 </button>
@@ -277,11 +266,8 @@ function MaterialAttachList({
                       {draft.imagePreview ? (
                         <div className="relative w-full h-full">
                           <img src={draft.imagePreview} alt="" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); setDraft(mat.id, { imageFile: undefined, imagePreview: undefined }); }}
-                            className="absolute top-1 right-1 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500"
-                          ><X size={10} /></button>
+                          <button type="button" onClick={(e) => { e.preventDefault(); setDraft(mat.id, { imageFile: undefined, imagePreview: undefined }); }}
+                            className="absolute top-1 right-1 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500"><X size={10} /></button>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-1 text-indigo-300">
@@ -290,88 +276,85 @@ function MaterialAttachList({
                         </div>
                       )}
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
+                        const f = e.target.files?.[0]; if (!f) return;
                         const reader = new FileReader();
                         reader.onload = (ev) => setDraft(mat.id, { imageFile: f, imagePreview: ev.target?.result as string });
-                        reader.readAsDataURL(f);
-                        e.target.value = "";
+                        reader.readAsDataURL(f); e.target.value = "";
                       }} />
                     </label>
                   </div>
-
-                  {/* 링크 */}
+                  {/* 링크 (제목 없음) */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-gray-600">링크</label>
-                    <input value={draft.linkTitle} onChange={(e) => setDraft(mat.id, { linkTitle: e.target.value })}
-                      placeholder="링크 제목 (예: 쇼핑몰)"
-                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400 bg-white" />
                     <input value={draft.link} onChange={(e) => setDraft(mat.id, { link: e.target.value })}
                       placeholder="https://..."
                       className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400 bg-white" />
                   </div>
                 </div>
-
-                {/* 내용·옵션 */}
+                {/* 비고 */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-600">내용 · 옵션 작성</label>
+                  <label className="text-xs font-semibold text-gray-600">비고</label>
                   <textarea value={draft.memo} onChange={(e) => setDraft(mat.id, { memo: e.target.value })}
-                    placeholder="두께감, 색상 옵션, 단가, 특이사항 등 자유롭게 작성하세요"
-                    rows={3}
+                    placeholder="두께감, 색상 옵션, 단가, 특이사항 등"
+                    rows={2}
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-indigo-400 bg-white resize-none" />
                 </div>
-
-                {/* 저장 버튼 */}
                 <div className="flex justify-end gap-2">
-                  <button onClick={() => closeForm(mat.id)}
-                    className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    취소
-                  </button>
-                  <button onClick={() => saveEntry(mat.id)}
-                    className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                    <Save size={11} />저장
-                  </button>
+                  <button onClick={() => closeForm(mat.id)} className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">취소</button>
+                  <button onClick={() => saveEntry(mat.id)} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"><Save size={11} />저장</button>
                 </div>
               </div>
             )}
 
-            {/* 저장된 첨부 목록 */}
+            {/* 저장된 첨부 목록 — 가로 행 레이아웃 */}
             {matAtts.length === 0 ? (
-              <div className="px-4 py-4 text-xs text-gray-300 text-center">첨부 없음 — 올리기 버튼을 눌러 추가하세요</div>
+              <div className="px-4 py-3 text-xs text-gray-300 text-center">첨부 없음</div>
             ) : (
-              <div className="p-3 grid grid-cols-3 gap-3">
+              <div className="divide-y divide-gray-50">
                 {matAtts.map((att) => (
-                  <div key={att.id} className="border border-gray-100 rounded-xl bg-gray-50 overflow-hidden">
-                    {att.type === "image" && att.value && (
-                      <div className="h-24 overflow-hidden relative group cursor-zoom-in"
-                        onClick={() => setLightbox(att.value)}>
-                        <img src={att.value} alt={att.name} className="w-full h-full object-cover" />
-                        <button onClick={(e) => { e.stopPropagation(); removeAtt(att.id); }}
-                          className="absolute top-1 right-1 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                          <X size={10} />
-                        </button>
-                      </div>
-                    )}
-                    <div className="p-2.5 space-y-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${att.type === "image" ? "bg-indigo-50 text-indigo-500" : "bg-emerald-50 text-emerald-500"}`}>
-                          {att.type === "image" ? "사진" : "링크"}
-                        </span>
-                        {att.type === "link" && (
-                          <button onClick={() => removeAtt(att.id)} className="text-gray-300 hover:text-red-400 ml-auto"><X size={11} /></button>
-                        )}
-                      </div>
-                      {att.type === "link" && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-700 truncate flex-1">{att.name || att.value}</span>
-                          {att.value && (
-                            <a href={att.value} target="_blank" rel="noopener noreferrer"
-                              className="text-emerald-500 hover:text-emerald-700 shrink-0"><ExternalLink size={11} /></a>
-                          )}
-                        </div>
+                  <div key={att.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/60 transition-colors group">
+                    {/* 썸네일 */}
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center cursor-pointer border border-gray-100"
+                      onClick={() => att.type === "image" && att.value && setLightbox(att.value)}>
+                      {att.type === "image" && att.value
+                        ? <img src={att.value} alt={att.name} className="w-full h-full object-cover" />
+                        : <LinkIcon size={16} className="text-gray-300" />}
+                    </div>
+                    {/* 링크 */}
+                    <div className="flex-1 min-w-0">
+                      {editingId === att.id ? (
+                        <input value={editDraft.link} onChange={(e) => setEditDraft(d => ({ ...d, link: e.target.value }))}
+                          placeholder="https://..." autoFocus
+                          className="w-full px-2 py-1 text-xs border border-indigo-300 rounded-lg focus:outline-none bg-white" />
+                      ) : (
+                        att.value
+                          ? <a href={att.value} target="_blank" rel="noopener noreferrer"
+                              className="text-xs text-indigo-600 hover:underline truncate block">{att.value}</a>
+                          : <span className="text-xs text-gray-300">링크 없음</span>
                       )}
-                      {att.memo && (
-                        <p className="text-[10px] text-gray-500 leading-relaxed whitespace-pre-wrap">{att.memo}</p>
+                    </div>
+                    {/* 비고 */}
+                    <div className="w-40 flex-shrink-0">
+                      {editingId === att.id ? (
+                        <input value={editDraft.memo} onChange={(e) => setEditDraft(d => ({ ...d, memo: e.target.value }))}
+                          placeholder="비고"
+                          className="w-full px-2 py-1 text-xs border border-indigo-300 rounded-lg focus:outline-none bg-white" />
+                      ) : (
+                        <span className="text-xs text-gray-500 truncate block">{att.memo || "—"}</span>
+                      )}
+                    </div>
+                    {/* 액션 버튼 */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {editingId === att.id ? (
+                        <>
+                          <button onClick={() => saveEdit(att.id)} className="px-2 py-1 text-[10px] font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">저장</button>
+                          <button onClick={() => setEditingId(null)} className="px-2 py-1 text-[10px] text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50">취소</button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => startEdit(att)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-indigo-500 transition-all" title="수정"><Edit3 size={12} /></button>
+                          <button onClick={() => removeAtt(att.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition-all" title="삭제"><Trash2 size={12} /></button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1595,12 +1578,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             ⠿
                           </span>
                         </td>
-                        {/* 품목 — 드롭다운 선택 + 직접 수정 가능 */}
+                        {/* 품목 — 클릭하면 전체선택 → datalist 리스트 항상 뜸 */}
                         <td className="border border-gray-200 p-1 min-w-[120px]">
                           <input
                             list={`mat-cat-${m.id}`}
                             value={m.category}
                             onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
                             className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent cursor-text"
                             placeholder="-- 선택 또는 입력 --"
                           />
