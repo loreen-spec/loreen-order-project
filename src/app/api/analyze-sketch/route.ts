@@ -74,10 +74,20 @@ ${MATERIAL_CATEGORIES.join(", ")}
     }
 
     const result = await response.json();
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    // JSON 배열 추출
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    // 모든 parts에서 텍스트 수집 (thinking 모드 대응)
+    const parts = result.candidates?.[0]?.content?.parts ?? [];
+    const text = parts.map((p: any) => p.text ?? "").join("");
+
+    if (!text) return NextResponse.json({ error: "응답 없음", raw: result }, { status: 500 });
+
+    // JSON 배열 추출 — ```json ... ``` 블록 또는 날 배열 모두 처리
+    const stripped = text
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .trim();
+
+    const jsonMatch = stripped.match(/\[[\s\S]*\]/);
     if (!jsonMatch) return NextResponse.json({ error: "파싱 실패", raw: text }, { status: 500 });
 
     const materials = JSON.parse(jsonMatch[0]);
