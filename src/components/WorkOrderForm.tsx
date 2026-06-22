@@ -761,7 +761,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
         body: JSON.stringify({ imageBase64: base64, mimeType }),
       });
       const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error ?? "분석 실패");
+      if (!res.ok || data.error) throw new Error(JSON.stringify(data.error ?? data).slice(0, 200));
+      if (!Array.isArray(data.materials)) throw new Error("materials 없음: " + JSON.stringify(data).slice(0, 200));
       // 기존 원부자재에 추가 (중복 카테고리 제외)
       const existingCats = new Set(wo.materials.map((m) => m.category));
       const newMats: WorkOrderMaterial[] = data.materials

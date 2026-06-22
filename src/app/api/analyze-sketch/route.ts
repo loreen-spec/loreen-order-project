@@ -75,8 +75,27 @@ ${MATERIAL_CATEGORIES.join(", ")}
 
     const result = await response.json();
 
-    // DEBUG: 전체 응답 구조 반환
-    return NextResponse.json({ debug: true, result });
+    // Gemini 2.5 thinking 모드: thought:true 파트 제외하고 텍스트만 수집
+    const parts: any[] = result.candidates?.[0]?.content?.parts ?? [];
+    const text = parts
+      .filter((p: any) => !p.thought)
+      .map((p: any) => p.text ?? "")
+      .join("")
+      .trim();
+
+    if (!text) {
+      return NextResponse.json({ error: "응답 없음", parts: parts.map((p:any) => ({ thought: p.thought, hasText: !!p.text })) }, { status: 500 });
+    }
+
+    // JSON 배열 추출 — ```json ... ``` 코드블록 처리
+    const cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      return NextResponse.json({ error: "파싱 실패", raw: text.slice(0, 500) }, { status: 500 });
+    }
+
+    const materials = JSON.parse(jsonMatch[0]);
+    return NextResponse.json({ materials });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
