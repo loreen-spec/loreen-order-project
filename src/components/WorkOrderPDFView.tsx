@@ -73,16 +73,23 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   // 선택된 라벨 다이어그램 이미지 로드 (브라우저에서만)
   const [selectedLabelImages, setSelectedLabelImages] = useState<{ name: string; group: string; imageData: string }[]>([]);
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("labelDiagramPresets");
-      const presets: LabelPreset[] = raw ? JSON.parse(raw) : [];
-      const selected = wo.labelDiagramSelected ?? [];
-      setSelectedLabelImages(
-        presets
-          .filter(p => selected.includes(p.id) && p.imageData)
-          .map(p => ({ name: p.name, group: p.group, imageData: p.imageData! }))
-      );
-    } catch {}
+    const selected = wo.labelDiagramSelected ?? [];
+    if (selected.length === 0) return;
+    fetch("/api/label-presets")
+      .then(r => r.json())
+      .then((rows: any[]) => {
+        if (!Array.isArray(rows)) return;
+        const presets: LabelPreset[] = rows.map(r => ({
+          id: r.id, group: r.group_name, name: r.name,
+          imageData: r.image_data ?? undefined,
+        }));
+        setSelectedLabelImages(
+          presets
+            .filter(p => selected.includes(p.id) && p.imageData)
+            .map(p => ({ name: p.name, group: p.group, imageData: p.imageData! }))
+        );
+      })
+      .catch(() => {});
   }, [wo.labelDiagramSelected]);
 
   function handlePrint() {
