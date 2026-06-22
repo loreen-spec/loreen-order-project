@@ -494,15 +494,20 @@ function LabelDiagramSection({
 }) {
   const [presets, setPresets] = useState<LabelDiagramPreset[]>(LABEL_PRESET_DEFAULT);
 
-  const [saving, setSaving] = useState<string | null>(null); // 저장 중인 preset id
+  const [saving, setSaving] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Supabase에서 로드
-  useEffect(() => {
+  function loadFromSupabase() {
+    setLoadError(null);
     fetch("/api/label-presets")
       .then(r => r.json())
       .then((rows: any[]) => {
-        if (!Array.isArray(rows) || rows.length === 0) {
-          // 서버에 없으면 기본값 초기화
+        if (!Array.isArray(rows)) {
+          setLoadError(`API 오류: ${JSON.stringify(rows).slice(0, 100)}`);
+          setPresets(LABEL_PRESET_DEFAULT);
+          return;
+        }
+        if (rows.length === 0) {
           Promise.all(LABEL_PRESET_DEFAULT.map((p, i) =>
             fetch("/api/label-presets", {
               method: "POST",
@@ -518,8 +523,13 @@ function LabelDiagramSection({
           imageData: r.image_data ?? undefined,
         })));
       })
-      .catch(() => setPresets(LABEL_PRESET_DEFAULT));
-  }, []);
+      .catch((e) => {
+        setLoadError(`네트워크 오류: ${e?.message ?? e}`);
+        setPresets(LABEL_PRESET_DEFAULT);
+      });
+  }
+
+  useEffect(() => { loadFromSupabase(); }, []);
 
   const [addingGroup, setAddingGroup] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
@@ -571,6 +581,12 @@ function LabelDiagramSection({
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <div className="flex items-center gap-3 px-4 py-2 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+          <span>{loadError}</span>
+          <button onClick={loadFromSupabase} className="ml-auto px-2 py-1 bg-red-500 text-white rounded-lg text-[10px] font-semibold">재시도</button>
+        </div>
+      )}
       {LABEL_GROUPS.map(group => {
         const items = presets.filter(p => p.group === group);
         const c = GROUP_COLORS[group];
