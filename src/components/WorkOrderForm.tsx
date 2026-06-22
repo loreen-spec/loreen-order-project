@@ -467,7 +467,6 @@ export interface LabelDiagramPreset {
   imageData?: string; // base64
 }
 
-const LABEL_PRESET_KEY = "labelDiagramPresets";
 const LABEL_PRESET_DEFAULT: LabelDiagramPreset[] = [
   { id: "care_top",    group: "케어라벨",  name: "상의"  },
   { id: "care_bottom", group: "케어라벨",  name: "하의"  },
@@ -479,19 +478,6 @@ const LABEL_PRESET_DEFAULT: LabelDiagramPreset[] = [
   { id: "point_outer", group: "포인트라벨", name: "아우터" },
   { id: "point_care",  group: "포인트라벨", name: "케어+포인트 같이" },
 ];
-
-function loadPresets(): LabelDiagramPreset[] {
-  if (typeof window === "undefined") return LABEL_PRESET_DEFAULT;
-  try {
-    const raw = localStorage.getItem(LABEL_PRESET_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return LABEL_PRESET_DEFAULT;
-}
-function savePresets(presets: LabelDiagramPreset[]) {
-  if (typeof window === "undefined") return;
-  try { localStorage.setItem(LABEL_PRESET_KEY, JSON.stringify(presets)); } catch {}
-}
 
 const LABEL_GROUPS = ["케어라벨", "메인라벨", "포인트라벨"] as const;
 const GROUP_COLORS: Record<string, { border: string; bg: string; header: string; tag: string }> = {
@@ -508,9 +494,33 @@ function LabelDiagramSection({
 }) {
   const [presets, setPresets] = useState<LabelDiagramPreset[]>(LABEL_PRESET_DEFAULT);
 
+  const [saving, setSaving] = useState<string | null>(null); // 저장 중인 preset id
+
+  // Supabase에서 로드
   useEffect(() => {
-    setPresets(loadPresets());
+    fetch("/api/label-presets")
+      .then(r => r.json())
+      .then((rows: any[]) => {
+        if (!Array.isArray(rows) || rows.length === 0) {
+          // 서버에 없으면 기본값 초기화
+          Promise.all(LABEL_PRESET_DEFAULT.map((p, i) =>
+            fetch("/api/label-presets", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: p.id, group: p.group, name: p.name, sortOrder: i }),
+            })
+          ));
+          setPresets(LABEL_PRESET_DEFAULT);
+          return;
+        }
+        setPresets(rows.map(r => ({
+          id: r.id, group: r.group_name, name: r.name,
+          imageData: r.image_data ?? undefined,
+        })));
+      })
+      .catch(() => setPresets(LABEL_PRESET_DEFAULT));
   }, []);
+
   const [addingGroup, setAddingGroup] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -519,28 +529,44 @@ function LabelDiagramSection({
     onChange(selected.includes(id) ? selected.filter(s => s !== id) : [...selected, id]);
   }
 
-  function updatePresetImage(id: string, imageData: string) {
+  async function updatePresetImage(id: string, imageData: string) {
     const updated = presets.map(p => p.id === id ? { ...p, imageData } : p);
     setPresets(updated);
-    savePresets(updated);
+    setSaving(id);
+    const preset = updated.find(p => p.id === id)!;
+    await fetch("/api/label-presets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, group: preset.group, name: preset.name, imageData }),
+    }).catch(() => {});
+    setSaving(null);
   }
 
-  function addCustomPreset(group: string) {
+  async function addCustomPreset(group: string) {
     if (!newName.trim()) return;
     const id = `custom_${Date.now()}`;
-    const updated = [...presets, { id, group, name: newName.trim() }];
+    const newPreset = { id, group, name: newName.trim() };
+    const updated = [...presets, newPreset];
     setPresets(updated);
-    savePresets(updated);
     onChange([...selected, id]);
     setNewName("");
     setAddingGroup(null);
+    await fetch("/api/label-presets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, group, name: newPreset.name, sortOrder: updated.length }),
+    }).catch(() => {});
   }
 
-  function removePreset(id: string) {
+  async function removePreset(id: string) {
     const updated = presets.filter(p => p.id !== id);
     setPresets(updated);
-    savePresets(updated);
     onChange(selected.filter(s => s !== id));
+    await fetch("/api/label-presets", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
   }
 
   return (
