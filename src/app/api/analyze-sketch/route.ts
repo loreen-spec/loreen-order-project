@@ -58,7 +58,7 @@ ${MATERIAL_CATEGORIES.join(", ")}
         { inline_data: { mime_type: mimeType, data: imageBase64 } },
       ],
     }],
-    generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+    generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
   });
 
   try {
@@ -92,13 +92,29 @@ ${MATERIAL_CATEGORIES.join(", ")}
 
     // JSON 배열 추출 — ```json ... ``` 코드블록 처리
     const cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-    const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      // 에러 메시지에 실제 응답 첫 300자 포함
-      return NextResponse.json({ error: `파싱 실패 | 응답: ${cleaned.slice(0, 300)}` }, { status: 500 });
+    // JSON 배열 시작 위치 찾기
+    const start = cleaned.indexOf("[");
+    if (start === -1) {
+      return NextResponse.json({ error: `JSON 없음 | 응답: ${cleaned.slice(0, 300)}` }, { status: 500 });
     }
 
-    const materials = JSON.parse(jsonMatch[0]);
+    let jsonStr = cleaned.slice(start);
+
+    // 닫는 ] 가 없으면 (토큰 잘림) → 마지막 완전한 객체까지만 복구
+    if (!jsonStr.trimEnd().endsWith("]")) {
+      const lastComma = jsonStr.lastIndexOf("},");
+      const lastClose = jsonStr.lastIndexOf("}");
+      const cut = lastComma > -1 ? lastComma + 1 : lastClose > -1 ? lastClose + 1 : -1;
+      if (cut > -1) jsonStr = jsonStr.slice(0, cut) + "]";
+      else return NextResponse.json({ error: `복구 불가 | 응답: ${cleaned.slice(0, 300)}` }, { status: 500 });
+    }
+
+    let materials: any[];
+    try {
+      materials = JSON.parse(jsonStr);
+    } catch {
+      return NextResponse.json({ error: `JSON 파싱 오류 | 응답: ${jsonStr.slice(0, 300)}` }, { status: 500 });
+    }
     return NextResponse.json({ materials });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
