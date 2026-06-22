@@ -39,6 +39,94 @@ const LINING_NAMES = ["폴리트윌", "T/C", "단면폴라폴리스", "양면폴
 const SEASONS = ["봄", "여름", "가을", "겨울", "사계절"];
 const YEARS   = ["2024", "2025", "2026", "2027"];
 
+type TemplateMat = Pick<WorkOrderMaterial, "category"|"name"|"yield"|"yieldUnit"|"notes">;
+const mk = (category: string, name="", yld="", yieldUnit="YD", notes=""): TemplateMat =>
+  ({ category, name, yield: yld, yieldUnit, notes });
+
+const MATERIAL_TEMPLATES: Record<string, TemplateMat[]> = {
+  "티셔츠": [
+    mk("주원단A", "", "1.3"),
+    mk("배색B", "립", "0.1", "M", "넥/소매/밑단"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "맨투맨": [
+    mk("주원단A", "", "1.5"),
+    mk("배색B", "립", "0.15", "M", "넥/소매/밑단"),
+    mk("E/BAND", "", "1", "M"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "후드집업": [
+    mk("주원단A", "", "1.7"),
+    mk("배색B", "립", "0.15", "M", "소매/밑단"),
+    mk("E/BAND", "", "1", "M"),
+    mk("지퍼", "", "1", "EA"),
+    mk("슬라이더", "", "1", "EA"),
+    mk("스트링", "", "1.5", "M", "후드끈"),
+    mk("스토퍼", "", "2", "EA"),
+    mk("아일렛", "", "2", "EA"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "패딩류": [
+    mk("주원단A", "", "1.5"),
+    mk("안감A", "폴리트윌", "1.2"),
+    mk("웰론(몸판)", "", "1.2", "YD"),
+    mk("웰론(소매)", "", "0.5", "YD"),
+    mk("배색B", "", "0.3"),
+    mk("지퍼", "", "1", "EA"),
+    mk("슬라이더", "", "1", "EA"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "점퍼": [
+    mk("주원단A", "", "1.5"),
+    mk("안감A", "폴리트윌", "1.2"),
+    mk("배색B", "", "0.3", "M", "소매/밑단 립"),
+    mk("배색C", "", "0.2", "M", "테이프"),
+    mk("지퍼", "", "1", "EA"),
+    mk("슬라이더", "", "1", "EA"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "코트": [
+    mk("주원단A", "", "2.0"),
+    mk("안감A", "폴리트윌", "1.8"),
+    mk("배색B", "", "0.2"),
+    mk("테이프", "", "1", "M"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "블라우스": [
+    mk("주원단A", "", "1.3"),
+    mk("배색B", "", "0.2"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "바지": [
+    mk("주원단A", "", "1.2"),
+    mk("안감A", "", "0.5", "YD", "필요 시"),
+    mk("E/BAND", "", "0.8", "M", "허리"),
+    mk("스트링", "", "0.8", "M", "허리끈"),
+    mk("스토퍼", "", "2", "EA"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "스커트": [
+    mk("주원단A", "", "1.0"),
+    mk("안감A", "", "0.8", "YD", "필요 시"),
+    mk("E/BAND", "", "0.6", "M", "허리"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "실내복": [
+    mk("주원단A", "", "1.8", "YD", "상하 합산"),
+    mk("배색B", "립", "0.2", "M"),
+    mk("E/BAND", "", "0.8", "M"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+  "상하복(세트)": [
+    mk("주원단A", "", "2.5", "YD", "상하 합산"),
+    mk("배색B", "립", "0.2", "M"),
+    mk("E/BAND", "", "1.0", "M"),
+    mk("스트링", "", "0.8", "M"),
+    mk("스토퍼", "", "2", "EA"),
+    mk("재봉사", "", "1", "EA"),
+  ],
+};
+
 function emptyOrder(): WorkOrder {
   return {
     id: "",
@@ -746,6 +834,24 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   // AI 도식화 분석
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
+  const [templateType, setTemplateType] = useState("");
+
+  function applyTemplate(type: string) {
+    const tmpl = MATERIAL_TEMPLATES[type];
+    if (!tmpl) return;
+    const existingCats = new Set(wo.materials.map((m) => m.category));
+    const newMats: WorkOrderMaterial[] = tmpl
+      .filter((t) => !existingCats.has(t.category))
+      .map((t) => ({
+        id: crypto.randomUUID(),
+        category: t.category, name: t.name,
+        color: "", spec: "",
+        yield: t.yield, yieldUnit: t.yieldUnit,
+        unitPrice: "", orderUnit: "", notes: t.notes,
+      }));
+    if (newMats.length === 0) { alert("이미 모든 항목이 추가되어 있습니다."); return; }
+    setWo((w) => ({ ...w, materials: [...w.materials, ...newMats] }));
+  }
 
   async function analyzeSketch() {
     if (!wo.sketchImage) return;
@@ -1616,10 +1722,29 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <SectionHeader title="원단 및 부자재" sub="요척, 단가, 발주단위 등을 입력하세요" />
-              <button onClick={addMaterial}
-                className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
-                <Plus size={14} />항목 추가
-              </button>
+              <div className="flex items-center gap-2">
+                {/* 품종별 템플릿 자동입력 */}
+                <div className="flex items-center gap-1.5 px-3 py-2 border border-pink-200 rounded-xl bg-pink-50">
+                  <span className="text-xs text-pink-500 font-semibold whitespace-nowrap">✨ 품종 자동입력</span>
+                  <select
+                    value={templateType}
+                    onChange={(e) => {
+                      setTemplateType(e.target.value);
+                      if (e.target.value) applyTemplate(e.target.value);
+                    }}
+                    className="text-xs text-gray-600 bg-transparent focus:outline-none cursor-pointer"
+                  >
+                    <option value="">품종 선택</option>
+                    {Object.keys(MATERIAL_TEMPLATES).map((k) => (
+                      <option key={k} value={k}>{k}</option>
+                    ))}
+                  </select>
+                </div>
+                <button onClick={addMaterial}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
+                  <Plus size={14} />항목 추가
+                </button>
+              </div>
             </div>
 
             {wo.materials.length === 0 ? (
