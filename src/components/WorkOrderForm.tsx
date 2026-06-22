@@ -1599,25 +1599,30 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                           </span>
                         </td>
                         {/* 품목 — fixed 드롭다운 (overflow 컨테이너 탈출) */}
-                        <td className="border border-gray-200 p-1 min-w-[120px]">
+                        <td
+                          className="border border-gray-200 p-1 min-w-[120px]"
+                          ref={(el) => { if (el) (el as any)._matId = m.id; }}
+                        >
                           <div className="flex items-center gap-0.5">
                             <input
                               value={m.category}
                               onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
                               onFocus={(e) => {
-                                const r = e.currentTarget.getBoundingClientRect();
-                                setCatPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width + 24, 160) });
+                                const td = e.currentTarget.closest("td")!;
+                                const r = td.getBoundingClientRect();
+                                setCatPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 180) });
                                 setCatOpen(m.id);
                               }}
-                              onBlur={() => setTimeout(() => setCatOpen(null), 150)}
+                              onBlur={() => setTimeout(() => setCatOpen(null), 200)}
                               className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-transparent"
                               placeholder="-- 선택 또는 입력 --"
                             />
                             <button type="button" tabIndex={-1}
                               onMouseDown={(e) => {
                                 e.preventDefault();
-                                const r = e.currentTarget.getBoundingClientRect();
-                                setCatPos({ top: r.bottom + 2, left: r.left - 130, width: 160 });
+                                const td = e.currentTarget.closest("td")!;
+                                const r = td.getBoundingClientRect();
+                                setCatPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 180) });
                                 setCatOpen(v => v === m.id ? null : m.id);
                               }}
                               className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
@@ -1905,13 +1910,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       {/* 품목 fixed 드롭다운 */}
       {catOpen && (
         <div
-          style={{ position: "fixed", top: catPos.top, left: catPos.left, width: catPos.width, zIndex: 9999 }}
-          className="bg-white border border-gray-200 rounded-xl shadow-lg py-1 max-h-56 overflow-y-auto"
+          style={{ position: "fixed", top: catPos.top, left: catPos.left, width: Math.max(catPos.width, 200), zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-64 overflow-y-auto"
         >
           {MATERIAL_CATEGORIES.map((c) => (
             <button key={c} type="button"
-              onMouseDown={() => { updateMaterial(catOpen, "category", c); setCatOpen(null); }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors text-gray-700">
+              onMouseDown={(e) => { e.preventDefault(); updateMaterial(catOpen, "category", c); setCatOpen(null); }}
+              className="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition-colors text-gray-700">
               {c}
             </button>
           ))}
