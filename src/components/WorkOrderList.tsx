@@ -383,7 +383,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "작업처", "담당", "납품예정일", "상태"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
+                  <th key={h}
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500"
+                    style={h === "품명" ? { background: "rgba(252, 231, 243, 0.6)" } : {}}
+                  >{h}</th>
                 ))}
                 <th className="px-4 py-3 text-center text-xs font-semibold text-pink-500 whitespace-nowrap">
                   {editingDirector ? (
@@ -422,7 +425,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/30"}`}
                   >
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{o.styleNo || "—"}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" style={{ background: "rgba(252, 231, 243, 0.45)" }}>
                       {(() => {
                         // notionProductId 직접 링크 우선, 없으면 notionMap 이름 매칭
                         const directId = o.notionProductId?.replace(/-/g, "");
@@ -434,13 +437,13 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                             href={notionUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group inline-flex items-center gap-1 font-semibold text-pink-700 hover:text-pink-900 hover:underline transition-colors"
+                            className="group inline-flex items-center gap-1 font-semibold text-gray-900 hover:text-gray-700 hover:underline transition-colors"
                           >
                             {o.productName}
-                            <ExternalLink size={11} className="text-pink-400 group-hover:text-pink-600 flex-shrink-0" />
+                            <ExternalLink size={11} className="text-gray-400 group-hover:text-gray-600 flex-shrink-0" />
                           </a>
                         ) : (
-                          <div className="font-semibold text-gray-800 flex items-center gap-1">
+                          <div className="font-semibold text-gray-900 flex items-center gap-1">
                             {o.productName}
                             {notionLoading && <Loader2 size={10} className="text-gray-300 animate-spin" />}
                           </div>
