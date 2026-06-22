@@ -91,7 +91,8 @@ ${MATERIAL_CATEGORIES.join(", ")}
     const cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
     const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      return NextResponse.json({ error: "파싱 실패", raw: text.slice(0, 500) }, { status: 500 });
+      // 에러 메시지에 실제 응답 첫 300자 포함
+      return NextResponse.json({ error: `파싱 실패 | 응답: ${cleaned.slice(0, 300)}` }, { status: 500 });
     }
 
     const materials = JSON.parse(jsonMatch[0]);
