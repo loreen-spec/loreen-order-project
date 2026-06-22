@@ -269,7 +269,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
       {/* Supabase 연결 오류 배너 */}
       {loadError && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center gap-2">
-          ⚠️ 서버 저장소 연결 실패 — Vercel 환경변수(SUPABASE_URL, SUPABASE_ANON_KEY)를 확인해주세요. 현재 로컬 캐시를 표시 중입니다.
+          ⚠️ 서버 저장소 연결 실패 — Vercel 환경변수(NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)를 확인해주세요. 현재 로컬 캐시를 표시 중입니다.
         </div>
       )}
 
