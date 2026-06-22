@@ -61,8 +61,8 @@ function FilterDropdown({
         onClick={() => setOpen(o => !o)}
         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border transition-colors whitespace-nowrap ${
           isFiltered
-            ? "bg-indigo-600 text-white border-indigo-600"
-            : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-600"
+            ? "bg-violet-600 text-white border-violet-600"
+            : "bg-white text-gray-600 border-gray-200 hover:border-violet-300 hover:text-violet-600"
         }`}
       >
         <span className={`text-[10px] font-semibold ${isFiltered ? "text-indigo-200" : "text-gray-400"}`}>{label}</span>
@@ -77,7 +77,7 @@ function FilterDropdown({
               onClick={() => { onChange(opt.value); setOpen(false); }}
               className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
                 value === opt.value
-                  ? "bg-indigo-50 text-indigo-700 font-semibold"
+                  ? "bg-violet-50 text-violet-700 font-semibold"
                   : "text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -286,12 +286,12 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="스타일넘버, 품명, 업체 검색..."
-              className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+              className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-indigo-100"
             />
           </div>
           <button
             onClick={onNew}
-            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors"
           >
             <Plus size={14} />새 작업지시서
           </button>
@@ -301,7 +301,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
           <div className="flex items-center gap-1 text-gray-400">
             <SlidersHorizontal size={13} />
             {activeFilterCount > 0 && (
-              <span className="w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              <span className="w-4 h-4 bg-violet-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
@@ -360,7 +360,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
           </div>
           {orders.length === 0 && (
             <button onClick={onNew}
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors"
             >
               <Plus size={14} />첫 작업지시서 작성
             </button>
@@ -374,7 +374,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                 {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "작업처", "담당", "납품예정일", "상태"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
                 ))}
-                <th className="px-4 py-3 text-center text-xs font-semibold text-indigo-500 whitespace-nowrap">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-violet-500 whitespace-nowrap">
                   {editingDirector ? (
                     <div className="flex items-center gap-1 justify-center">
                       <input
@@ -383,9 +383,9 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                         onKeyDown={(e) => { if (e.key === "Enter") saveDirectorName(); if (e.key === "Escape") setEditingDirector(false); }}
                         placeholder={directorName}
                         autoFocus
-                        className="w-20 px-1.5 py-0.5 text-xs border border-indigo-300 rounded-lg focus:outline-none focus:border-indigo-500 text-gray-800 font-normal"
+                        className="w-20 px-1.5 py-0.5 text-xs border border-violet-300 rounded-lg focus:outline-none focus:border-violet-500 text-gray-800 font-normal"
                       />
-                      <button onClick={saveDirectorName} className="text-indigo-600 hover:text-indigo-800"><Check size={12} /></button>
+                      <button onClick={saveDirectorName} className="text-violet-600 hover:text-violet-800"><Check size={12} /></button>
                       <button onClick={() => setEditingDirector(false)} className="text-gray-400 hover:text-gray-600"><X size={12} /></button>
                     </div>
                   ) : (
@@ -393,7 +393,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                       <span>실장 승인</span>
                       <button
                         onClick={() => { setDirectorInput(directorName); setEditingDirector(true); }}
-                        className="text-gray-300 hover:text-indigo-500 transition-colors"
+                        className="text-gray-300 hover:text-violet-500 transition-colors"
                         title="승인자 이름 변경"
                       ><Settings2 size={11} /></button>
                     </div>
@@ -423,10 +423,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                             href={notionUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group inline-flex items-center gap-1 font-semibold text-indigo-700 hover:text-indigo-900 hover:underline transition-colors"
+                            className="group inline-flex items-center gap-1 font-semibold text-violet-700 hover:text-violet-900 hover:underline transition-colors"
                           >
                             {o.productName}
-                            <ExternalLink size={11} className="text-indigo-400 group-hover:text-indigo-600 flex-shrink-0" />
+                            <ExternalLink size={11} className="text-violet-400 group-hover:text-violet-600 flex-shrink-0" />
                           </a>
                         ) : (
                           <div className="font-semibold text-gray-800 flex items-center gap-1">
@@ -461,7 +461,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{o.year}/{o.season}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold">{o.orderCount}차</span>
+                      <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-lg text-xs font-bold">{o.orderCount}차</span>
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
@@ -490,7 +490,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                           })}
                           {o.status === "custom" && (
                             <input
-                              className="mx-2 mt-1 mb-1 px-2 py-1 text-xs border border-gray-200 rounded-lg w-[calc(100%-16px)] focus:outline-none focus:border-indigo-400"
+                              className="mx-2 mt-1 mb-1 px-2 py-1 text-xs border border-gray-200 rounded-lg w-[calc(100%-16px)] focus:outline-none focus:border-violet-400"
                               placeholder="직접 입력..."
                               defaultValue={o.customStatus || ""}
                               onBlur={(e) => updateStatus(o.id, "custom", e.target.value)}
@@ -509,21 +509,21 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
                           type="checkbox"
                           checked={!!o.directorApproved}
                           onChange={(e) => toggleApproval(o.id, e.target.checked)}
-                          className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                          className="w-4 h-4 accent-violet-600 cursor-pointer"
                         />
                         {o.directorApproved && (
-                          <span className="text-xs font-medium text-indigo-600 whitespace-nowrap">{directorName}</span>
+                          <span className="text-xs font-medium text-violet-600 whitespace-nowrap">{directorName}</span>
                         )}
                       </label>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button onClick={() => onPreview(o)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors"
                           title="미리보기 / PDF"
                         ><Eye size={14} /></button>
                         <button onClick={() => onEdit(o)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors"
                           title="수정"
                         ><Edit3 size={14} /></button>
                         <button onClick={() => deleteOrder(o.id)}

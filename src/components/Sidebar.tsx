@@ -39,11 +39,11 @@ export default function Sidebar({ activePage, onNavigate }: Props) {
     <aside className="w-56 shrink-0 h-screen sticky top-0 bg-white border-r border-gray-100 flex flex-col">
       {/* 로고 */}
       <div className="h-14 flex items-center gap-2.5 px-5 border-b border-gray-100">
-        <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-          <LayoutDashboard size={14} className="text-white" />
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xl select-none" style={{ background: "linear-gradient(135deg, #fde68a 0%, #fca5a5 50%, #c4b5fd 100%)" }}>
+          👗
         </div>
         <div>
-          <div className="font-bold text-gray-900 text-sm leading-tight">OZ Dashboard</div>
+          <div className="font-bold text-gray-900 text-sm leading-tight">OZKIZ</div>
           <div className="text-gray-400 text-[10px] leading-tight">제품디자인팀</div>
         </div>
       </div>
@@ -59,7 +59,7 @@ export default function Sidebar({ activePage, onNavigate }: Props) {
                 onClick={() => setOpen((o) => ({ ...o, [group.group]: !o[group.group] }))}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
               >
-                <Icon size={15} className="text-indigo-500" />
+                <Icon size={15} className="text-violet-400" />
                 <span className="flex-1 text-left font-bold text-xs text-gray-500 tracking-widest uppercase">{group.group}</span>
                 {isOpen
                   ? <ChevronDown size={13} className="text-gray-300" />
@@ -77,13 +77,13 @@ export default function Sidebar({ activePage, onNavigate }: Props) {
                         onClick={() => onNavigate(item.key)}
                         className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                           active
-                            ? "bg-indigo-50 text-indigo-700"
+                            ? "bg-violet-50 text-violet-700"
                             : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                         }`}
                       >
-                        <ItemIcon size={15} className={active ? "text-indigo-600" : "text-gray-400"} />
+                        <ItemIcon size={15} className={active ? "text-violet-600" : "text-gray-400"} />
                         {item.label}
-                        {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+                        {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400" />}
                       </button>
                     );
                   })}
