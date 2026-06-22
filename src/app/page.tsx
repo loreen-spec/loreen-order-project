@@ -102,7 +102,7 @@ export default function App() {
       <Sidebar activePage={activePage} onNavigate={setActivePage} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+        <div className="max-w-screen-2xl mx-auto px-4 py-6">
           {!isWorkOrder && (
             <div className="mb-6">
               <h1 className="font-bold text-gray-900 text-xl">{PAGE_META[activePage].title}</h1>

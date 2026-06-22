@@ -38,7 +38,7 @@ const NAV = [
 
 const CATEGORIES: { value: CategoryFilter; emoji: string; label: string }[] = [
   { value: "전체", emoji: "🌟", label: "전체" },
-  { value: "의류", emoji: "🧸", label: "의류" },
+  { value: "의류", emoji: "👗", label: "의류" },
   { value: "슈즈", emoji: "🩴", label: "슈즈" },
 ];
 
