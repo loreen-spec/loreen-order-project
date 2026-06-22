@@ -50,27 +50,30 @@ ${MATERIAL_CATEGORIES.join(", ")}
 - 불확실한 항목은 제외하고 확실한 것만 포함
 - yield는 일반적인 수치 사용 (원단류: 1.2~2.0 YD, 지퍼: 1 EA, 재봉사: 1 EA 등)`;
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: mimeType, data: imageBase64 } },
-            ],
-          }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
-        }),
-      }
-    );
+  const MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-001", "gemini-2.5-flash"];
+  const body = JSON.stringify({
+    contents: [{
+      parts: [
+        { text: prompt },
+        { inline_data: { mime_type: mimeType, data: imageBase64 } },
+      ],
+    }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+  });
 
-    if (!response.ok) {
-      const err = await response.text();
-      return NextResponse.json({ error: err }, { status: 500 });
+  try {
+    let response: Response | null = null;
+    let lastErr = "";
+    for (const model of MODELS) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body }
+      );
+      if (r.ok) { response = r; break; }
+      lastErr = await r.text();
+    }
+    if (!response) {
+      return NextResponse.json({ error: lastErr.slice(0, 300) }, { status: 500 });
     }
 
     const result = await response.json();
