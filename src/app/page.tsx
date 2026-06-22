@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { FilePlus, History, ClipboardList } from "lucide-react";
 import type { WorkOrder } from "@/types";
-import Sidebar, { type SidebarPage } from "@/components/Sidebar";
+import Sidebar, { type SidebarPage, type CategoryFilter } from "@/components/Sidebar";
 import OrderManagement from "@/components/OrderManagement";
 import WorkOrderList from "@/components/WorkOrderList";
 import WorkOrderForm from "@/components/WorkOrderForm";
@@ -22,7 +22,7 @@ function ComingSoon({ title, icon: Icon }: { title: string; icon: any }) {
 }
 
 // ─── 작업지시서 섹션 ──────────────────────────────────────
-function WorkOrderSection({ initialPage }: { initialPage: "list" | "new" }) {
+function WorkOrderSection({ initialPage, categoryFilter }: { initialPage: "list" | "new"; categoryFilter: CategoryFilter }) {
   const [view, setView]       = useState<"list" | "form" | "pdf">(initialPage === "new" ? "form" : "list");
   const [editing, setEditing] = useState<WorkOrder | null>(null);
   const [previewing, setPreview] = useState<WorkOrder | null>(null);
@@ -67,6 +67,7 @@ function WorkOrderSection({ initialPage }: { initialPage: "list" | "new" }) {
           onNew={handleNew}
           onEdit={handleEdit}
           onPreview={handlePreview}
+          categoryFilter={categoryFilter}
         />
       )}
       {view === "form" && (
@@ -84,6 +85,7 @@ function WorkOrderSection({ initialPage }: { initialPage: "list" | "new" }) {
 // ─── 메인 앱 ──────────────────────────────────────────────
 export default function App() {
   const [activePage, setActivePage] = useState<SidebarPage>("작업지시서목록");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("전체");
 
   const PAGE_META: Record<SidebarPage, { title: string; sub: string }> = {
     "발주관리":       { title: "발주 관리",         sub: "진행 중인 발주 현황 관리" },
@@ -97,7 +99,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "#f8f9fb" }}>
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar activePage={activePage} onNavigate={setActivePage} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-6 py-6">
@@ -113,10 +115,10 @@ export default function App() {
           {activePage === "발주이력"   && <ComingSoon title="발주 이력" icon={History} />}
 
           {activePage === "작업지시서목록" && (
-            <WorkOrderSection initialPage="list" />
+            <WorkOrderSection initialPage="list" categoryFilter={categoryFilter} />
           )}
           {activePage === "작업지시서작성" && (
-            <WorkOrderSection initialPage="new" />
+            <WorkOrderSection initialPage="new" categoryFilter={categoryFilter} />
           )}
         </div>
       </main>

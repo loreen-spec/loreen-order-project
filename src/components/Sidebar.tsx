@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import {
-  LayoutDashboard, ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight,
   ClipboardList, FilePlus, History,
   FileText, Archive, PlusSquare
 } from "lucide-react";
@@ -13,9 +13,13 @@ export type SidebarPage =
   | "작업지시서목록"
   | "작업지시서작성";
 
+export type CategoryFilter = "전체" | "의류" | "슈즈";
+
 interface Props {
   activePage: SidebarPage;
   onNavigate: (page: SidebarPage) => void;
+  categoryFilter: CategoryFilter;
+  onCategoryChange: (c: CategoryFilter) => void;
 }
 
 const NAV = [
@@ -32,7 +36,13 @@ const NAV = [
   },
 ];
 
-export default function Sidebar({ activePage, onNavigate }: Props) {
+const CATEGORIES: { value: CategoryFilter; emoji: string; label: string }[] = [
+  { value: "전체", emoji: "✦",  label: "전체" },
+  { value: "의류", emoji: "👕", label: "의류" },
+  { value: "슈즈", emoji: "👟", label: "슈즈" },
+];
+
+export default function Sidebar({ activePage, onNavigate, categoryFilter, onCategoryChange }: Props) {
   const [open, setOpen] = useState<Record<string, boolean>>({ ORDER: true, "WORK ORDER": true });
 
   return (
@@ -40,11 +50,35 @@ export default function Sidebar({ activePage, onNavigate }: Props) {
       {/* 로고 */}
       <div className="h-14 flex items-center gap-2.5 px-5 border-b border-gray-100">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xl select-none" style={{ background: "linear-gradient(135deg, #fde68a 0%, #fca5a5 50%, #c4b5fd 100%)" }}>
-          👗
+          📋
         </div>
         <div>
           <div className="font-bold text-gray-900 text-sm leading-tight">OZKIZ</div>
           <div className="text-gray-400 text-[10px] leading-tight">제품디자인팀</div>
+        </div>
+      </div>
+
+      {/* 카테고리 탭 */}
+      <div className="px-3 py-3 border-b border-gray-100">
+        <p className="text-[9px] font-bold text-gray-300 tracking-widest uppercase px-1 mb-2">CATEGORY</p>
+        <div className="flex gap-1.5">
+          {CATEGORIES.map((c) => {
+            const active = categoryFilter === c.value;
+            return (
+              <button
+                key={c.value}
+                onClick={() => onCategoryChange(c.value)}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+                  active
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                }`}
+              >
+                <span className="text-base leading-none">{c.emoji}</span>
+                <span>{c.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

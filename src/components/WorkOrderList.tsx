@@ -90,13 +90,23 @@ function FilterDropdown({
   );
 }
 
+// 의류/슈즈 카테고리 분류 키워드
+const SHOE_KEYWORDS = ["슈즈", "신발", "부츠", "샌들", "스니커", "로퍼", "플랫", "힐", "슬리퍼"];
+
+function getCategoryGroup(wo: WorkOrder): "의류" | "슈즈" {
+  const target = [wo.category, wo.productName, wo.styleNo].join(" ").toLowerCase();
+  if (SHOE_KEYWORDS.some((k) => target.includes(k.toLowerCase()))) return "슈즈";
+  return "의류";
+}
+
 interface Props {
   onNew: () => void;
   onEdit: (wo: WorkOrder) => void;
   onPreview: (wo: WorkOrder) => void;
+  categoryFilter?: "전체" | "의류" | "슈즈";
 }
 
-export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
+export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter = "전체" }: Props) {
   const [orders, setOrders]       = useState<WorkOrder[]>([]);
   const [search, setSearch]       = useState("");
   const [yearFilter, setYear]     = useState("전체");
@@ -246,9 +256,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
     const matchYear    = yearFilter    === "전체" || o.year    === yearFilter;
     const matchSeason  = seasonFilter  === "전체" || o.season  === seasonFilter;
     const matchStatus  = statusFilter  === "전체" || o.status  === statusFilter;
-    const matchManager = managerFilter === "전체" || o.manager === managerFilter;
-    const matchVendor  = vendorFilter  === "전체" || o.vendor  === vendorFilter;
-    return matchQ && matchYear && matchSeason && matchStatus && matchManager && matchVendor;
+    const matchManager  = managerFilter  === "전체" || o.manager === managerFilter;
+    const matchVendor   = vendorFilter   === "전체" || o.vendor  === vendorFilter;
+    const matchCategory = categoryFilter === "전체" || getCategoryGroup(o) === categoryFilter;
+    return matchQ && matchYear && matchSeason && matchStatus && matchManager && matchVendor && matchCategory;
   });
 
   const totalQty = filtered.reduce((s, o) => s + (o.totalQuantity || 0), 0);
@@ -265,10 +276,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview }: Props) {
       {/* 상단 요약 카드 */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "전체 작업지시서", value: orders.length + "건",                                                  color: "text-gray-800"    },
-          { label: "작성중",          value: orders.filter(o=>o.status==="draft").length + "건",           color: "text-gray-500"    },
-          { label: "컨펌대기",        value: orders.filter(o=>o.status==="pending_confirm").length + "건", color: "text-pink-500"    },
-          { label: "완료",            value: orders.filter(o=>o.status==="completed").length + "건",       color: "text-emerald-600" },
+          { label: "전체 작업지시서", value: filtered.length + "건",                                                    color: "text-gray-800"    },
+          { label: "작성중",          value: filtered.filter(o=>o.status==="draft").length + "건",           color: "text-gray-500"    },
+          { label: "컨펌대기",        value: filtered.filter(o=>o.status==="pending_confirm").length + "건", color: "text-pink-500"    },
+          { label: "완료",            value: filtered.filter(o=>o.status==="completed").length + "건",       color: "text-emerald-600" },
         ].map((c) => (
           <div key={c.label} className="bg-white rounded-2xl p-4 border border-gray-100">
             <div className="text-xs text-gray-400 mb-1">{c.label}</div>
