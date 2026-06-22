@@ -743,6 +743,49 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   // 자재명 드롭다운
   const [nameOpen, setNameOpen] = useState<string | null>(null);
   const [namePos, setNamePos]   = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 150 });
+  // AI 도식화 분석
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
+
+  async function analyzeSketch() {
+    if (!wo.sketchImage) return;
+    setAnalyzing(true);
+    setAnalyzeResult(null);
+    try {
+      // base64에서 헤더 제거 (data:image/jpeg;base64, 부분)
+      const base64 = wo.sketchImage.split(",")[1];
+      const mimeType = wo.sketchImage.split(";")[0].replace("data:", "") || "image/jpeg";
+      const res = await fetch("/api/analyze-sketch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? "분석 실패");
+      // 기존 원부자재에 추가 (중복 카테고리 제외)
+      const existingCats = new Set(wo.materials.map((m) => m.category));
+      const newMats: WorkOrderMaterial[] = data.materials
+        .filter((m: any) => !existingCats.has(m.category))
+        .map((m: any) => ({
+          id: crypto.randomUUID(),
+          category:  m.category  ?? "",
+          name:      m.name      ?? "",
+          color:     m.color     ?? "",
+          spec:      m.spec      ?? "",
+          yield:     m.yield     ?? "",
+          yieldUnit: m.yieldUnit ?? "YD",
+          unitPrice: m.unitPrice ?? "",
+          orderUnit: m.orderUnit ?? "",
+          notes:     m.notes     ?? "",
+        }));
+      setWo((w) => ({ ...w, materials: [...w.materials, ...newMats] }));
+      setAnalyzeResult(`✅ ${newMats.length}개 항목 자동 추가됨. 원부자재 탭에서 확인·수정하세요.`);
+    } catch (e: any) {
+      setAnalyzeResult(`❌ 분석 실패: ${e.message}`);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   function onDragStart(idx: number) {
     dragIdx.current = idx;
@@ -1290,7 +1333,29 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
 
                 {/* 도식화 */}
                 <div className="space-y-2">
-                  <div className="text-xs font-semibold text-gray-600">도식화 이미지</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-semibold text-gray-600">도식화 이미지</div>
+                    {wo.sketchImage && (
+                      <button
+                        type="button"
+                        onClick={analyzeSketch}
+                        disabled={analyzing}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all disabled:opacity-60"
+                        style={{ background: analyzing ? "#e5e7eb" : "linear-gradient(135deg, #f472b6, #fb7185)", color: analyzing ? "#9ca3af" : "white" }}
+                      >
+                        {analyzing ? (
+                          <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />분석 중...</>
+                        ) : (
+                          <>✨ AI 원부자재 자동분석</>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  {analyzeResult && (
+                    <div className={`text-xs px-3 py-2 rounded-xl ${analyzeResult.startsWith("✅") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                      {analyzeResult}
+                    </div>
+                  )}
                   {wo.sketchImage ? (
                     <div className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                       <img src={wo.sketchImage} alt="도식화"
