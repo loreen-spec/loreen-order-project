@@ -761,8 +761,16 @@ const VENDOR_NAME_PRESETS = [
   "영재",
 ];
 
+const VENDOR_AUTOFILL: Record<string, { manager?: string; contact?: string }> = {
+  "주나패밀리D2813":    { manager: "최병덕이사님", contact: "010-8949-9009" },
+  "뉴고려텍스타일":     { manager: "최영주사장님", contact: "010-3366-1272" },
+  "애플텍스타일D2722-1": { contact: "010-3238-1995" },
+  "유정 와글펜글":      { contact: "010-5449-6615" },
+  "영재":               { contact: "010-5310-0204" },
+};
+
 // 업체명 셀: 프리셋 드롭다운 + 직접입력 (맨 아래 "직접입력" 항목)
-function VendorNameCell({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function VendorNameCell({ value, onChange, onAutoFill }: { value: string; onChange: (v: string) => void; onAutoFill?: (fill: { manager?: string; contact?: string }) => void }) {
   const [open, setOpen] = React.useState(false);
   const [pos, setPos] = React.useState({ top: 0, left: 0, width: 160 });
   return (
@@ -798,7 +806,13 @@ function VendorNameCell({ value, onChange }: { value: string; onChange: (v: stri
         >
           {VENDOR_NAME_PRESETS.map((name) => (
             <button key={name} type="button"
-              onMouseDown={(e) => { e.preventDefault(); onChange(name); setOpen(false); }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(name);
+                const fill = VENDOR_AUTOFILL[name];
+                if (fill && onAutoFill) onAutoFill(fill);
+                setOpen(false);
+              }}
               className="w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
               {name}
             </button>
@@ -2658,6 +2672,12 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                               <VendorNameCell
                                 value={row.vendorName}
                                 onChange={(v) => upd({ vendorName: v })}
+                                onAutoFill={(fill) => {
+                                  const patch: Record<string, string> = {};
+                                  if (fill.manager !== undefined) patch.manager = fill.manager;
+                                  if (fill.contact !== undefined) patch.contact = fill.contact;
+                                  if (Object.keys(patch).length) upd(patch);
+                                }}
                               />
                             </td>
                             {/* 담당자 */}
