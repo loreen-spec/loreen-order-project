@@ -1512,50 +1512,55 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 // 백의자리 반올림: 0~4 내림, 5~9 올림 → 천원 단위
                 function roundToThousand(n: number) { return Math.round(n / 1000) * 1000; }
 
-                // 판매가 버튼+입력 공통 컴포넌트
-                function SalePriceRow({ finalCost }: { finalCost: number }) {
+                // 판매가 패널 (오른쪽 컬럼)
+                function SalePanel({ finalCost }: { finalCost: number }) {
                   return (
-                    <div className="flex gap-3 items-start">
+                    <div className="border border-gray-200 rounded-2xl bg-white px-4 py-4 flex flex-col gap-2 h-full">
+                      <div className="text-xs font-semibold text-gray-500 mb-0.5">판매가</div>
                       {finalCost > 0 && (
-                        <div className="flex flex-col gap-1.5 shrink-0">
+                        <div className="flex flex-col gap-1.5">
                           {[4, 5].map(mult => {
                             const val = roundToThousand(finalCost * mult);
                             const active = wo.salePrice?.replace(/,/g, "") === String(val);
                             return (
                               <button key={mult} type="button"
                                 onClick={() => set("salePrice", val.toLocaleString())}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors whitespace-nowrap ${
+                                className={`w-full py-2 rounded-xl text-xs font-bold border transition-colors ${
                                   active
                                     ? "bg-pink-500 border-pink-500 text-white"
-                                    : "border-pink-300 text-pink-500 bg-white hover:bg-pink-50"
+                                    : "border-pink-300 text-pink-500 bg-pink-50 hover:bg-pink-100"
                                 }`}>
-                                {mult}배 {val.toLocaleString()}원
+                                {mult}배수 → {val.toLocaleString()}원
                               </button>
                             );
                           })}
                         </div>
                       )}
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-400 mb-1">판매가</div>
-                        <input value={wo.salePrice} onChange={(e) => set("salePrice", e.target.value)}
-                          placeholder="직접 입력" className={inputCls} />
-                      </div>
+                      <input value={wo.salePrice} onChange={(e) => set("salePrice", e.target.value)}
+                        placeholder="직접 입력" className={inputCls} />
+                    </div>
+                  );
+                }
+
+                // 2열 레이아웃 래퍼
+                function CostLayout({ cost, finalCost, children }: { cost: React.ReactNode; finalCost: number; children?: React.ReactNode }) {
+                  return (
+                    <div className="grid grid-cols-2 gap-4 items-start">
+                      <div>{cost}</div>
+                      <SalePanel finalCost={finalCost} />
                     </div>
                   );
                 }
 
                 // ── 중국 (오중생산) ────────────────────────────────────
                 if (vtype === "china") {
-                  return (
-                    <div className="space-y-3">
-                      <div className="border border-amber-200 rounded-2xl bg-amber-50 px-5 py-4 space-y-1">
-                        <div className="text-xs text-amber-600 font-semibold">소재+부자재 합계 (단가×요척)</div>
-                        <div className="text-2xl font-bold text-amber-700">{fmtCNY(matSum)}</div>
-                        <div className="text-[11px] text-amber-400">원부자재 탭 단가(위안)·요척 입력 시 자동계산</div>
-                      </div>
-                      <SalePriceRow finalCost={0} />
+                  return <CostLayout finalCost={0} cost={
+                    <div className="border border-amber-200 rounded-2xl bg-amber-50 px-5 py-4 space-y-1 h-full">
+                      <div className="text-xs text-amber-600 font-semibold">소재+부자재 합계 (단가×요척)</div>
+                      <div className="text-2xl font-bold text-amber-700">{fmtCNY(matSum)}</div>
+                      <div className="text-[11px] text-amber-400">원부자재 탭 단가(위안)·요척 입력 시 자동계산</div>
                     </div>
-                  );
+                  } />;
                 }
 
                 // ── 완사입 (코니키즈 등) ───────────────────────────────
@@ -1563,34 +1568,25 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   const basePrice = parseFloat(wo.totalCost?.replace(/,/g, "") || "0");
                   const vatExcl = basePrice > 0 ? basePrice / 1.1 : 0;
                   const total = basePrice + matSum;
-                  return (
-                    <div className="space-y-3">
-                      <div className="border border-pink-200 rounded-2xl bg-pink-50/60 px-5 py-4 space-y-2">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <div className="text-xs text-pink-600 font-semibold mb-1">납품가 (VAT 포함)</div>
-                            <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)}
-                              placeholder="23,500" className={inputCls} />
-                            {vatExcl > 0 && (
-                              <div className="text-[11px] text-gray-400 mt-1">(VAT제외: {Math.round(vatExcl).toLocaleString()}원)</div>
-                            )}
-                          </div>
+                  return <CostLayout finalCost={total} cost={
+                    <div className="border border-pink-200 rounded-2xl bg-pink-50/60 px-5 py-4 space-y-2">
+                      <div className="text-xs text-pink-600 font-semibold mb-1">납품가 (VAT 포함)</div>
+                      <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)}
+                        placeholder="23,500" className={inputCls} />
+                      {vatExcl > 0 && <div className="text-[11px] text-gray-400">(VAT제외: {Math.round(vatExcl).toLocaleString()}원)</div>}
+                      {matSum > 0 && (
+                        <div className="border-t border-pink-200 pt-2 text-xs text-pink-600">
+                          <span className="font-semibold">추가 부자재</span> +{fmtKRW(matSum)}
                         </div>
-                        {matSum > 0 && (
-                          <div className="border-t border-pink-200 pt-2 text-xs text-pink-600">
-                            <span className="font-semibold">추가 부자재</span> +{fmtKRW(matSum)}
-                          </div>
-                        )}
-                        {total > 0 && (
-                          <div className="border-t border-pink-200 pt-2 flex items-baseline gap-2">
-                            <span className="text-xs text-pink-500 font-semibold">총 원가</span>
-                            <span className="text-xl font-bold text-pink-700">{fmtKRW(total)}</span>
-                          </div>
-                        )}
-                      </div>
-                      <SalePriceRow finalCost={total} />
+                      )}
+                      {total > 0 && (
+                        <div className="border-t border-pink-200 pt-2 flex items-baseline gap-2">
+                          <span className="text-xs text-pink-500 font-semibold">총 원가</span>
+                          <span className="text-xl font-bold text-pink-700">{fmtKRW(total)}</span>
+                        </div>
+                      )}
                     </div>
-                  );
+                  } />;
                 }
 
                 // ── 인도 (CEEDEE) ─────────────────────────────────────
@@ -1598,38 +1594,35 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   const usdPrice = parseFloat(wo.totalCost?.replace(/,/g, "") || "0");
                   const usdToKrwVal = usdPrice * usdToKrw;
                   const total = usdToKrwVal + matSum;
-                  return (
-                    <div className="space-y-3">
-                      <div className="border border-teal-200 rounded-2xl bg-teal-50/60 px-5 py-4 space-y-2">
-                        <div className="text-xs text-teal-600 font-semibold mb-1">달러 금액 ($)</div>
-                        <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)}
-                          placeholder="12.50" className={inputCls} />
-                        {usdPrice > 0 && (
-                          <div className="text-[11px] text-gray-500">
-                            = {fmtKRW(usdToKrwVal)}
-                            <span className="ml-1 text-gray-400">({rateDate} 1$={Math.round(usdToKrw).toLocaleString()}원)</span>
+                  return <CostLayout finalCost={total} cost={
+                    <div className="border border-teal-200 rounded-2xl bg-teal-50/60 px-5 py-4 space-y-2">
+                      <div className="text-xs text-teal-600 font-semibold mb-1">달러 금액 ($)</div>
+                      <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)}
+                        placeholder="12.50" className={inputCls} />
+                      {usdPrice > 0 && (
+                        <div className="text-[11px] text-gray-500">
+                          = {fmtKRW(usdToKrwVal)}
+                          <span className="ml-1 text-gray-400">({rateDate} 1$={Math.round(usdToKrw).toLocaleString()}원)</span>
+                        </div>
+                      )}
+                      {matSum > 0 && (
+                        <div className="border-t border-teal-200 pt-2 text-xs text-teal-600">
+                          <span className="font-semibold">추가 원부자재</span> +{fmtKRW(matSum)}
+                        </div>
+                      )}
+                      {total > 0 && (
+                        <div className="border-t border-teal-200 pt-2">
+                          <div className="text-[11px] text-teal-400 mb-0.5">
+                            {fmtUSD(usdPrice)} × {Math.round(usdToKrw).toLocaleString()}원{matSum > 0 ? ` + 부자재 ${fmtKRW(matSum)}` : ""}
                           </div>
-                        )}
-                        {matSum > 0 && (
-                          <div className="border-t border-teal-200 pt-2 text-xs text-teal-600">
-                            <span className="font-semibold">추가 원부자재</span> +{fmtKRW(matSum)}
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs text-teal-500 font-semibold">최종 원가</span>
+                            <span className="text-xl font-bold text-teal-700">{fmtKRW(total)}</span>
                           </div>
-                        )}
-                        {total > 0 && (
-                          <div className="border-t border-teal-200 pt-2">
-                            <div className="text-[11px] text-teal-400 mb-0.5">
-                              {fmtUSD(usdPrice)} × {Math.round(usdToKrw).toLocaleString()}원{matSum > 0 ? ` + 부자재 ${fmtKRW(matSum)}` : ""}
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xs text-teal-500 font-semibold">최종 원가</span>
-                              <span className="text-xl font-bold text-teal-700">{fmtKRW(total)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <SalePriceRow finalCost={total} />
+                        </div>
+                      )}
                     </div>
-                  );
+                  } />;
                 }
 
                 // ── 국내 공임 (민주·내주) ─────────────────────────────
@@ -1638,51 +1631,41 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   const packVal  = parseFloat(wo.packagingCost?.replace(/,/g, "") || "0");
                   const subtotal = matSum + laborVal + packVal;
                   const totalVat = subtotal * 1.1;
-                  return (
-                    <div className="space-y-3">
-                      <div className="border border-violet-200 rounded-2xl bg-violet-50/60 px-5 py-4 space-y-2">
-                        <div className="text-xs text-violet-600 font-semibold">원부자재 합계 (단가×요척)</div>
-                        <div className="text-base font-bold text-violet-700">{fmtKRW(matSum)}</div>
-                        <div className="grid grid-cols-2 gap-3 border-t border-violet-200 pt-2">
-                          <div>
-                            <div className="text-xs text-violet-500 font-semibold mb-1">공임비</div>
-                            <input value={wo.laborCost} onChange={(e) => set("laborCost", e.target.value)}
-                              placeholder="5,000" className={inputCls} />
-                          </div>
-                          <div>
-                            <div className="text-xs text-violet-500 font-semibold mb-1">포장비</div>
-                            <input value={wo.packagingCost} onChange={(e) => set("packagingCost", e.target.value)}
-                              placeholder="500" className={inputCls} />
+                  return <CostLayout finalCost={totalVat} cost={
+                    <div className="border border-violet-200 rounded-2xl bg-violet-50/60 px-5 py-4 space-y-2">
+                      <div className="text-xs text-violet-600 font-semibold">원부자재 합계 (단가×요척)</div>
+                      <div className="text-base font-bold text-violet-700">{fmtKRW(matSum)}</div>
+                      <div className="grid grid-cols-2 gap-3 border-t border-violet-200 pt-2">
+                        <div>
+                          <div className="text-xs text-violet-500 font-semibold mb-1">공임비</div>
+                          <input value={wo.laborCost} onChange={(e) => set("laborCost", e.target.value)} placeholder="5,000" className={inputCls} />
+                        </div>
+                        <div>
+                          <div className="text-xs text-violet-500 font-semibold mb-1">포장비</div>
+                          <input value={wo.packagingCost} onChange={(e) => set("packagingCost", e.target.value)} placeholder="500" className={inputCls} />
+                        </div>
+                      </div>
+                      {subtotal > 0 && (
+                        <div className="border-t border-violet-200 pt-2">
+                          <div className="text-[11px] text-violet-400 mb-0.5">({fmtKRW(matSum)} + {fmtKRW(laborVal)} + {fmtKRW(packVal)}) × 1.1</div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs text-violet-500 font-semibold">VAT포함 총 원가</span>
+                            <span className="text-xl font-bold text-violet-700">{fmtKRW(totalVat)}</span>
                           </div>
                         </div>
-                        {subtotal > 0 && (
-                          <div className="border-t border-violet-200 pt-2">
-                            <div className="text-[11px] text-violet-400 mb-0.5">
-                              ({fmtKRW(matSum)} + {fmtKRW(laborVal)} + {fmtKRW(packVal)}) × 1.1
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xs text-violet-500 font-semibold">VAT포함 총 원가</span>
-                              <span className="text-xl font-bold text-violet-700">{fmtKRW(totalVat)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <SalePriceRow finalCost={totalVat} />
+                      )}
                     </div>
-                  );
+                  } />;
                 }
 
                 // ── 기타 / 직접입력 ────────────────────────────────────
                 const directCost = parseFloat(wo.totalCost?.replace(/,/g, "") || "0");
-                return (
-                  <div className="space-y-3">
-                    <div className="border border-gray-200 rounded-2xl bg-gray-50 px-5 py-4">
-                      <div className="text-xs text-gray-500 font-semibold mb-1">원가 (VAT 포함)</div>
-                      <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)} placeholder="23,500원" className={inputCls} />
-                    </div>
-                    <SalePriceRow finalCost={directCost} />
+                return <CostLayout finalCost={directCost} cost={
+                  <div className="border border-gray-200 rounded-2xl bg-gray-50 px-5 py-4">
+                    <div className="text-xs text-gray-500 font-semibold mb-1">원가 (VAT 포함)</div>
+                    <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)} placeholder="23,500원" className={inputCls} />
                   </div>
-                );
+                } />;
               })()}
             </div>
 
