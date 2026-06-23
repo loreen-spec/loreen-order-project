@@ -848,14 +848,15 @@ function CustomLabelInput({ onAdd }: { onAdd: (name: string) => void }) {
   );
 }
 
-const VENDORS   = ["코니키즈", "오중생산", "오중생산CN", "성은교역", "와이티트레이딩", "민주어페럴", "내주실업", "인도(CEEDEE)", "기타"];
+const VENDORS = ["오중생산", "코니키즈", "성은교역", "와이티트레이딩", "민주어페럴", "내주실업", "인도(CEEDEE)", "기타"];
 
-type VendorType = "china" | "outsourcing" | "domestic" | "other";
+type VendorType = "china" | "outsourcing" | "domestic" | "india" | "other";
 function getVendorType(vendor: string): VendorType {
-  const v = vendor.trim();
-  if (["오중생산", "오중생산CN", "오중"].includes(v)) return "china";
-  if (["코니키즈", "성은교역", "와이티트레이딩"].includes(v)) return "outsourcing";
-  if (["민주", "민주어페럴", "내주", "내주실업"].includes(v)) return "domestic";
+  const v = vendor.trim().toLowerCase();
+  if (["오중생산", "오중"].some(k => vendor.trim() === k)) return "china";
+  if (["코니키즈", "성은교역", "와이티트레이딩"].includes(vendor.trim())) return "outsourcing";
+  if (["민주", "민주어페럴", "내주", "내주실업"].includes(vendor.trim())) return "domestic";
+  if (v.includes("인도") || v.includes("ceedee")) return "india";
   return "other";
 }
 
@@ -873,6 +874,9 @@ function fmtKRW(n: number) {
 }
 function fmtCNY(n: number) {
   return "¥ " + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+function fmtUSD(n: number) {
+  return "$ " + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 const CATEGORIES = ["상의", "하의", "실내복", "아우터", "원피스", "세트"];
 const MANAGERS  = ["김진선(SUNNY)", "박정은(LOREEN)", "유가현(JESSICA)"];
@@ -902,6 +906,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
   const [templateType, setTemplateType] = useState("");
+  const [usdToKrw, setUsdToKrw] = useState<number>(1380);
+  const [rateDate, setRateDate] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/exchange-rate")
+      .then(r => r.json())
+      .then(d => {
+        if (d.usdToKrw) { setUsdToKrw(d.usdToKrw); setRateDate(d.fallback ? "고정환율" : "오늘 기준"); }
+      })
+      .catch(() => {});
+  }, []);
 
   function applyTemplate(type: string) {
     const tmpl = MATERIAL_TEMPLATES[type];
@@ -1489,10 +1504,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader title="원가 정보" sub={`작업처 타입: ${getVendorType(wo.vendor) === "china" ? "중국 위안 계산" : getVendorType(wo.vendor) === "outsourcing" ? "완사입 (VAT포함)" : getVendorType(wo.vendor) === "domestic" ? "국내 공임 계산" : "직접 입력"}`} />
+              <SectionHeader title="원가 정보" sub={`작업처 타입: ${{ china:"중국 위안 계산", outsourcing:"완사입 (VAT포함)", domestic:"국내 공임 계산", india:"인도 달러→원 환산", other:"직접 입력" }[getVendorType(wo.vendor)]}`} />
               {(() => {
                 const vtype = getVendorType(wo.vendor);
                 const matSum = calcMaterialsSum(wo.materials);
+
 
                 // ── 중국 (오중생산) ────────────────────────────────────
                 if (vtype === "china") {
@@ -1540,6 +1556,49 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                           <div className="text-xs text-pink-500 mt-0.5 font-semibold border-t border-pink-200 pt-1.5">
                             총 원가: {fmtKRW(total)}
                           </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // ── 인도 (CEEDEE) ─────────────────────────────────────
+                if (vtype === "india") {
+                  const usdPrice = parseFloat(wo.totalCost?.replace(/,/g, "") || "0");
+                  const usdToKrwVal = usdPrice * usdToKrw;
+                  const total = usdToKrwVal + matSum;
+                  return (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field label="달러 금액 ($)">
+                          <div>
+                            <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)}
+                              placeholder="12.50" className={inputCls} />
+                            {usdPrice > 0 && (
+                              <div className="text-[11px] text-gray-400 mt-1 pl-1">
+                                = {fmtKRW(usdToKrwVal)}
+                                <span className="ml-1 text-gray-300">({rateDate} 1$={Math.round(usdToKrw).toLocaleString()}원)</span>
+                              </div>
+                            )}
+                          </div>
+                        </Field>
+                        <Field label="판매가">
+                          <input value={wo.salePrice} onChange={(e) => set("salePrice", e.target.value)} placeholder="84,000원" className={inputCls} />
+                        </Field>
+                      </div>
+                      {matSum > 0 && (
+                        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-5 py-3">
+                          <div className="text-xs text-emerald-600 font-semibold mb-0.5">추가 원부자재 합계</div>
+                          <div className="text-sm font-bold text-emerald-700">+{fmtKRW(matSum)}</div>
+                        </div>
+                      )}
+                      {total > 0 && (
+                        <div className="rounded-2xl bg-teal-50 border border-teal-200 px-5 py-3">
+                          <div className="text-xs text-teal-500 mb-0.5">
+                            {fmtUSD(usdPrice)} × {Math.round(usdToKrw).toLocaleString()}원{matSum > 0 ? ` + 부자재 ${fmtKRW(matSum)}` : ""}
+                          </div>
+                          <div className="text-xl font-bold text-teal-700">{fmtKRW(total)}</div>
+                          <div className="text-[11px] text-teal-400">최종 원가 (KRW)</div>
                         </div>
                       )}
                     </div>
