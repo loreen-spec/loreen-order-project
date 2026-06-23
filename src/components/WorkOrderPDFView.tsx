@@ -597,36 +597,53 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 </div>
 
                 {/* 원부자재 업체 */}
-                <div style={{
-                  ...S.cell, flexShrink: 0, height: "22%",
-                  padding: "3px 5px", fontSize: FL, textAlign: "left",
-                  overflow: "hidden",
-                }}>
-                  <div style={{ fontWeight: 700, marginBottom: "3px", fontSize: FL }}>원부자재 업체</div>
-                  {(wo.vendorInfoTable ?? []).length > 0 ? (
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FL }}>
-                      <thead>
-                        <tr style={{ background: "#f9fafb" }}>
-                          {["종류", "업체명", "연락처", "비고"].map((h) => (
-                            <th key={h} style={{ border: "1px solid #e5e7eb", padding: "1px 3px", fontWeight: 600, textAlign: "left" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(wo.vendorInfoTable ?? []).map((row) => (
-                          <tr key={row.id}>
-                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.materialType}</td>
-                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.vendorName}</td>
-                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.contact}</td>
-                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.notes}</td>
+                {(() => {
+                  const rows = wo.vendorInfoTable ?? [];
+                  const MIN_ROWS = 5;
+                  // 5줄 미만이면 빈 행으로 채워서 항상 5줄 고정
+                  const displayRows = rows.length >= MIN_ROWS ? rows : [
+                    ...rows,
+                    ...Array.from({ length: MIN_ROWS - rows.length }, (_, i) => ({
+                      id: `empty-${i}`, materialType: "", vendorName: "", contact: "", notes: "",
+                    })),
+                  ];
+                  const cellPad = "1px 3px";
+                  const border = "1px solid #e5e7eb";
+                  return (
+                    <div style={{
+                      ...S.cell, flexShrink: 0,
+                      padding: "3px 5px", fontSize: FL, textAlign: "left",
+                      overflow: "hidden",
+                    }}>
+                      <div style={{ fontWeight: 700, marginBottom: "2px", fontSize: FL }}>원부자재 업체</div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FL, tableLayout: "fixed" }}>
+                        <colgroup>
+                          <col style={{ width: "18%" }} />
+                          <col style={{ width: "28%" }} />
+                          <col style={{ width: "30%" }} />
+                          <col style={{ width: "24%" }} />
+                        </colgroup>
+                        <thead>
+                          <tr style={{ background: "#f3f4f6" }}>
+                            {["종류", "업체명", "연락처", "비고"].map((h) => (
+                              <th key={h} style={{ border, padding: cellPad, fontWeight: 600, textAlign: "left" }}>{h}</th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{wo.vendorNotes}</div>
-                  )}
-                </div>
+                        </thead>
+                        <tbody>
+                          {displayRows.map((row) => (
+                            <tr key={row.id}>
+                              <td style={{ border, padding: cellPad }}>{row.materialType}</td>
+                              <td style={{ border, padding: cellPad }}>{row.vendorName}</td>
+                              <td style={{ border, padding: cellPad }}>{row.contact}</td>
+                              <td style={{ border, padding: cellPad }}>{row.notes}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
 
               </div>
             </div>{/* end body grid */}
