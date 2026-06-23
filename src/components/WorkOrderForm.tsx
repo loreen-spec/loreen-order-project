@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft, Save, Printer, Plus, Trash2, Edit3,
   Upload, FileSpreadsheet, CheckCircle2, AlertCircle,
@@ -31,7 +31,7 @@ const MATERIAL_CATEGORIES = [
   "중국위안", "완사입가(VAT+)", "기타",
 ];
 
-const COLOR_PRESETS = ["BLACK", "WHITE", "BEIGE", "PINK", "RED", "BLUE", "GREEN", "PURPLE", "기타"];
+const COLOR_PRESETS = ["BLACK", "WHITE", "BEIGE", "PINK", "RED", "BLUE", "GREEN", "PURPLE", "원단매칭", "기타"];
 
 const YIELD_UNITS = ["YD", "M", "EA", "직접입력"] as const;
 type YieldUnit = typeof YIELD_UNITS[number];
@@ -700,6 +700,54 @@ function LabelDiagramSection({
         <p className="text-xs text-pink-600 font-medium">
           ✓ {selected.length}개 선택됨 — PDF에 포함됩니다
         </p>
+      )}
+    </div>
+  );
+}
+
+// ─── 업체 종류 셀 (드롭다운 + 직접입력) ───────────────────
+function VendorTypeCell({ value, options, onChange }: { value: string; options: string[]; onChange: (v: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const [pos, setPos] = React.useState({ top: 0, left: 0, width: 140 });
+  return (
+    <div className="relative flex items-center gap-0.5">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => {
+          const td = e.currentTarget.closest("td")!;
+          const r = td.getBoundingClientRect();
+          setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 150) });
+          setOpen(true);
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
+        className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+        placeholder="원단"
+      />
+      <button type="button" tabIndex={-1}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          const td = e.currentTarget.closest("td")!;
+          const r = td.getBoundingClientRect();
+          setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 150) });
+          setOpen((v) => !v);
+        }}
+        className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
+        <ChevronDown size={11} />
+      </button>
+      {open && (
+        <div
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto"
+        >
+          {options.map((opt) => (
+            <button key={opt} type="button"
+              onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
+              {opt}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -2188,7 +2236,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="border border-gray-200 w-7" />
-                      {["품목", "자재명", "색상", "규격", "요척", "단위", "단가", "단발주", "비고", ""].map((h) => (
+                      {["품목", "자재명", "색상", "규격", "요척", "단위", "단가", "원단발주", "비고", ""].map((h) => (
                         <th key={h} className="border border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                       ))}
                     </tr>
@@ -2491,13 +2539,91 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </SectionCard>
 
             {/* 원부자재 업체 정보 */}
-            <SectionCard title="원부자재 업체 정보" sub="PDF 우측 하단 — 거래 업체명, 연락처 등">
-              <textarea value={wo.vendorNotes}
-                onChange={(e) => set("vendorNotes", e.target.value)}
-                rows={4}
-                placeholder={"예)\n원단: OO텍스타일 010-0000-0000\n지퍼: OO지퍼 02-000-0000"}
-                className={`w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300`}
-              />
+            <SectionCard
+              title="원부자재 업체 정보"
+              sub="PDF 우측 하단 — 거래 업체명, 연락처 등"
+              action={
+                <button
+                  type="button"
+                  onClick={() => set("vendorInfoTable", [
+                    ...(wo.vendorInfoTable ?? []),
+                    { id: Date.now().toString(), materialType: "", vendorName: "", contact: "", notes: "" },
+                  ])}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors"
+                >
+                  <Plus size={12} />행 추가
+                </button>
+              }
+            >
+              {(wo.vendorInfoTable ?? []).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl text-gray-400">
+                  <div className="text-2xl mb-2">🏭</div>
+                  <p className="text-sm">거래 업체 정보를 추가하세요</p>
+                  <button type="button"
+                    onClick={() => set("vendorInfoTable", [{ id: Date.now().toString(), materialType: "", vendorName: "", contact: "", notes: "" }])}
+                    className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors">
+                    <Plus size={12} />첫 업체 추가
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        {["원부자재 종류", "업체명", "연락처", "비고", ""].map((h) => (
+                          <th key={h} className="border border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(wo.vendorInfoTable ?? []).map((row) => {
+                        const VENDOR_MAT_TYPES = ["원단", "안감", "배색원단", "지퍼", "슬라이더", "와펜", "E/BAND", "스트링", "스토퍼", "아일렛", "테이프", "재봉사", "패턴비", "기타"];
+                        return (
+                          <tr key={row.id} className="hover:bg-gray-50/50">
+                            {/* 원부자재 종류 — 드롭다운 */}
+                            <td className="border border-gray-200 p-1 min-w-[120px]">
+                              <VendorTypeCell
+                                value={row.materialType}
+                                options={VENDOR_MAT_TYPES}
+                                onChange={(v) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, materialType: v } : r))}
+                              />
+                            </td>
+                            {/* 업체명 */}
+                            <td className="border border-gray-200 p-1 min-w-[120px]">
+                              <input value={row.vendorName}
+                                onChange={(e) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, vendorName: e.target.value } : r))}
+                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                                placeholder="OO텍스타일" />
+                            </td>
+                            {/* 연락처 */}
+                            <td className="border border-gray-200 p-1 min-w-[130px]">
+                              <input value={row.contact}
+                                onChange={(e) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, contact: e.target.value } : r))}
+                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                                placeholder="010-0000-0000" />
+                            </td>
+                            {/* 비고 */}
+                            <td className="border border-gray-200 p-1 min-w-[100px]">
+                              <input value={row.notes}
+                                onChange={(e) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, notes: e.target.value } : r))}
+                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                                placeholder="비고" />
+                            </td>
+                            <td className="border border-gray-200 p-1 text-center w-8">
+                              <button
+                                type="button"
+                                onClick={() => set("vendorInfoTable", (wo.vendorInfoTable ?? []).filter((r) => r.id !== row.id))}
+                                className="text-gray-300 hover:text-red-400 transition-colors">
+                                <Trash2 size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </SectionCard>
 
           </div>

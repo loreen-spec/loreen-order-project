@@ -475,7 +475,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                     </colgroup>
                     <thead>
                       <tr>
-                        {["품목","자재명","색상","규격","요척","단가","단발주","비고"].map((name) => (
+                        {["품목","자재명","색상","규격","요척","단가","원단발주","비고"].map((name) => (
                           <th key={name} style={lbl()}>{name}</th>
                         ))}
                       </tr>
@@ -600,10 +600,32 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 <div style={{
                   ...S.cell, flexShrink: 0, height: "22%",
                   padding: "3px 5px", fontSize: FL, textAlign: "left",
-                  lineHeight: 1.6, whiteSpace: "pre-wrap", overflow: "hidden",
+                  overflow: "hidden",
                 }}>
-                  <div style={{ fontWeight: 700, marginBottom: "2px", fontSize: FL }}>원부자재 업체</div>
-                  {wo.vendorNotes}
+                  <div style={{ fontWeight: 700, marginBottom: "3px", fontSize: FL }}>원부자재 업체</div>
+                  {(wo.vendorInfoTable ?? []).length > 0 ? (
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FL }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb" }}>
+                          {["종류", "업체명", "연락처", "비고"].map((h) => (
+                            <th key={h} style={{ border: "1px solid #e5e7eb", padding: "1px 3px", fontWeight: 600, textAlign: "left" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(wo.vendorInfoTable ?? []).map((row) => (
+                          <tr key={row.id}>
+                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.materialType}</td>
+                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.vendorName}</td>
+                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.contact}</td>
+                            <td style={{ border: "1px solid #e5e7eb", padding: "1px 3px" }}>{row.notes}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{wo.vendorNotes}</div>
+                  )}
                 </div>
 
               </div>

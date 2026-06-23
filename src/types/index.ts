@@ -85,7 +85,14 @@ export interface WorkOrder {
   // Notes
   productionNotes: string; // 비고/기타 작성란
   fixedNotes: string;      // 고정값 문구 (순수사항)
-  vendorNotes: string;     // 원부자재 업체 정보
+  vendorNotes: string;     // 원부자재 업체 정보 (레거시 — 텍스트)
+  vendorInfoTable?: {      // 원부자재 업체 정보 테이블
+    id: string;
+    materialType: string;  // 원부자재 종류
+    vendorName: string;    // 업체명
+    contact: string;       // 연락처
+    notes: string;         // 비고
+  }[];
   specialNotes: string;
 
   // Cost
