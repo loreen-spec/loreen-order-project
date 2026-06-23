@@ -5,7 +5,7 @@ import {
   Upload, FileSpreadsheet, CheckCircle2, AlertCircle,
   ImagePlus, X, ChevronDown, Check,
   Image as ImageIcon, Link as LinkIcon, Paperclip, ExternalLink,
-  Sparkles, Loader2
+  Sparkles, Loader2, Search, Download
 } from "lucide-react";
 import type { WorkOrder, WorkOrderMaterial, WorkOrderMeasurement, WorkOrderColorSize } from "@/types";
 
@@ -947,6 +947,14 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const [xlsxStatus, setXlsxStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [xlsxMsg, setXlsxMsg]       = useState("");
   const fileInputRef  = useRef<HTMLInputElement>(null);
+
+  // ── 드라이브 검색 상태 ──
+  const [driveQuery, setDriveQuery]   = useState("");
+  const [driveResults, setDriveResults] = useState<{ id: string; name: string; score?: number }[]>([]);
+  const [driveSearching, setDriveSearching] = useState(false);
+  const [driveOpen, setDriveOpen]     = useState(false);
+  const [driveLoadingId, setDriveLoadingId] = useState<string | null>(null);
+  const driveSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matTableRef   = useRef<HTMLTableElement>(null);
 
   // ─── 원부자재 드래그 정렬 ──────────────────────────────────
@@ -1270,6 +1278,57 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
     setXlsxMsg(`✓ "${result.fileName}" — ${result.measurements.length}개 항목, 사이즈 ${result.sizes.join("·")} 자동입력됨`);
     // 인풋 리셋 (같은 파일 재업로드 가능하도록)
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  // ─── 드라이브 검색 ────────────────────────────────────
+  function searchDrive(q: string) {
+    setDriveQuery(q);
+    setDriveOpen(true);
+    if (driveSearchTimer.current) clearTimeout(driveSearchTimer.current);
+    if (!q.trim()) { setDriveResults([]); setDriveSearching(false); return; }
+    setDriveSearching(true);
+    driveSearchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/drive-search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        setDriveResults(data.files ?? []);
+      } catch {
+        setDriveResults([]);
+      } finally {
+        setDriveSearching(false);
+      }
+    }, 400);
+  }
+
+  async function loadDriveFile(fileId: string, fileName: string) {
+    setDriveLoadingId(fileId);
+    setDriveOpen(false);
+    setXlsxStatus("loading");
+    setXlsxMsg("드라이브에서 파일 불러오는 중...");
+    try {
+      const res = await fetch(`/api/drive-file?id=${fileId}`);
+      if (!res.ok) throw new Error(await res.text());
+      const buffer = await res.arrayBuffer();
+      const file = new File([buffer], fileName, {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const result = await parsePatternExcel(file);
+      if (!result) throw new Error("파일 파싱 실패");
+      setWo((w) => ({
+        ...w,
+        sizes: result.sizes,
+        measurements: result.measurements,
+        productName: w.productName || result.productName,
+        sampleNo: result.fileName,
+      }));
+      setXlsxStatus("ok");
+      setXlsxMsg(`✓ "${result.fileName}" — ${result.measurements.length}개 항목, 사이즈 ${result.sizes.join("·")} 자동입력됨`);
+    } catch (e) {
+      setXlsxStatus("error");
+      setXlsxMsg(String(e));
+    } finally {
+      setDriveLoadingId(null);
+    }
   }
 
   // ─── 이미지 업로드 ────────────────────────────────────
@@ -1815,6 +1874,64 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </Field>
               }
             >
+
+            {/* 드라이브 검색 */}
+            <div className="relative mb-3">
+              <div className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white focus-within:border-pink-400 focus-within:ring-2 focus-within:ring-pink-100 transition">
+                <Search size={14} className="text-gray-400 shrink-0" />
+                <input
+                  value={driveQuery}
+                  onChange={(e) => searchDrive(e.target.value)}
+                  onFocus={() => { if (driveQuery) setDriveOpen(true); }}
+                  placeholder="패턴 파일명으로 검색 (예: OF2501_티셔츠)"
+                  className="flex-1 text-sm bg-transparent focus:outline-none placeholder:text-gray-300"
+                />
+                {driveSearching && (
+                  <div className="w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                )}
+                {driveQuery && !driveSearching && (
+                  <button type="button" onClick={() => { setDriveQuery(""); setDriveResults([]); setDriveOpen(false); }}
+                    className="text-gray-300 hover:text-gray-500 shrink-0"><X size={13} /></button>
+                )}
+              </div>
+              <div className="mt-1 text-[11px] text-gray-400 pl-1">구글 드라이브 패턴실 폴더에서 유사한 파일을 자동으로 찾아줍니다</div>
+
+              {/* 검색 결과 드롭다운 */}
+              {driveOpen && (driveResults.length > 0 || (!driveSearching && driveQuery)) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto">
+                  {driveResults.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-400 text-center">일치하는 파일 없음 (70% 이상 유사도 기준)</div>
+                  ) : (
+                    driveResults.map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        disabled={driveLoadingId === f.id}
+                        onClick={() => loadDriveFile(f.id, f.name)}
+                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-pink-50 transition-colors text-left group"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileSpreadsheet size={14} className="text-green-500 shrink-0" />
+                          <span className="text-sm text-gray-700 truncate group-hover:text-pink-700">{f.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {f.score !== undefined && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-500 font-medium">
+                              {Math.round(f.score * 100)}%
+                            </span>
+                          )}
+                          {driveLoadingId === f.id ? (
+                            <div className="w-3.5 h-3.5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Download size={13} className="text-gray-300 group-hover:text-pink-400" />
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* 엑셀 업로드 영역 */}
             <div
