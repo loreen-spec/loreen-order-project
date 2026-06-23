@@ -900,28 +900,29 @@ const VENDOR_AUTOFILL: Record<string, { manager?: string; contact?: string }> = 
 function VendorNameCell({ value, onChange, onAutoFill }: { value: string; onChange: (v: string) => void; onAutoFill?: (fill: { manager?: string; contact?: string }) => void }) {
   const [open, setOpen] = React.useState(false);
   const [pos, setPos] = React.useState({ top: 0, left: 0, width: 160 });
+
+  function openDropdown(el: Element) {
+    const td = el.closest("td")!;
+    const r = td.getBoundingClientRect();
+    setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 170) });
+    setOpen(true);
+  }
+
   return (
     <div className="relative flex items-center gap-0.5">
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={(e) => {
-          const td = e.currentTarget.closest("td")!;
-          const r = td.getBoundingClientRect();
-          setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 170) });
-          setOpen(true);
-        }}
         onBlur={() => setTimeout(() => setOpen(false), 180)}
         className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
         placeholder="업체명 선택 또는 입력"
       />
+      {/* 화살표 버튼 클릭으로만 드롭다운 열림 */}
       <button type="button" tabIndex={-1}
         onMouseDown={(e) => {
           e.preventDefault();
-          const td = e.currentTarget.closest("td")!;
-          const r = td.getBoundingClientRect();
-          setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 170) });
-          setOpen((v) => !v);
+          if (open) { setOpen(false); return; }
+          openDropdown(e.currentTarget);
         }}
         className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
         <ChevronDown size={11} />
@@ -936,8 +937,9 @@ function VendorNameCell({ value, onChange, onAutoFill }: { value: string; onChan
               onMouseDown={(e) => {
                 e.preventDefault();
                 onChange(name);
-                const fill = VENDOR_AUTOFILL[name];
-                if (fill && onAutoFill) onAutoFill(fill);
+                // 담당자 없는 업체는 manager를 ""로 명시 초기화
+                const fill = VENDOR_AUTOFILL[name] ?? {};
+                if (onAutoFill) onAutoFill({ manager: fill.manager ?? "", contact: fill.contact ?? "" });
                 setOpen(false);
               }}
               className="w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
@@ -946,7 +948,7 @@ function VendorNameCell({ value, onChange, onAutoFill }: { value: string; onChan
           ))}
           <div className="border-t border-gray-100 mt-1 pt-1">
             <button type="button"
-              onMouseDown={(e) => { e.preventDefault(); onChange(""); setOpen(false); setTimeout(() => { const input = document.activeElement as HTMLInputElement; input?.focus(); }, 50); }}
+              onMouseDown={(e) => { e.preventDefault(); setOpen(false); }}
               className="w-full text-left px-3 py-1.5 text-xs text-pink-500 font-semibold hover:bg-pink-50 transition-colors">
               ✏ 직접입력
             </button>
@@ -2800,10 +2802,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                 value={row.vendorName}
                                 onChange={(v) => upd({ vendorName: v })}
                                 onAutoFill={(fill) => {
-                                  const patch: Record<string, string> = {};
-                                  if (fill.manager !== undefined) patch.manager = fill.manager;
-                                  if (fill.contact !== undefined) patch.contact = fill.contact;
-                                  if (Object.keys(patch).length) upd(patch);
+                                  upd({ manager: fill.manager ?? "", contact: fill.contact ?? "" });
                                 }}
                               />
                             </td>
