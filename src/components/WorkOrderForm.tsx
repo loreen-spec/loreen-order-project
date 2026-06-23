@@ -2023,7 +2023,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
 
             {/* 스펙 테이블 */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto mt-5">
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
