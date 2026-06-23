@@ -604,7 +604,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   const displayRows = rows.length >= MIN_ROWS ? rows : [
                     ...rows,
                     ...Array.from({ length: MIN_ROWS - rows.length }, (_, i) => ({
-                      id: `empty-${i}`, materialType: "", vendorName: "", contact: "", notes: "",
+                      id: `empty-${i}`, materialType: "", vendorName: "", manager: "", contact: "", notes: "",
                     })),
                   ];
                   const cellPad = "1px 3px";
@@ -618,14 +618,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       <div style={{ fontWeight: 700, marginBottom: "2px", fontSize: FL }}>원부자재 업체</div>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FL, tableLayout: "fixed" }}>
                         <colgroup>
-                          <col style={{ width: "18%" }} />
-                          <col style={{ width: "28%" }} />
-                          <col style={{ width: "30%" }} />
+                          <col style={{ width: "16%" }} />
                           <col style={{ width: "24%" }} />
+                          <col style={{ width: "18%" }} />
+                          <col style={{ width: "24%" }} />
+                          <col style={{ width: "18%" }} />
                         </colgroup>
                         <thead>
                           <tr style={{ background: "#f3f4f6" }}>
-                            {["종류", "업체명", "연락처", "비고"].map((h) => (
+                            {["종류", "업체명", "담당자", "연락처", "비고"].map((h) => (
                               <th key={h} style={{ border, padding: cellPad, fontWeight: 600, textAlign: "left" }}>{h}</th>
                             ))}
                           </tr>
@@ -635,6 +636,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             <tr key={row.id}>
                               <td style={{ border, padding: cellPad }}>{row.materialType}</td>
                               <td style={{ border, padding: cellPad }}>{row.vendorName}</td>
+                              <td style={{ border, padding: cellPad }}>{(row as any).manager ?? ""}</td>
                               <td style={{ border, padding: cellPad }}>{row.contact}</td>
                               <td style={{ border, padding: cellPad }}>{row.notes}</td>
                             </tr>

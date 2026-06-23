@@ -90,6 +90,7 @@ export interface WorkOrder {
     id: string;
     materialType: string;  // 원부자재 종류
     vendorName: string;    // 업체명
+    manager: string;       // 담당자
     contact: string;       // 연락처
     notes: string;         // 비고
   }[];

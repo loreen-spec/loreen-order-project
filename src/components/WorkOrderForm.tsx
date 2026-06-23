@@ -753,6 +753,69 @@ function VendorTypeCell({ value, options, onChange }: { value: string; options: 
   );
 }
 
+const VENDOR_NAME_PRESETS = [
+  "주나패밀리D2813",
+  "뉴고려텍스타일",
+  "애플텍스타일D2722-1",
+  "유정 와글펜글",
+  "영재",
+];
+
+// 업체명 셀: 프리셋 드롭다운 + 직접입력 (맨 아래 "직접입력" 항목)
+function VendorNameCell({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const [pos, setPos] = React.useState({ top: 0, left: 0, width: 160 });
+  return (
+    <div className="relative flex items-center gap-0.5">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => {
+          const td = e.currentTarget.closest("td")!;
+          const r = td.getBoundingClientRect();
+          setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 170) });
+          setOpen(true);
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
+        className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+        placeholder="업체명 선택 또는 입력"
+      />
+      <button type="button" tabIndex={-1}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          const td = e.currentTarget.closest("td")!;
+          const r = td.getBoundingClientRect();
+          setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 170) });
+          setOpen((v) => !v);
+        }}
+        className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
+        <ChevronDown size={11} />
+      </button>
+      {open && (
+        <div
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-lg py-1 max-h-56 overflow-y-auto"
+        >
+          {VENDOR_NAME_PRESETS.map((name) => (
+            <button key={name} type="button"
+              onMouseDown={(e) => { e.preventDefault(); onChange(name); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
+              {name}
+            </button>
+          ))}
+          <div className="border-t border-gray-100 mt-1 pt-1">
+            <button type="button"
+              onMouseDown={(e) => { e.preventDefault(); onChange(""); setOpen(false); setTimeout(() => { const input = document.activeElement as HTMLInputElement; input?.focus(); }, 50); }}
+              className="w-full text-left px-3 py-1.5 text-xs text-pink-500 font-semibold hover:bg-pink-50 transition-colors">
+              ✏ 직접입력
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── 섹션 헤더 ────────────────────────────────────────────
 function SectionCard({ title, sub, action, children, className }: { title: string; sub?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
@@ -2547,7 +2610,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   type="button"
                   onClick={() => set("vendorInfoTable", [
                     ...(wo.vendorInfoTable ?? []),
-                    { id: Date.now().toString(), materialType: "", vendorName: "", contact: "", notes: "" },
+                    { id: Date.now().toString(), materialType: "", vendorName: "", manager: "", contact: "", notes: "" },
                   ])}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors"
                 >
@@ -2560,7 +2623,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <div className="text-2xl mb-2">🏭</div>
                   <p className="text-sm">거래 업체 정보를 추가하세요</p>
                   <button type="button"
-                    onClick={() => set("vendorInfoTable", [{ id: Date.now().toString(), materialType: "", vendorName: "", contact: "", notes: "" }])}
+                    onClick={() => set("vendorInfoTable", [{ id: Date.now().toString(), materialType: "", vendorName: "", manager: "", contact: "", notes: "" }])}
                     className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors">
                     <Plus size={12} />첫 업체 추가
                   </button>
@@ -2570,7 +2633,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <table className="w-full text-sm border-collapse">
                     <thead>
                       <tr className="bg-gray-50">
-                        {["원부자재 종류", "업체명", "연락처", "비고", ""].map((h) => (
+                        {["원부자재 종류", "업체명", "담당자", "연락처", "비고", ""].map((h) => (
                           <th key={h} className="border border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                         ))}
                       </tr>
@@ -2578,40 +2641,48 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     <tbody>
                       {(wo.vendorInfoTable ?? []).map((row) => {
                         const VENDOR_MAT_TYPES = ["원단", "안감", "배색원단", "지퍼", "슬라이더", "와펜", "E/BAND", "스트링", "스토퍼", "아일렛", "테이프", "재봉사", "패턴비", "기타"];
+                        const upd = (patch: Partial<typeof row>) =>
+                          set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, ...patch } : r));
                         return (
                           <tr key={row.id} className="hover:bg-gray-50/50">
-                            {/* 원부자재 종류 — 드롭다운 */}
-                            <td className="border border-gray-200 p-1 min-w-[120px]">
+                            {/* 원부자재 종류 */}
+                            <td className="border border-gray-200 p-1 min-w-[110px]">
                               <VendorTypeCell
                                 value={row.materialType}
                                 options={VENDOR_MAT_TYPES}
-                                onChange={(v) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, materialType: v } : r))}
+                                onChange={(v) => upd({ materialType: v })}
                               />
                             </td>
-                            {/* 업체명 */}
-                            <td className="border border-gray-200 p-1 min-w-[120px]">
-                              <input value={row.vendorName}
-                                onChange={(e) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, vendorName: e.target.value } : r))}
+                            {/* 업체명 — 프리셋 드롭다운 */}
+                            <td className="border border-gray-200 p-1 min-w-[150px]">
+                              <VendorNameCell
+                                value={row.vendorName}
+                                onChange={(v) => upd({ vendorName: v })}
+                              />
+                            </td>
+                            {/* 담당자 */}
+                            <td className="border border-gray-200 p-1 min-w-[90px]">
+                              <input value={row.manager ?? ""}
+                                onChange={(e) => upd({ manager: e.target.value })}
                                 className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
-                                placeholder="OO텍스타일" />
+                                placeholder="담당자명" />
                             </td>
                             {/* 연락처 */}
-                            <td className="border border-gray-200 p-1 min-w-[130px]">
+                            <td className="border border-gray-200 p-1 min-w-[120px]">
                               <input value={row.contact}
-                                onChange={(e) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, contact: e.target.value } : r))}
+                                onChange={(e) => upd({ contact: e.target.value })}
                                 className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
                                 placeholder="010-0000-0000" />
                             </td>
                             {/* 비고 */}
-                            <td className="border border-gray-200 p-1 min-w-[100px]">
+                            <td className="border border-gray-200 p-1 min-w-[90px]">
                               <input value={row.notes}
-                                onChange={(e) => set("vendorInfoTable", (wo.vendorInfoTable ?? []).map((r) => r.id === row.id ? { ...r, notes: e.target.value } : r))}
+                                onChange={(e) => upd({ notes: e.target.value })}
                                 className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
                                 placeholder="비고" />
                             </td>
                             <td className="border border-gray-200 p-1 text-center w-8">
-                              <button
-                                type="button"
+                              <button type="button"
                                 onClick={() => set("vendorInfoTable", (wo.vendorInfoTable ?? []).filter((r) => r.id !== row.id))}
                                 className="text-gray-300 hover:text-red-400 transition-colors">
                                 <Trash2 size={12} />
