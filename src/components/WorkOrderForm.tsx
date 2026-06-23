@@ -1865,6 +1865,16 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
 
               </div>
             </SectionCard>
+
+            {/* ── 비고/기타 작성란 ── */}
+            <SectionCard title="비고 / 기타 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 비고란">
+              <textarea value={wo.productionNotes}
+                onChange={(e) => set("productionNotes", e.target.value)}
+                rows={4}
+                placeholder="비고, 특이사항 등"
+                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300"
+              />
+            </SectionCard>
           </div>
         )}
 
@@ -2423,16 +2433,6 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               <LabelDiagramSection
                 selected={wo.labelDiagramSelected ?? []}
                 onChange={(ids) => set("labelDiagramSelected", ids)}
-              />
-            </SectionCard>
-
-            {/* 비고/기타 작성란 */}
-            <SectionCard title="비고 / 기타 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 비고란">
-              <textarea value={wo.productionNotes}
-                onChange={(e) => set("productionNotes", e.target.value)}
-                rows={4}
-                placeholder="비고, 특이사항 등"
-                className={`w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300`}
               />
             </SectionCard>
 
