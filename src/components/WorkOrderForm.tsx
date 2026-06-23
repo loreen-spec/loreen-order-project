@@ -225,7 +225,7 @@ async function parsePatternExcel(file: File): Promise<{
 }
 
 // ─── 탭 타입 ───────────────────────────────────────────────
-const TABS = ["기본정보", "사이즈스펙", "원부자재", "라벨·기타", "첨부파일"] as const;
+const TABS = ["기본정보", "원부자재", "라벨·기타", "첨부파일"] as const;
 type Tab = (typeof TABS)[number];
 
 interface Props {
@@ -2201,12 +2201,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300"
               />
             </SectionCard>
-          </div>
-        )}
 
-        {/* ── 2. 사이즈스펙 ── */}
-        {tab === "사이즈스펙" && (
-          <div className="space-y-4">
+            {/* ── 사이즈 스펙 ── */}
             <SectionCard
               title="사이즈 스펙"
               sub="패턴실 엑셀 파일 업로드 또는 직접 입력"
@@ -2219,7 +2215,6 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </Field>
               }
             >
-
             {/* 드라이브 검색 */}
             <div className="relative mb-3">
               <div className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white focus-within:border-pink-400 focus-within:ring-2 focus-within:ring-pink-100 transition">
@@ -2246,8 +2241,6 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   전체 목록 보기
                 </button>
               </div>
-
-              {/* 검색 결과 드롭다운 */}
               {driveOpen && (driveResults.length > 0 || driveError || (!driveSearching && driveQuery)) && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto">
                   {driveError ? (
@@ -2264,13 +2257,9 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     </div>
                   ) : (
                     driveResults.map((f) => (
-                      <button
-                        key={f.id}
-                        type="button"
-                        disabled={driveLoadingId === f.id}
+                      <button key={f.id} type="button" disabled={driveLoadingId === f.id}
                         onClick={() => loadDriveFile(f.id, f.name)}
-                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-pink-50 transition-colors text-left group"
-                      >
+                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-pink-50 transition-colors text-left group">
                         <div className="flex items-center gap-2 min-w-0">
                           <FileSpreadsheet size={14} className="text-green-500 shrink-0" />
                           <span className="text-sm text-gray-700 truncate group-hover:text-pink-700">{f.name}</span>
@@ -2293,7 +2282,6 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </div>
               )}
             </div>
-
             {/* 엑셀 업로드 영역 */}
             <div
               className="border-2 border-dashed border-indigo-200 rounded-2xl p-5 bg-pink-50/40 hover:bg-pink-50 transition-colors cursor-pointer"
@@ -2310,13 +2298,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 }
               }}
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={handleExcelUpload}
-              />
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                   xlsxStatus === "ok" ? "bg-green-100" : xlsxStatus === "error" ? "bg-red-100" : "bg-indigo-100"
@@ -2335,10 +2317,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <div className={`text-sm font-semibold ${
                     xlsxStatus === "ok" ? "text-green-700" : xlsxStatus === "error" ? "text-red-600" : "text-pink-700"
                   }`}>
-                    {xlsxStatus === "idle"    && "패턴실 엑셀 파일 업로드"}
+                    {xlsxStatus === "idle" && "패턴실 엑셀 파일 업로드"}
                     {xlsxStatus === "loading" && "파일 분석 중..."}
-                    {xlsxStatus === "ok"      && "자동 입력 완료"}
-                    {xlsxStatus === "error"   && "파일 오류"}
+                    {xlsxStatus === "ok" && "자동 입력 완료"}
+                    {xlsxStatus === "error" && "파일 오류"}
                   </div>
                   <div className={`text-xs mt-0.5 truncate ${
                     xlsxStatus === "ok" ? "text-green-600" : xlsxStatus === "error" ? "text-red-500" : "text-pink-400"
@@ -2348,16 +2330,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                       : xlsxMsg}
                   </div>
                 </div>
-                <button
-                  type="button"
+                <button type="button"
                   onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors"
-                >
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors">
                   <Upload size={13} />파일 선택
                 </button>
               </div>
             </div>
-
             {/* 스펙 테이블 */}
             <div className="overflow-x-auto mt-5">
               <table className="w-full text-sm border-collapse">
@@ -2374,71 +2353,52 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </thead>
                 <tbody>
                   {wo.measurements.map((m, idx) => m.isHeader ? (
-                    // ── 구분 헤더 행 ──
-                    <tr key={idx}
-                      onDragEnter={() => onMDragEnter(idx)}
-                      onDragOver={(e) => e.preventDefault()}
+                    <tr key={idx} onDragEnter={() => onMDragEnter(idx)} onDragOver={(e) => e.preventDefault()}
                       className={`bg-pink-50 border-t-2 border-indigo-200${mDragOver === idx ? " opacity-50" : ""}`}>
-                      <td draggable
-                        onDragStart={() => onMDragStart(idx)}
-                        onDragEnd={onMDragEnd}
+                      <td draggable onDragStart={() => onMDragStart(idx)} onDragEnd={onMDragEnd}
                         className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
                       <td colSpan={wo.sizes.length + 2} className="border border-gray-200 p-1">
-                        <input value={m.item}
-                          onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
+                        <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
                           placeholder="구분명 입력 (예: 상의, 하의, 모자)"
                           className="w-full px-2 py-1 text-xs font-bold text-pink-700 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
                       </td>
                       <td className="border border-gray-200 p-1 text-center">
-                        <button onClick={() => removeMeasurementRow(idx)}
-                          className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                        <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
                       </td>
                     </tr>
                   ) : (
-                    // ── 일반 측정 행 ──
-                    <tr key={idx}
-                      onDragEnter={() => onMDragEnter(idx)}
-                      onDragOver={(e) => e.preventDefault()}
+                    <tr key={idx} onDragEnter={() => onMDragEnter(idx)} onDragOver={(e) => e.preventDefault()}
                       className={`${idx % 2 === 0 ? "" : "bg-gray-50/50"}${mDragOver === idx ? " opacity-50" : ""}`}>
-                      <td draggable
-                        onDragStart={() => onMDragStart(idx)}
-                        onDragEnd={onMDragEnd}
+                      <td draggable onDragStart={() => onMDragStart(idx)} onDragEnd={onMDragEnd}
                         className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
                       <td className="border border-gray-200 p-1">
-                        <input value={m.item}
-                          onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
+                        <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
                           className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent font-medium" />
                       </td>
                       {wo.sizes.map((s) => (
                         <td key={s} className="border border-gray-200 p-1">
-                          <input value={m.values[s] || ""}
-                            onChange={(e) => updateMeasurement(idx, s, e.target.value)}
+                          <input value={m.values[s] || ""} onChange={(e) => updateMeasurement(idx, s, e.target.value)}
                             className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
                         </td>
                       ))}
                       <td className="border border-gray-200 p-1">
-                        <input value={m.diff}
-                          onChange={(e) => updateMeasurement(idx, "diff", e.target.value)}
+                        <input value={m.diff} onChange={(e) => updateMeasurement(idx, "diff", e.target.value)}
                           className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
                       </td>
                       <td className="border border-gray-200 p-1 text-center">
-                        <button onClick={() => removeMeasurementRow(idx)}
-                          className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                        <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <button onClick={addMeasurementRow}
-                  className="flex items-center gap-1.5 text-sm text-pink-600 hover:text-pink-700 transition-colors">
+                <button onClick={addMeasurementRow} className="flex items-center gap-1.5 text-sm text-pink-600 hover:text-pink-700 transition-colors">
                   <Plus size={14} />항목 추가
                 </button>
-                <button onClick={addMeasurementHeader}
-                  className="flex items-center gap-1.5 text-sm text-pink-400 hover:text-pink-600 transition-colors border border-indigo-200 rounded px-2 py-0.5">
+                <button onClick={addMeasurementHeader} className="flex items-center gap-1.5 text-sm text-pink-400 hover:text-pink-600 transition-colors border border-indigo-200 rounded px-2 py-0.5">
                   <Plus size={12} />구분 추가
                 </button>
               </div>
