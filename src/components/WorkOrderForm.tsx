@@ -1851,6 +1851,185 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
             </SectionCard>
 
+            {/* ── 사이즈 스펙 ── */}
+            <SectionCard
+              title="사이즈 스펙"
+              sub="패턴실 엑셀 파일 업로드 또는 직접 입력"
+              action={
+                <Field label="사이즈 목록 (쉼표로 구분)">
+                  <input value={wo.sizes.join(", ")}
+                    onChange={(e) => updateSizes(e.target.value)}
+                    placeholder="100, 110, 120, 130, 140"
+                    className={inputCls + " w-56"} />
+                </Field>
+              }
+            >
+            {/* 드라이브 검색 */}
+            <div className="relative mb-3">
+              <div className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white focus-within:border-pink-400 focus-within:ring-2 focus-within:ring-pink-100 transition">
+                <Search size={14} className="text-gray-400 shrink-0" />
+                <input
+                  value={driveQuery}
+                  onChange={(e) => searchDrive(e.target.value)}
+                  onFocus={() => { if (driveQuery) setDriveOpen(true); }}
+                  placeholder="패턴 파일명으로 검색 (예: OF2501_티셔츠)"
+                  className="flex-1 text-sm bg-transparent focus:outline-none placeholder:text-gray-300"
+                />
+                {driveSearching && (
+                  <div className="w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                )}
+                {driveQuery && !driveSearching && (
+                  <button type="button" onClick={() => { setDriveQuery(""); setDriveResults([]); setDriveOpen(false); }}
+                    className="text-gray-300 hover:text-gray-500 shrink-0"><X size={13} /></button>
+                )}
+              </div>
+              <div className="mt-1 flex items-center justify-between pl-1">
+                <span className="text-[11px] text-gray-400">구글 드라이브 패턴실 폴더에서 유사한 파일을 자동으로 찾아줍니다</span>
+                <button type="button" onClick={() => { setDriveOpen(true); fetchDrive(""); }}
+                  className="text-[11px] text-pink-500 hover:text-pink-700 transition-colors">전체 목록 보기</button>
+              </div>
+              {driveOpen && (driveResults.length > 0 || driveError || (!driveSearching && driveQuery)) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto">
+                  {driveError ? (
+                    <div className="px-4 py-3 text-xs text-red-500 whitespace-pre-wrap">{driveError}</div>
+                  ) : driveResults.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                      일치하는 파일 없음 (40% 이상 유사도 기준)
+                      {driveTotal !== null && <div className="text-xs text-gray-300 mt-1">폴더에서 총 {driveTotal}개 파일 확인됨</div>}
+                      {driveTotal === 0 && <div className="text-xs text-orange-400 mt-1">⚠ 폴더 접근 권한을 확인해주세요</div>}
+                    </div>
+                  ) : (
+                    driveResults.map((f) => (
+                      <button key={f.id} type="button" disabled={driveLoadingId === f.id}
+                        onClick={() => loadDriveFile(f.id, f.name)}
+                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-pink-50 transition-colors text-left group">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileSpreadsheet size={14} className="text-green-500 shrink-0" />
+                          <span className="text-sm text-gray-700 truncate group-hover:text-pink-700">{f.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {f.score !== undefined && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-500 font-medium">{Math.round(f.score * 100)}%</span>
+                          )}
+                          {driveLoadingId === f.id
+                            ? <div className="w-3.5 h-3.5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
+                            : <Download size={13} className="text-gray-300 group-hover:text-pink-400" />}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            {/* 엑셀 업로드 영역 */}
+            <div className="border-2 border-dashed border-indigo-200 rounded-2xl p-5 bg-pink-50/40 hover:bg-pink-50 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file && fileInputRef.current) {
+                  const dt = new DataTransfer(); dt.items.add(file);
+                  fileInputRef.current.files = dt.files;
+                  fileInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+              }}>
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${xlsxStatus === "ok" ? "bg-green-100" : xlsxStatus === "error" ? "bg-red-100" : "bg-indigo-100"}`}>
+                  {xlsxStatus === "loading" ? <div className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
+                    : xlsxStatus === "ok" ? <CheckCircle2 size={20} className="text-green-600" />
+                    : xlsxStatus === "error" ? <AlertCircle size={20} className="text-red-500" />
+                    : <FileSpreadsheet size={20} className="text-pink-500" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-semibold ${xlsxStatus === "ok" ? "text-green-700" : xlsxStatus === "error" ? "text-red-600" : "text-pink-700"}`}>
+                    {xlsxStatus === "idle" && "패턴실 엑셀 파일 업로드"}
+                    {xlsxStatus === "loading" && "파일 분석 중..."}
+                    {xlsxStatus === "ok" && "자동 입력 완료"}
+                    {xlsxStatus === "error" && "파일 오류"}
+                  </div>
+                  <div className={`text-xs mt-0.5 truncate ${xlsxStatus === "ok" ? "text-green-600" : xlsxStatus === "error" ? "text-red-500" : "text-pink-400"}`}>
+                    {xlsxStatus === "idle" ? ".xlsx 파일을 드래그하거나 클릭해서 선택 — 파일명이 SAMPLE NO.에, 사이즈 스펙이 표에 자동 입력됩니다" : xlsxMsg}
+                  </div>
+                </div>
+                <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors">
+                  <Upload size={13} />파일 선택
+                </button>
+              </div>
+            </div>
+            {/* 스펙 테이블 */}
+            <div className="overflow-x-auto mt-5">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-200 px-1 py-2 w-6"></th>
+                    <th className="border border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600 w-32">항목</th>
+                    {wo.sizes.map((s) => (
+                      <th key={s} className="border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-600 w-20">{s}</th>
+                    ))}
+                    <th className="border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-600 w-16">편차</th>
+                    <th className="border border-gray-200 px-2 py-2 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wo.measurements.map((m, idx) => m.isHeader ? (
+                    <tr key={idx} onDragEnter={() => onMDragEnter(idx)} onDragOver={(e) => e.preventDefault()}
+                      className={`bg-pink-50 border-t-2 border-indigo-200${mDragOver === idx ? " opacity-50" : ""}`}>
+                      <td draggable onDragStart={() => onMDragStart(idx)} onDragEnd={onMDragEnd}
+                        className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
+                      <td colSpan={wo.sizes.length + 2} className="border border-gray-200 p-1">
+                        <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
+                          placeholder="구분명 입력 (예: 상의, 하의, 모자)"
+                          className="w-full px-2 py-1 text-xs font-bold text-pink-700 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                      </td>
+                      <td className="border border-gray-200 p-1 text-center">
+                        <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={idx} onDragEnter={() => onMDragEnter(idx)} onDragOver={(e) => e.preventDefault()}
+                      className={`${idx % 2 === 0 ? "" : "bg-gray-50/50"}${mDragOver === idx ? " opacity-50" : ""}`}>
+                      <td draggable onDragStart={() => onMDragStart(idx)} onDragEnd={onMDragEnd}
+                        className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
+                      <td className="border border-gray-200 p-1">
+                        <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent font-medium" />
+                      </td>
+                      {wo.sizes.map((s) => (
+                        <td key={s} className="border border-gray-200 p-1">
+                          <input value={m.values[s] || ""} onChange={(e) => updateMeasurement(idx, s, e.target.value)}
+                            className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                        </td>
+                      ))}
+                      <td className="border border-gray-200 p-1">
+                        <input value={m.diff} onChange={(e) => updateMeasurement(idx, "diff", e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                      </td>
+                      <td className="border border-gray-200 p-1 text-center">
+                        <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button onClick={addMeasurementRow} className="flex items-center gap-1.5 text-sm text-pink-600 hover:text-pink-700 transition-colors">
+                  <Plus size={14} />항목 추가
+                </button>
+                <button onClick={addMeasurementHeader} className="flex items-center gap-1.5 text-sm text-pink-400 hover:text-pink-600 transition-colors border border-indigo-200 rounded px-2 py-0.5">
+                  <Plus size={12} />구분 추가
+                </button>
+              </div>
+              {wo.measurements.length > 0 && (
+                <span className="text-xs text-gray-400">{wo.measurements.filter(m => !m.isHeader).length}개 항목</span>
+              )}
+            </div>
+            </SectionCard>
+
             {/* ── 발주수량 (기본정보 내) ── */}
             <SectionCard title="컬러 × 사이즈 발주 수량표" sub="컬러별, 사이즈별 발주 수량을 입력하세요">
               <div className="flex items-center justify-end mb-4 gap-3">
@@ -2202,211 +2381,6 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               />
             </SectionCard>
 
-            {/* ── 사이즈 스펙 ── */}
-            <SectionCard
-              title="사이즈 스펙"
-              sub="패턴실 엑셀 파일 업로드 또는 직접 입력"
-              action={
-                <Field label="사이즈 목록 (쉼표로 구분)">
-                  <input value={wo.sizes.join(", ")}
-                    onChange={(e) => updateSizes(e.target.value)}
-                    placeholder="100, 110, 120, 130, 140"
-                    className={inputCls + " w-56"} />
-                </Field>
-              }
-            >
-            {/* 드라이브 검색 */}
-            <div className="relative mb-3">
-              <div className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white focus-within:border-pink-400 focus-within:ring-2 focus-within:ring-pink-100 transition">
-                <Search size={14} className="text-gray-400 shrink-0" />
-                <input
-                  value={driveQuery}
-                  onChange={(e) => searchDrive(e.target.value)}
-                  onFocus={() => { if (driveQuery) setDriveOpen(true); }}
-                  placeholder="패턴 파일명으로 검색 (예: OF2501_티셔츠)"
-                  className="flex-1 text-sm bg-transparent focus:outline-none placeholder:text-gray-300"
-                />
-                {driveSearching && (
-                  <div className="w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0" />
-                )}
-                {driveQuery && !driveSearching && (
-                  <button type="button" onClick={() => { setDriveQuery(""); setDriveResults([]); setDriveOpen(false); }}
-                    className="text-gray-300 hover:text-gray-500 shrink-0"><X size={13} /></button>
-                )}
-              </div>
-              <div className="mt-1 flex items-center justify-between pl-1">
-                <span className="text-[11px] text-gray-400">구글 드라이브 패턴실 폴더에서 유사한 파일을 자동으로 찾아줍니다</span>
-                <button type="button" onClick={() => { setDriveOpen(true); fetchDrive(""); }}
-                  className="text-[11px] text-pink-500 hover:text-pink-700 transition-colors">
-                  전체 목록 보기
-                </button>
-              </div>
-              {driveOpen && (driveResults.length > 0 || driveError || (!driveSearching && driveQuery)) && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto">
-                  {driveError ? (
-                    <div className="px-4 py-3 text-xs text-red-500 whitespace-pre-wrap">{driveError}</div>
-                  ) : driveResults.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-400 text-center">
-                      일치하는 파일 없음 (40% 이상 유사도 기준)
-                      {driveTotal !== null && (
-                        <div className="text-xs text-gray-300 mt-1">폴더에서 총 {driveTotal}개 파일 확인됨</div>
-                      )}
-                      {driveTotal === 0 && (
-                        <div className="text-xs text-orange-400 mt-1">⚠ 폴더 접근 권한을 확인해주세요</div>
-                      )}
-                    </div>
-                  ) : (
-                    driveResults.map((f) => (
-                      <button key={f.id} type="button" disabled={driveLoadingId === f.id}
-                        onClick={() => loadDriveFile(f.id, f.name)}
-                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-pink-50 transition-colors text-left group">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileSpreadsheet size={14} className="text-green-500 shrink-0" />
-                          <span className="text-sm text-gray-700 truncate group-hover:text-pink-700">{f.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {f.score !== undefined && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-500 font-medium">
-                              {Math.round(f.score * 100)}%
-                            </span>
-                          )}
-                          {driveLoadingId === f.id ? (
-                            <div className="w-3.5 h-3.5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Download size={13} className="text-gray-300 group-hover:text-pink-400" />
-                          )}
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-            {/* 엑셀 업로드 영역 */}
-            <div
-              className="border-2 border-dashed border-indigo-200 rounded-2xl p-5 bg-pink-50/40 hover:bg-pink-50 transition-colors cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const file = e.dataTransfer.files?.[0];
-                if (file && fileInputRef.current) {
-                  const dt = new DataTransfer();
-                  dt.items.add(file);
-                  fileInputRef.current.files = dt.files;
-                  fileInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
-                }
-              }}
-            >
-              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  xlsxStatus === "ok" ? "bg-green-100" : xlsxStatus === "error" ? "bg-red-100" : "bg-indigo-100"
-                }`}>
-                  {xlsxStatus === "loading" ? (
-                    <div className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
-                  ) : xlsxStatus === "ok" ? (
-                    <CheckCircle2 size={20} className="text-green-600" />
-                  ) : xlsxStatus === "error" ? (
-                    <AlertCircle size={20} className="text-red-500" />
-                  ) : (
-                    <FileSpreadsheet size={20} className="text-pink-500" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-semibold ${
-                    xlsxStatus === "ok" ? "text-green-700" : xlsxStatus === "error" ? "text-red-600" : "text-pink-700"
-                  }`}>
-                    {xlsxStatus === "idle" && "패턴실 엑셀 파일 업로드"}
-                    {xlsxStatus === "loading" && "파일 분석 중..."}
-                    {xlsxStatus === "ok" && "자동 입력 완료"}
-                    {xlsxStatus === "error" && "파일 오류"}
-                  </div>
-                  <div className={`text-xs mt-0.5 truncate ${
-                    xlsxStatus === "ok" ? "text-green-600" : xlsxStatus === "error" ? "text-red-500" : "text-pink-400"
-                  }`}>
-                    {xlsxStatus === "idle"
-                      ? ".xlsx 파일을 드래그하거나 클릭해서 선택 — 파일명이 SAMPLE NO.에, 사이즈 스펙이 표에 자동 입력됩니다"
-                      : xlsxMsg}
-                  </div>
-                </div>
-                <button type="button"
-                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors">
-                  <Upload size={13} />파일 선택
-                </button>
-              </div>
-            </div>
-            {/* 스펙 테이블 */}
-            <div className="overflow-x-auto mt-5">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-200 px-1 py-2 w-6"></th>
-                    <th className="border border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600 w-32">항목</th>
-                    {wo.sizes.map((s) => (
-                      <th key={s} className="border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-600 w-20">{s}</th>
-                    ))}
-                    <th className="border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-600 w-16">편차</th>
-                    <th className="border border-gray-200 px-2 py-2 w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {wo.measurements.map((m, idx) => m.isHeader ? (
-                    <tr key={idx} onDragEnter={() => onMDragEnter(idx)} onDragOver={(e) => e.preventDefault()}
-                      className={`bg-pink-50 border-t-2 border-indigo-200${mDragOver === idx ? " opacity-50" : ""}`}>
-                      <td draggable onDragStart={() => onMDragStart(idx)} onDragEnd={onMDragEnd}
-                        className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
-                      <td colSpan={wo.sizes.length + 2} className="border border-gray-200 p-1">
-                        <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
-                          placeholder="구분명 입력 (예: 상의, 하의, 모자)"
-                          className="w-full px-2 py-1 text-xs font-bold text-pink-700 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
-                      </td>
-                      <td className="border border-gray-200 p-1 text-center">
-                        <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
-                      </td>
-                    </tr>
-                  ) : (
-                    <tr key={idx} onDragEnter={() => onMDragEnter(idx)} onDragOver={(e) => e.preventDefault()}
-                      className={`${idx % 2 === 0 ? "" : "bg-gray-50/50"}${mDragOver === idx ? " opacity-50" : ""}`}>
-                      <td draggable onDragStart={() => onMDragStart(idx)} onDragEnd={onMDragEnd}
-                        className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
-                      <td className="border border-gray-200 p-1">
-                        <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent font-medium" />
-                      </td>
-                      {wo.sizes.map((s) => (
-                        <td key={s} className="border border-gray-200 p-1">
-                          <input value={m.values[s] || ""} onChange={(e) => updateMeasurement(idx, s, e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
-                        </td>
-                      ))}
-                      <td className="border border-gray-200 p-1">
-                        <input value={m.diff} onChange={(e) => updateMeasurement(idx, "diff", e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
-                      </td>
-                      <td className="border border-gray-200 p-1 text-center">
-                        <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button onClick={addMeasurementRow} className="flex items-center gap-1.5 text-sm text-pink-600 hover:text-pink-700 transition-colors">
-                  <Plus size={14} />항목 추가
-                </button>
-                <button onClick={addMeasurementHeader} className="flex items-center gap-1.5 text-sm text-pink-400 hover:text-pink-600 transition-colors border border-indigo-200 rounded px-2 py-0.5">
-                  <Plus size={12} />구분 추가
-                </button>
-              </div>
-              {wo.measurements.length > 0 && (
-                <span className="text-xs text-gray-400">{wo.measurements.filter(m => !m.isHeader).length}개 항목</span>
-              )}
-            </div>
-            </SectionCard>
           </div>
         )}
 
