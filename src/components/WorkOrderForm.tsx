@@ -238,6 +238,16 @@ interface Props {
 // ─── 원부자재별 첨부파일 컴포넌트 ────────────────────────
 type Attachment = NonNullable<WorkOrder["attachments"]>[number];
 
+// 커스텀 섹션 (원부자재 없이 직접 추가)
+type CustomSection = { id: string; name: string };
+
+type AttachDraft = {
+  imagePreviews: string[];   // 여러 장 지원
+  imageFileNames: string[];
+  link: string;
+  memo: string;
+};
+
 function MaterialAttachList({
   materials, attachments, onChange,
 }: {
@@ -246,20 +256,22 @@ function MaterialAttachList({
   onChange: (atts: Attachment[]) => void;
 }) {
   const [openForms, setOpenForms] = useState<Record<string, boolean>>({});
-  const [drafts, setDrafts] = useState<Record<string, {
-    imageFile?: File; imagePreview?: string;
-    link: string; memo: string;
-  }>>({});
+  const [drafts, setDrafts] = useState<Record<string, AttachDraft>>({});
   const [savedIds, setSavedIds] = useState<Record<string, boolean>>({});
   const [lightbox, setLightbox] = useState<string | null>(null);
-  // 수정 중인 첨부 ID → 편집 중 값
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{ link: string; memo: string }>({ link: "", memo: "" });
+  // 숨긴 자재 ID 목록
+  const [hiddenMatIds, setHiddenMatIds] = useState<Set<string>>(new Set());
+  // 커스텀 섹션 (원부자재 없이 추가)
+  const [customSections, setCustomSections] = useState<CustomSection[]>([]);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [addingSection, setAddingSection] = useState(false);
 
-  function getDraft(matId: string) {
-    return drafts[matId] ?? { link: "", memo: "" };
+  function getDraft(matId: string): AttachDraft {
+    return drafts[matId] ?? { imagePreviews: [], imageFileNames: [], link: "", memo: "" };
   }
-  function setDraft(matId: string, patch: object) {
+  function setDraft(matId: string, patch: Partial<AttachDraft>) {
     setDrafts(prev => ({ ...prev, [matId]: { ...getDraft(matId), ...patch } }));
   }
   function openForm(matId: string) {
@@ -271,15 +283,41 @@ function MaterialAttachList({
     setDrafts(prev => { const n = { ...prev }; delete n[matId]; return n; });
   }
 
+  function addImages(matId: string, files: FileList) {
+    const d = getDraft(matId);
+    const readers: Promise<{ preview: string; name: string }>[] = [];
+    Array.from(files).forEach(f => {
+      readers.push(new Promise(resolve => {
+        const r = new FileReader();
+        r.onload = (ev) => resolve({ preview: ev.target?.result as string, name: f.name });
+        r.readAsDataURL(f);
+      }));
+    });
+    Promise.all(readers).then(results => {
+      setDraft(matId, {
+        imagePreviews: [...d.imagePreviews, ...results.map(r => r.preview)],
+        imageFileNames: [...d.imageFileNames, ...results.map(r => r.name)],
+      });
+    });
+  }
+
+  function removePreview(matId: string, idx: number) {
+    const d = getDraft(matId);
+    setDraft(matId, {
+      imagePreviews: d.imagePreviews.filter((_, i) => i !== idx),
+      imageFileNames: d.imageFileNames.filter((_, i) => i !== idx),
+    });
+  }
+
   function saveEntry(matId: string) {
     const d = getDraft(matId);
     const newAtts: Attachment[] = [];
-    if (d.imagePreview) {
+    d.imagePreviews.forEach((preview, idx) => {
       newAtts.push({
         id: crypto.randomUUID(), materialId: matId, type: "image",
-        name: d.imageFile?.name ?? "사진", value: d.imagePreview, memo: d.memo,
+        name: d.imageFileNames[idx] ?? `사진${idx + 1}`, value: preview, memo: d.memo,
       });
-    }
+    });
     if (d.link.trim()) {
       newAtts.push({
         id: crypto.randomUUID(), materialId: matId, type: "link",
@@ -302,7 +340,6 @@ function MaterialAttachList({
   function removeAtt(id: string) {
     onChange(attachments.filter(a => a.id !== id));
   }
-
   function startEdit(att: Attachment) {
     setEditingId(att.id);
     setEditDraft({ link: att.value || "", memo: att.memo || "" });
@@ -314,6 +351,31 @@ function MaterialAttachList({
     setEditingId(null);
   }
 
+  function hideSection(matId: string) {
+    setHiddenMatIds(prev => new Set([...prev, matId]));
+    // 해당 자재 첨부파일도 함께 제거
+    onChange(attachments.filter(a => a.materialId !== matId));
+  }
+  function removeCustomSection(sectionId: string) {
+    setCustomSections(prev => prev.filter(s => s.id !== sectionId));
+    onChange(attachments.filter(a => a.materialId !== sectionId));
+  }
+
+  function addCustomSection() {
+    const name = newSectionName.trim() || "추가 섹션";
+    setCustomSections(prev => [...prev, { id: crypto.randomUUID(), name }]);
+    setNewSectionName("");
+    setAddingSection(false);
+  }
+
+  // 표시할 자재 목록 (숨긴 것 제외)
+  const visibleMaterials = materials.filter(m => !hiddenMatIds.has(m.id));
+  // 전체 섹션 (자재 + 커스텀)
+  const allSections: Array<{ id: string; label: string; sub?: string; isCustom: boolean }> = [
+    ...visibleMaterials.map(m => ({ id: m.id, label: m.name || "자재명 없음", sub: m.category, isCustom: false })),
+    ...customSections.map(s => ({ id: s.id, label: s.name, isCustom: true })),
+  ];
+
   return (
     <>
     {lightbox && (
@@ -323,26 +385,34 @@ function MaterialAttachList({
       </div>
     )}
     <div className="space-y-3">
-      {materials.map((mat) => {
-        const matAtts = attachments.filter(a => a.materialId === mat.id);
-        const isOpen  = openForms[mat.id] ?? false;
-        const draft   = getDraft(mat.id);
-        const saved   = savedIds[mat.id] ?? false;
+      {allSections.map((sec) => {
+        const matAtts = attachments.filter(a => a.materialId === sec.id);
+        const isOpen  = openForms[sec.id] ?? false;
+        const draft   = getDraft(sec.id);
+        const saved   = savedIds[sec.id] ?? false;
 
         return (
-          <div key={mat.id} className="border border-gray-100 rounded-2xl bg-white overflow-hidden">
+          <div key={sec.id} className="border border-gray-100 rounded-2xl bg-white overflow-hidden">
             {/* 헤더 */}
             <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100">
-              <span className="text-[10px] font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-md">{mat.category || "—"}</span>
-              <span className="text-sm font-bold text-gray-800">{mat.name || "자재명 없음"}</span>
-              {mat.color && <span className="text-xs text-gray-400">{mat.color}</span>}
-              <div className="ml-auto flex items-center gap-2">
+              {sec.sub && <span className="text-[10px] font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-md flex-shrink-0">{sec.sub}</span>}
+              {sec.isCustom && <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md flex-shrink-0">직접추가</span>}
+              <span className="text-sm font-bold text-gray-800 truncate">{sec.label}</span>
+              <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                 {saved && <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={12} />저장됨</span>}
                 <button
-                  onClick={() => isOpen ? closeForm(mat.id) : openForm(mat.id)}
+                  onClick={() => isOpen ? closeForm(sec.id) : openForm(sec.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${isOpen ? "bg-gray-200 text-gray-600 hover:bg-gray-300" : "bg-pink-500 text-white hover:bg-pink-600"}`}
                 >
                   <Plus size={12} />{isOpen ? "취소" : "올리기"}
+                </button>
+                {/* 섹션 삭제 버튼 */}
+                <button
+                  onClick={() => sec.isCustom ? removeCustomSection(sec.id) : hideSection(sec.id)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-400 hover:border-red-200 transition-colors"
+                  title="이 섹션 삭제"
+                >
+                  <Trash2 size={11} />
                 </button>
               </div>
             </div>
@@ -350,69 +420,103 @@ function MaterialAttachList({
             {/* 올리기 폼 */}
             {isOpen && (
               <div className="p-4 border-b border-gray-100 bg-pink-50/30 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* 사진 업로드 */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-600">사진</label>
-                    <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-indigo-200 rounded-xl bg-white cursor-pointer hover:border-pink-400 transition-colors overflow-hidden">
-                      {draft.imagePreview ? (
-                        <div className="relative w-full h-full">
-                          <img src={draft.imagePreview} alt="" className="w-full h-full object-cover" />
-                          <button type="button" onClick={(e) => { e.preventDefault(); setDraft(mat.id, { imageFile: undefined, imagePreview: undefined }); }}
-                            className="absolute top-1 right-1 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500"><X size={10} /></button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1 text-indigo-300">
-                          <ImageIcon size={20} />
-                          <span className="text-[10px]">클릭하여 사진 선택</span>
-                        </div>
-                      )}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const f = e.target.files?.[0]; if (!f) return;
-                        const reader = new FileReader();
-                        reader.onload = (ev) => setDraft(mat.id, { imageFile: f, imagePreview: ev.target?.result as string });
-                        reader.readAsDataURL(f); e.target.value = "";
+                {/* 사진 — 여러 장 */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-gray-600">사진 (여러 장 가능)</label>
+                    <label className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-pink-600 border border-pink-200 rounded-lg cursor-pointer hover:bg-pink-50 transition-colors">
+                      <Plus size={10} />사진 추가
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                        if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
                       }} />
                     </label>
                   </div>
-                  {/* 링크 (제목 없음) */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-600">링크</label>
-                    <input value={draft.link} onChange={(e) => setDraft(mat.id, { link: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-pink-400 bg-white" />
-                  </div>
+                  {draft.imagePreviews.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {draft.imagePreviews.map((src, idx) => (
+                        <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex-shrink-0">
+                          <img src={src} alt="" className="w-full h-full object-cover cursor-pointer" onClick={() => setLightbox(src)} />
+                          <button type="button"
+                            onClick={() => removePreview(sec.id, idx)}
+                            className="absolute top-0.5 right-0.5 w-5 h-5 bg-white/90 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 shadow">
+                            <X size={9} />
+                          </button>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-1 py-0.5">
+                            <span className="text-[8px] text-white truncate block">{idx + 1}번</span>
+                          </div>
+                        </div>
+                      ))}
+                      {/* + 추가 슬롯 */}
+                      <label className="w-20 h-20 border-2 border-dashed border-indigo-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-pink-400 transition-colors bg-white flex-shrink-0">
+                        <Plus size={16} className="text-indigo-300" />
+                        <span className="text-[9px] text-indigo-300 mt-0.5">추가</span>
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                          if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
+                        }} />
+                      </label>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-indigo-200 rounded-xl bg-white cursor-pointer hover:border-pink-400 transition-colors">
+                      <div className="flex flex-col items-center gap-1 text-indigo-300">
+                        <ImageIcon size={20} />
+                        <span className="text-[10px]">클릭하여 사진 선택 (여러 장 가능)</span>
+                      </div>
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                        if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
+                      }} />
+                    </label>
+                  )}
+                </div>
+                {/* 링크 */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-600">링크</label>
+                  <input value={draft.link} onChange={(e) => setDraft(sec.id, { link: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-pink-400 bg-white" />
                 </div>
                 {/* 비고 */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-600">비고</label>
-                  <textarea value={draft.memo} onChange={(e) => setDraft(mat.id, { memo: e.target.value })}
+                  <textarea value={draft.memo} onChange={(e) => setDraft(sec.id, { memo: e.target.value })}
                     placeholder="두께감, 색상 옵션, 단가, 특이사항 등"
                     rows={2}
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 bg-white resize-none" />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <button onClick={() => closeForm(mat.id)} className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">취소</button>
-                  <button onClick={() => saveEntry(mat.id)} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"><Save size={11} />저장</button>
+                  <button onClick={() => closeForm(sec.id)} className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">취소</button>
+                  <button onClick={() => saveEntry(sec.id)} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"><Save size={11} />저장</button>
                 </div>
               </div>
             )}
 
-            {/* 저장된 첨부 목록 — 가로 행 레이아웃 */}
+            {/* 저장된 첨부 목록 */}
             {matAtts.length === 0 ? (
               <div className="px-4 py-3 text-xs text-gray-300 text-center">첨부 없음</div>
             ) : (
-              <div className="divide-y divide-gray-50">
-                {matAtts.map((att) => (
-                  <div key={att.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/60 transition-colors group">
-                    {/* 썸네일 */}
-                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center cursor-pointer border border-gray-100"
-                      onClick={() => att.type === "image" && att.value && setLightbox(att.value)}>
-                      {att.type === "image" && att.value
-                        ? <img src={att.value} alt={att.name} className="w-full h-full object-cover" />
-                        : <LinkIcon size={16} className="text-gray-300" />}
-                    </div>
-                    {/* 링크 */}
+              <div className="p-3">
+                {/* 이미지 그리드 */}
+                {matAtts.some(a => a.type === "image") && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {matAtts.filter(a => a.type === "image").map((att) => (
+                      <div key={att.id} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 group flex-shrink-0">
+                        <img src={att.value} alt={att.name} className="w-full h-full object-cover cursor-pointer" onClick={() => setLightbox(att.value)} />
+                        {att.memo && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5">
+                            <span className="text-[8px] text-white truncate block">{att.memo}</span>
+                          </div>
+                        )}
+                        <button onClick={() => removeAtt(att.id)}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 bg-white/90 rounded-full items-center justify-center text-gray-400 hover:text-red-500 shadow hidden group-hover:flex transition-all">
+                          <X size={9} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* 링크 목록 */}
+                {matAtts.filter(a => a.type === "link").map((att) => (
+                  <div key={att.id} className="flex items-center gap-3 py-1.5 hover:bg-gray-50/60 rounded-lg px-1 transition-colors group">
+                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0"><LinkIcon size={13} className="text-gray-400" /></div>
                     <div className="flex-1 min-w-0">
                       {editingId === att.id ? (
                         <input value={editDraft.link} onChange={(e) => setEditDraft(d => ({ ...d, link: e.target.value }))}
@@ -422,20 +526,18 @@ function MaterialAttachList({
                         att.value
                           ? <a href={att.value} target="_blank" rel="noopener noreferrer"
                               className="text-xs text-pink-600 hover:underline truncate block">{att.value}</a>
-                          : <span className="text-xs text-gray-300">링크 없음</span>
+                          : <span className="text-xs text-gray-300">{att.name}</span>
                       )}
                     </div>
-                    {/* 비고 */}
-                    <div className="w-40 flex-shrink-0">
+                    <div className="w-32 flex-shrink-0">
                       {editingId === att.id ? (
                         <input value={editDraft.memo} onChange={(e) => setEditDraft(d => ({ ...d, memo: e.target.value }))}
                           placeholder="비고"
                           className="w-full px-2 py-1 text-xs border border-pink-300 rounded-lg focus:outline-none bg-white" />
                       ) : (
-                        <span className="text-xs text-gray-500 truncate block">{att.memo || "—"}</span>
+                        <span className="text-xs text-gray-400 truncate block">{att.memo || ""}</span>
                       )}
                     </div>
-                    {/* 액션 버튼 */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {editingId === att.id ? (
                         <>
@@ -444,8 +546,8 @@ function MaterialAttachList({
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEdit(att)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-pink-500 transition-all" title="수정"><Edit3 size={12} /></button>
-                          <button onClick={() => removeAtt(att.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition-all" title="삭제"><Trash2 size={12} /></button>
+                          <button onClick={() => startEdit(att)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-pink-500 transition-all"><Edit3 size={12} /></button>
+                          <button onClick={() => removeAtt(att.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition-all"><Trash2 size={12} /></button>
                         </>
                       )}
                     </div>
@@ -456,6 +558,31 @@ function MaterialAttachList({
           </div>
         );
       })}
+
+      {/* 섹션 추가 버튼 */}
+      <div className="pt-1">
+        {addingSection ? (
+          <div className="flex items-center gap-2 p-3 border border-dashed border-indigo-200 rounded-2xl bg-indigo-50/30">
+            <input
+              value={newSectionName}
+              onChange={(e) => setNewSectionName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addCustomSection(); if (e.key === "Escape") setAddingSection(false); }}
+              placeholder="섹션 이름 입력 (예: 기타 원단, 참고 사진)"
+              autoFocus
+              className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400 bg-white"
+            />
+            <button onClick={addCustomSection} className="px-3 py-2 text-xs font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">추가</button>
+            <button onClick={() => { setAddingSection(false); setNewSectionName(""); }} className="px-3 py-2 text-xs text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">취소</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setAddingSection(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-2xl text-xs text-gray-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-colors"
+          >
+            <Plus size={14} />섹션 직접 추가
+          </button>
+        )}
+      </div>
     </div>
     </>
   );
@@ -2727,17 +2854,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               title="원부자재별 첨부파일"
               sub="원부자재 탭에서 입력한 각 항목별로 스와치 사진·링크를 첨부하세요 (PDF에는 포함되지 않음)"
             >
-              {wo.materials.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400">
-                  <Paperclip size={28} className="mb-2 text-gray-300" />
-                  <p className="text-sm font-medium">원부자재가 없습니다</p>
-                  <p className="text-xs text-gray-400 mt-1">먼저 원부자재 탭에서 자재를 추가해주세요</p>
-                  <button onClick={() => setTab("원부자재" as Tab)}
-                    className="mt-4 px-4 py-2 text-xs text-pink-600 border border-indigo-200 rounded-xl hover:bg-pink-50 transition-colors">
-                    원부자재 탭으로 이동
-                  </button>
-                </div>
-              ) : (
+              {(
                 <MaterialAttachList
                   materials={wo.materials.filter((mat) =>
                     !["중국위안", "완사입가(VAT+)", "최종원가", "패턴비"].includes(mat.category?.trim()) &&
