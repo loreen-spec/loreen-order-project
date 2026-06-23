@@ -954,6 +954,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const [driveSearching, setDriveSearching] = useState(false);
   const [driveOpen, setDriveOpen]     = useState(false);
   const [driveLoadingId, setDriveLoadingId] = useState<string | null>(null);
+  const [driveError, setDriveError]   = useState<string | null>(null);
   const driveSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matTableRef   = useRef<HTMLTableElement>(null);
 
@@ -1281,23 +1282,29 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   }
 
   // ─── 드라이브 검색 ────────────────────────────────────
+  async function fetchDrive(q: string) {
+    setDriveSearching(true);
+    setDriveError(null);
+    try {
+      const url = q.trim() ? `/api/drive-search?q=${encodeURIComponent(q)}` : `/api/drive-search`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.error) { setDriveError(data.error); setDriveResults([]); }
+      else setDriveResults(data.files ?? []);
+    } catch (e) {
+      setDriveError(String(e));
+      setDriveResults([]);
+    } finally {
+      setDriveSearching(false);
+    }
+  }
+
   function searchDrive(q: string) {
     setDriveQuery(q);
     setDriveOpen(true);
     if (driveSearchTimer.current) clearTimeout(driveSearchTimer.current);
-    if (!q.trim()) { setDriveResults([]); setDriveSearching(false); return; }
-    setDriveSearching(true);
-    driveSearchTimer.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/drive-search?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        setDriveResults(data.files ?? []);
-      } catch {
-        setDriveResults([]);
-      } finally {
-        setDriveSearching(false);
-      }
-    }, 400);
+    if (!q.trim()) { setDriveResults([]); setDriveSearching(false); setDriveError(null); return; }
+    driveSearchTimer.current = setTimeout(() => fetchDrive(q), 400);
   }
 
   async function loadDriveFile(fileId: string, fileName: string) {
@@ -1894,13 +1901,21 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     className="text-gray-300 hover:text-gray-500 shrink-0"><X size={13} /></button>
                 )}
               </div>
-              <div className="mt-1 text-[11px] text-gray-400 pl-1">구글 드라이브 패턴실 폴더에서 유사한 파일을 자동으로 찾아줍니다</div>
+              <div className="mt-1 flex items-center justify-between pl-1">
+                <span className="text-[11px] text-gray-400">구글 드라이브 패턴실 폴더에서 유사한 파일을 자동으로 찾아줍니다</span>
+                <button type="button" onClick={() => { setDriveOpen(true); fetchDrive(""); }}
+                  className="text-[11px] text-pink-500 hover:text-pink-700 transition-colors">
+                  전체 목록 보기
+                </button>
+              </div>
 
               {/* 검색 결과 드롭다운 */}
-              {driveOpen && (driveResults.length > 0 || (!driveSearching && driveQuery)) && (
+              {driveOpen && (driveResults.length > 0 || driveError || (!driveSearching && driveQuery)) && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto">
-                  {driveResults.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-400 text-center">일치하는 파일 없음 (70% 이상 유사도 기준)</div>
+                  {driveError ? (
+                    <div className="px-4 py-3 text-xs text-red-500 text-center whitespace-pre-wrap">{driveError}</div>
+                  ) : driveResults.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-400 text-center">일치하는 파일 없음 (40% 이상 유사도 기준)</div>
                   ) : (
                     driveResults.map((f) => (
                       <button
