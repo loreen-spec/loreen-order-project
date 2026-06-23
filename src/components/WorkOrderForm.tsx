@@ -28,8 +28,10 @@ const MATERIAL_CATEGORIES = [
   "배색B", "배색C", "테이프",
   "웰론(몸판)", "웰론(소매)", "지퍼", "슬라이더", "와펜",
   "E/BAND", "아일렛", "스트링", "스토퍼", "재봉사", "패턴비",
-  "완사입가(VAT+)", "기타",
+  "중국위안", "완사입가(VAT+)", "기타",
 ];
+
+const COLOR_PRESETS = ["BLACK", "WHITE", "BEIGE", "PINK", "RED", "BLUE", "GREEN", "PURPLE", "기타"];
 
 const YIELD_UNITS = ["YD", "M", "EA", "직접입력"] as const;
 type YieldUnit = typeof YIELD_UNITS[number];
@@ -971,6 +973,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   // 자재명 드롭다운
   const [nameOpen, setNameOpen] = useState<string | null>(null);
   const [namePos, setNamePos]   = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 150 });
+  const [colorOpen, setColorOpen] = useState<string | null>(null);
+  const [colorPos, setColorPos]   = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 140 });
   // AI 도식화 분석
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
@@ -1192,11 +1196,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       materials: w.materials.map((m) => {
         if (m.id !== id) return m;
         const updated = { ...m, [key]: value };
-        // 패턴비 선택 시 자동 입력 (항상 강제)
+        // 패턴비 선택 시 자동 입력
         if (key === "category" && value === "패턴비") {
           updated.yield     = "1";
           updated.yieldUnit = "EA";
           if (!updated.unitPrice) updated.unitPrice = "300";
+        }
+        // 재봉사 선택 시 자재명 자동 입력
+        if (key === "category" && value === "재봉사") {
+          if (!updated.name) updated.name = "60수3합";
+          updated.yield     = "1";
+          updated.yieldUnit = "EA";
         }
         return updated;
       }),
@@ -2273,17 +2283,45 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             />
                           )}
                         </td>
-                        {/* 색상, 규격 */}
-                        {(["color","spec"] as const).map((f) => (
-                          <td key={f} className="border border-gray-200 p-1">
-                            <input value={m[f]}
-                              onChange={(e) => updateMaterial(m.id, f, e.target.value)}
+                        {/* 색상 — 드롭다운 + 직접입력 */}
+                        <td className="border border-gray-200 p-1 min-w-[90px]">
+                          <div className="flex items-center gap-0.5">
+                            <input
+                              value={m.color}
+                              onChange={(e) => updateMaterial(m.id, "color", e.target.value)}
+                              onFocus={(e) => {
+                                const td = e.currentTarget.closest("td")!;
+                                const r = td.getBoundingClientRect();
+                                setColorPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) });
+                                setColorOpen(m.id);
+                              }}
+                              onBlur={() => setTimeout(() => setColorOpen(null), 200)}
                               onKeyDown={handleMatKeyDown}
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent min-w-[80px]"
-                              placeholder={f === "color" ? "BLACK" : "60\""}
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                              placeholder="BLACK"
                             />
-                          </td>
-                        ))}
+                            <button type="button" tabIndex={-1}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const td = e.currentTarget.closest("td")!;
+                                const r = td.getBoundingClientRect();
+                                setColorPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) });
+                                setColorOpen(v => v === m.id ? null : m.id);
+                              }}
+                              className="flex-shrink-0 text-gray-300 hover:text-gray-500 px-0.5">
+                              <ChevronDown size={11} />
+                            </button>
+                          </div>
+                        </td>
+                        {/* 규격 */}
+                        <td className="border border-gray-200 p-1">
+                          <input value={m.spec}
+                            onChange={(e) => updateMaterial(m.id, "spec", e.target.value)}
+                            onKeyDown={handleMatKeyDown}
+                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent min-w-[80px]"
+                            placeholder={`60"`}
+                          />
+                        </td>
                         {/* 요척 숫자 + YD→M 변환 버튼 */}
                         <td className="border border-gray-200 p-1 min-w-[90px]">
                           <div className="flex items-center gap-0.5">
@@ -2529,6 +2567,28 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 n === "직접입력" ? "text-pink-500 font-semibold border-t border-gray-100" : "text-gray-700"
               }`}>
               {n}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 색상 fixed 드롭다운 */}
+      {colorOpen && (
+        <div
+          style={{ position: "fixed", top: colorPos.top, left: colorPos.left, width: Math.max(colorPos.width, 130), zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-lg py-1 max-h-56 overflow-y-auto"
+        >
+          {COLOR_PRESETS.map((c) => (
+            <button key={c} type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                if (c !== "기타") updateMaterial(colorOpen, "color", c);
+                setColorOpen(null);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors ${
+                c === "기타" ? "text-pink-500 font-semibold border-t border-gray-100" : "text-gray-700"
+              }`}>
+              {c}
             </button>
           ))}
         </div>
