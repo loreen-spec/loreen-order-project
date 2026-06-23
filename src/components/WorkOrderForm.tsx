@@ -1515,24 +1515,31 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 // 판매가 버튼+입력 공통 컴포넌트
                 function SalePriceRow({ finalCost }: { finalCost: number }) {
                   return (
-                    <div className="border border-gray-200 rounded-2xl px-4 py-3 space-y-2 bg-white">
-                      <div className="text-xs font-semibold text-gray-500">판매가</div>
+                    <div className="flex gap-3 items-start">
                       {finalCost > 0 && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-1.5 shrink-0">
                           {[4, 5].map(mult => {
                             const val = roundToThousand(finalCost * mult);
+                            const active = wo.salePrice?.replace(/,/g, "") === String(val);
                             return (
                               <button key={mult} type="button"
                                 onClick={() => set("salePrice", val.toLocaleString())}
-                                className="flex-1 py-2 rounded-xl text-sm font-bold border-2 border-pink-300 text-pink-600 bg-pink-50 hover:bg-pink-100 transition-colors">
-                                {mult}배수 → {val.toLocaleString()}원
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors whitespace-nowrap ${
+                                  active
+                                    ? "bg-pink-500 border-pink-500 text-white"
+                                    : "border-pink-300 text-pink-500 bg-white hover:bg-pink-50"
+                                }`}>
+                                {mult}배 {val.toLocaleString()}원
                               </button>
                             );
                           })}
                         </div>
                       )}
-                      <input value={wo.salePrice} onChange={(e) => set("salePrice", e.target.value)}
-                        placeholder="직접 입력" className={inputCls} />
+                      <div className="flex-1">
+                        <div className="text-xs text-gray-400 mb-1">판매가</div>
+                        <input value={wo.salePrice} onChange={(e) => set("salePrice", e.target.value)}
+                          placeholder="직접 입력" className={inputCls} />
+                      </div>
                     </div>
                   );
                 }
