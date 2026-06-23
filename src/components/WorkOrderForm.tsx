@@ -704,6 +704,18 @@ function LabelDiagramSection({
 }
 
 // ─── 섹션 헤더 ────────────────────────────────────────────
+function SectionCard({ title, sub, children, className }: { title: string; sub?: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-2xl border border-gray-100 bg-gray-50/60 px-5 py-5 ${className ?? ""}`}>
+      <div className="mb-4">
+        <div className="text-sm font-bold text-gray-700">{title}</div>
+        {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function SectionHeader({ title, sub }: { title: string; sub?: string }) {
   return (
     <div className="mb-4">
@@ -1329,8 +1341,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
 
         {/* ── 1. 기본정보 ── */}
         {tab === "기본정보" && (
-          <div className="space-y-6">
-            <SectionHeader title="제품 기본 정보" sub="스타일넘버, 품명, 작업처 등 기본 정보를 입력하세요" />
+          <div className="space-y-4">
+            <SectionCard title="제품 기본 정보" sub="스타일넘버, 품명, 작업처 등 기본 정보를 입력하세요">
             <div className="grid grid-cols-3 gap-4">
               <Field label="스타일넘버" required>
                 <input value={wo.styleNo} onChange={(e) => set("styleNo", e.target.value)}
@@ -1437,11 +1449,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 )}
               </Field>
             </div>
+            </SectionCard>
 
             {/* ── 발주수량 (기본정보 내) ── */}
-            <div className="border-t-2 border-gray-200 pt-5">
-              <div className="flex items-center justify-between mb-4">
-                <SectionHeader title="컬러 × 사이즈 발주 수량표" sub="컬러별, 사이즈별 발주 수량을 입력하세요" />
+            <SectionCard title="컬러 × 사이즈 발주 수량표" sub="컬러별, 사이즈별 발주 수량을 입력하세요">
+              <div className="flex items-center justify-end mb-4 gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 text-sm">
                     <span className="text-gray-500">총</span>
@@ -1516,10 +1528,9 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   </table>
                 </div>
               )}
-            </div>
+            </SectionCard>
 
-            <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader title="담당자 & 일정" />
+            <SectionCard title="담당자 & 일정">
               <div className="grid grid-cols-3 gap-4">
                 <Field label="담당자">
                   <SelectDropdown
@@ -1542,10 +1553,9 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <input type="date" value={wo.deliveryDate} onChange={(e) => set("deliveryDate", e.target.value)} className={inputCls} />
                 </Field>
               </div>
-            </div>
+            </SectionCard>
 
-            <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader title="원가 정보" sub={`작업처 타입: ${{ china:"중국 위안 계산", outsourcing:"완사입 (VAT포함)", domestic:"국내 공임 계산", india:"인도 달러→원 환산", other:"직접 입력" }[getVendorType(wo.vendor)]}`} />
+            <SectionCard title="비용 및 원가" sub={`작업처 타입: ${{ china:"중국 위안 계산", outsourcing:"완사입 (VAT포함)", domestic:"국내 공임 계산", india:"인도 달러→원 환산", other:"직접 입력" }[getVendorType(wo.vendor)]}`}>
               {(() => {
                 const vtype = getVendorType(wo.vendor);
                 const matSum = calcMaterialsSum(wo.materials);
@@ -1667,11 +1677,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   </div>
                 } />;
               })()}
-            </div>
+            </SectionCard>
 
             {/* ── 이미지 업로드 ── */}
-            <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader title="이미지" sub="도식화와 제품 사진을 등록하세요 — PDF에 자동 삽입됩니다" />
+            <SectionCard title="이미지" sub="도식화와 제품 사진을 등록하세요 — PDF에 자동 삽입됩니다">
               <div className="grid grid-cols-2 gap-5">
 
                 {/* 도식화 */}
@@ -1781,7 +1790,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </div>
 
               </div>
-            </div>
+            </SectionCard>
           </div>
         )}
 
