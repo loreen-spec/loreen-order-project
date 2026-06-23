@@ -265,6 +265,39 @@ function MaterialAttachList({
   const [hiddenMatIds, setHiddenMatIds] = useState<Set<string>>(new Set());
   // 커스텀 섹션 (원부자재 없이 추가)
   const [customSections, setCustomSections] = useState<CustomSection[]>([]);
+
+  // 올리기 폼이 열려있는 동안 document 전체에서 Ctrl+V 붙여넣기 감지
+  // → 박스 클릭 없이 어디서든 이미지 붙여넣기 가능
+  const openFormsRef = React.useRef(openForms);
+  openFormsRef.current = openForms;
+  const addImagesRef = React.useRef(addImages);
+  addImagesRef.current = addImages;
+
+  useEffect(() => {
+    function onDocPaste(e: ClipboardEvent) {
+      // 열린 폼 ID 중 첫 번째에 붙여넣기
+      const openId = Object.entries(openFormsRef.current).find(([, v]) => v)?.[0];
+      if (!openId) return;
+      // 텍스트 입력 중이면 무시 (링크/비고 textarea에 타이핑 중일 때)
+      const tag = (document.activeElement as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === "textarea") return;
+      if (tag === "input") {
+        const inputType = (document.activeElement as HTMLInputElement)?.type;
+        if (inputType !== "file") return;
+      }
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const imageFiles = items
+        .filter(item => item.kind === "file" && item.type.startsWith("image/"))
+        .map(item => item.getAsFile())
+        .filter((f): f is File => f !== null);
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        addImagesRef.current(openId, imageFiles);
+      }
+    }
+    document.addEventListener("paste", onDocPaste);
+    return () => document.removeEventListener("paste", onDocPaste);
+  }, []);
   const [newSectionName, setNewSectionName] = useState("");
   const [addingSection, setAddingSection] = useState(false);
 
@@ -445,12 +478,7 @@ function MaterialAttachList({
                     </label>
                   </div>
                   {draft.imagePreviews.length > 0 ? (
-                    <div
-                      className="flex flex-wrap gap-2 p-2 rounded-xl border border-dashed border-indigo-100 focus-within:border-pink-300 transition-colors"
-                      onPaste={(e) => handlePaste(sec.id, e)}
-                      tabIndex={0}
-                      style={{ outline: "none" }}
-                    >
+                    <div className="flex flex-wrap gap-2 p-2 rounded-xl border border-dashed border-indigo-100 transition-colors">
                       {draft.imagePreviews.map((src, idx) => (
                         <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex-shrink-0">
                           <img src={src} alt="" className="w-full h-full object-cover cursor-pointer" onClick={() => setLightbox(src)} />
@@ -474,13 +502,11 @@ function MaterialAttachList({
                       </label>
                     </div>
                   ) : (
-                    <label
-                      className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-indigo-200 rounded-xl bg-white cursor-pointer hover:border-pink-400 transition-colors"
-                      onPaste={(e) => handlePaste(sec.id, e)}
-                    >
+                    <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-indigo-200 rounded-xl bg-white cursor-pointer hover:border-pink-400 transition-colors">
                       <div className="flex flex-col items-center gap-1 text-indigo-300">
                         <ImageIcon size={20} />
-                        <span className="text-[10px]">클릭하여 선택 또는 여기에 Ctrl+V 붙여넣기</span>
+                        <span className="text-[10px]">클릭하여 파일 선택</span>
+                        <span className="text-[9px] text-indigo-200 mt-0.5">또는 이미지 복사 후 Ctrl+V</span>
                       </div>
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
                         if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
