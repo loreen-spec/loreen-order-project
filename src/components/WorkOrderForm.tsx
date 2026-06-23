@@ -1802,16 +1802,19 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
 
         {/* ── 2. 사이즈스펙 ── */}
         {tab === "사이즈스펙" && (
-          <div className="space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <SectionHeader title="사이즈 스펙" sub="패턴실 엑셀 파일 업로드 또는 직접 입력" />
-              <Field label="사이즈 목록 (쉼표로 구분)">
-                <input value={wo.sizes.join(", ")}
-                  onChange={(e) => updateSizes(e.target.value)}
-                  placeholder="100, 110, 120, 130, 140"
-                  className={inputCls + " w-56"} />
-              </Field>
-            </div>
+          <div className="space-y-4">
+            <SectionCard
+              title="사이즈 스펙"
+              sub="패턴실 엑셀 파일 업로드 또는 직접 입력"
+              action={
+                <Field label="사이즈 목록 (쉼표로 구분)">
+                  <input value={wo.sizes.join(", ")}
+                    onChange={(e) => updateSizes(e.target.value)}
+                    placeholder="100, 110, 120, 130, 140"
+                    className={inputCls + " w-56"} />
+                </Field>
+              }
+            >
 
             {/* 엑셀 업로드 영역 */}
             <div
@@ -1965,6 +1968,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 <span className="text-xs text-gray-400">{wo.measurements.filter(m => !m.isHeader).length}개 항목</span>
               )}
             </div>
+            </SectionCard>
           </div>
         )}
 
@@ -2214,10 +2218,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
         {tab === "라벨·기타" && (
           <div className="space-y-4">
 
-            {/* 라벨 체크 */}
-            <div>
-              <SectionHeader title="라벨 구성" sub="부착할 라벨/태그를 선택하세요" />
-              {/* 고정 9개 라벨 — 너비 고정 */}
+            {/* 라벨 구성 */}
+            <SectionCard title="라벨 구성" sub="부착할 라벨/태그를 선택하세요">
               <div className="grid grid-cols-4 gap-3">
                 {(Object.entries({
                   main:         "메인라벨",
@@ -2232,7 +2234,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 }) as [keyof WorkOrder["labels"], string][]).map(([key, label]) => (
                   <label key={key}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
-                      wo.labels[key] ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-white hover:border-gray-300"
+                      wo.labels[key] ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-gray-50 hover:border-gray-300"
                     }`}
                   >
                     <input type="checkbox" checked={wo.labels[key]}
@@ -2243,9 +2245,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 ))}
               </div>
 
-              {/* 직접 추가 라벨 */}
               {wo.customLabels.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex flex-wrap gap-2 mt-4">
                   {wo.customLabels.map((name, i) => (
                     <div key={i} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-pink-400 bg-pink-50">
                       <span className="text-sm font-medium text-pink-700">{name}</span>
@@ -2261,8 +2262,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </div>
               )}
 
-              {/* 직접 추가 입력 */}
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-4 flex items-center gap-2">
                 <CustomLabelInput
                   onAdd={(name) => {
                     if (name && !wo.customLabels.includes(name)) {
@@ -2271,83 +2271,79 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   }}
                 />
               </div>
-            </div>
+            </SectionCard>
 
-            {/* 라벨 위치 다이어그램 프리셋 */}
-            <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader
-                title="라벨 위치 다이어그램"
-                sub="체크한 항목만 PDF에 삽입됩니다. 이미지에 마우스를 올려 업로드하세요."
-              />
+            {/* 라벨 위치 다이어그램 */}
+            <SectionCard
+              title="라벨 위치 다이어그램"
+              sub="체크한 항목만 PDF에 삽입됩니다. 이미지에 마우스를 올려 업로드하세요."
+            >
               <LabelDiagramSection
                 selected={wo.labelDiagramSelected ?? []}
                 onChange={(ids) => set("labelDiagramSelected", ids)}
               />
-            </div>
+            </SectionCard>
 
             {/* 비고/기타 작성란 */}
-            <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader title="비고 / 기타 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 비고란" />
+            <SectionCard title="비고 / 기타 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 비고란">
               <textarea value={wo.productionNotes}
                 onChange={(e) => set("productionNotes", e.target.value)}
                 rows={4}
                 placeholder="비고, 특이사항 등"
-                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-indigo-100 resize-none"
+                className={`w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300`}
               />
-            </div>
+            </SectionCard>
 
             {/* 고정값 문구 (순수사항) */}
-            <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader title="고정값 문구 (순수사항)" sub="PDF 하단 좌측 하단 — 매 작업지시서에 공통으로 들어가는 문구" />
+            <SectionCard title="고정값 문구 (순수사항)" sub="PDF 하단 좌측 하단 — 매 작업지시서에 공통으로 들어가는 문구">
               <textarea value={wo.fixedNotes}
                 onChange={(e) => set("fixedNotes", e.target.value)}
                 rows={6}
-                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-indigo-100 resize-none font-mono"
+                className={`w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none font-mono placeholder:text-gray-300`}
               />
-            </div>
+            </SectionCard>
 
-            {/* 원부자재 업체 */}
-            <div className="border-t-2 border-gray-200 pt-5">
-              <SectionHeader title="원부자재 업체 정보" sub="PDF 우측 하단 — 거래 업체명, 연락처 등" />
+            {/* 원부자재 업체 정보 */}
+            <SectionCard title="원부자재 업체 정보" sub="PDF 우측 하단 — 거래 업체명, 연락처 등">
               <textarea value={wo.vendorNotes}
                 onChange={(e) => set("vendorNotes", e.target.value)}
                 rows={4}
                 placeholder={"예)\n원단: OO텍스타일 010-0000-0000\n지퍼: OO지퍼 02-000-0000"}
-                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-indigo-100 resize-none"
+                className={`w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300`}
               />
-            </div>
+            </SectionCard>
 
           </div>
         )}
 
         {/* ── 6. 첨부파일 ── */}
         {tab === "첨부파일" && (
-          <div className="space-y-3">
-            <SectionHeader
+          <div className="space-y-4">
+            <SectionCard
               title="원부자재별 첨부파일"
               sub="원부자재 탭에서 입력한 각 항목별로 스와치 사진·링크를 첨부하세요 (PDF에는 포함되지 않음)"
-            />
-
-            {wo.materials.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400">
-                <Paperclip size={28} className="mb-2 text-gray-300" />
-                <p className="text-sm font-medium">원부자재가 없습니다</p>
-                <p className="text-xs text-gray-400 mt-1">먼저 원부자재 탭에서 자재를 추가해주세요</p>
-                <button onClick={() => setTab("원부자재" as Tab)}
-                  className="mt-4 px-4 py-2 text-xs text-pink-600 border border-indigo-200 rounded-xl hover:bg-pink-50 transition-colors">
-                  원부자재 탭으로 이동
-                </button>
-              </div>
-            ) : (
-              <MaterialAttachList
-                materials={wo.materials.filter((mat) =>
-                  !["중국위안", "완사입가(VAT+)", "최종원가", "패턴비"].includes(mat.category?.trim()) &&
-                  !["중국위안", "완사입가(VAT+)", "최종원가", "패턴비"].includes(mat.name?.trim())
-                )}
-                attachments={wo.attachments ?? []}
-                onChange={(atts) => set("attachments", atts)}
-              />
-            )}
+            >
+              {wo.materials.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400">
+                  <Paperclip size={28} className="mb-2 text-gray-300" />
+                  <p className="text-sm font-medium">원부자재가 없습니다</p>
+                  <p className="text-xs text-gray-400 mt-1">먼저 원부자재 탭에서 자재를 추가해주세요</p>
+                  <button onClick={() => setTab("원부자재" as Tab)}
+                    className="mt-4 px-4 py-2 text-xs text-pink-600 border border-indigo-200 rounded-xl hover:bg-pink-50 transition-colors">
+                    원부자재 탭으로 이동
+                  </button>
+                </div>
+              ) : (
+                <MaterialAttachList
+                  materials={wo.materials.filter((mat) =>
+                    !["중국위안", "완사입가(VAT+)", "최종원가", "패턴비"].includes(mat.category?.trim()) &&
+                    !["중국위안", "완사입가(VAT+)", "최종원가", "패턴비"].includes(mat.name?.trim())
+                  )}
+                  attachments={wo.attachments ?? []}
+                  onChange={(atts) => set("attachments", atts)}
+                />
+              )}
+            </SectionCard>
           </div>
         )}
       </div>
