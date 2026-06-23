@@ -283,13 +283,14 @@ function MaterialAttachList({
     setDrafts(prev => { const n = { ...prev }; delete n[matId]; return n; });
   }
 
-  function addImages(matId: string, files: FileList) {
+  function addImages(matId: string, files: FileList | File[]) {
     const d = getDraft(matId);
+    const arr = Array.from(files);
     const readers: Promise<{ preview: string; name: string }>[] = [];
-    Array.from(files).forEach(f => {
+    arr.forEach((f, idx) => {
       readers.push(new Promise(resolve => {
         const r = new FileReader();
-        r.onload = (ev) => resolve({ preview: ev.target?.result as string, name: f.name });
+        r.onload = (ev) => resolve({ preview: ev.target?.result as string, name: f.name || `붙여넣기_${idx + 1}.png` });
         r.readAsDataURL(f);
       }));
     });
@@ -299,6 +300,18 @@ function MaterialAttachList({
         imageFileNames: [...d.imageFileNames, ...results.map(r => r.name)],
       });
     });
+  }
+
+  function handlePaste(matId: string, e: React.ClipboardEvent) {
+    const items = Array.from(e.clipboardData.items);
+    const imageFiles = items
+      .filter(item => item.kind === "file" && item.type.startsWith("image/"))
+      .map(item => item.getAsFile())
+      .filter((f): f is File => f !== null);
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      addImages(matId, imageFiles);
+    }
   }
 
   function removePreview(matId: string, idx: number) {
@@ -420,10 +433,10 @@ function MaterialAttachList({
             {/* 올리기 폼 */}
             {isOpen && (
               <div className="p-4 border-b border-gray-100 bg-pink-50/30 space-y-3">
-                {/* 사진 — 여러 장 */}
+                {/* 사진 — 여러 장 + 붙여넣기 */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-gray-600">사진 (여러 장 가능)</label>
+                    <label className="text-xs font-semibold text-gray-600">사진 <span className="font-normal text-gray-400">(파일 선택 또는 Ctrl+V 붙여넣기)</span></label>
                     <label className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-pink-600 border border-pink-200 rounded-lg cursor-pointer hover:bg-pink-50 transition-colors">
                       <Plus size={10} />사진 추가
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
@@ -432,7 +445,12 @@ function MaterialAttachList({
                     </label>
                   </div>
                   {draft.imagePreviews.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div
+                      className="flex flex-wrap gap-2 p-2 rounded-xl border border-dashed border-indigo-100 focus-within:border-pink-300 transition-colors"
+                      onPaste={(e) => handlePaste(sec.id, e)}
+                      tabIndex={0}
+                      style={{ outline: "none" }}
+                    >
                       {draft.imagePreviews.map((src, idx) => (
                         <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex-shrink-0">
                           <img src={src} alt="" className="w-full h-full object-cover cursor-pointer" onClick={() => setLightbox(src)} />
@@ -456,10 +474,13 @@ function MaterialAttachList({
                       </label>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-indigo-200 rounded-xl bg-white cursor-pointer hover:border-pink-400 transition-colors">
+                    <label
+                      className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-indigo-200 rounded-xl bg-white cursor-pointer hover:border-pink-400 transition-colors"
+                      onPaste={(e) => handlePaste(sec.id, e)}
+                    >
                       <div className="flex flex-col items-center gap-1 text-indigo-300">
                         <ImageIcon size={20} />
-                        <span className="text-[10px]">클릭하여 사진 선택 (여러 장 가능)</span>
+                        <span className="text-[10px]">클릭하여 선택 또는 여기에 Ctrl+V 붙여넣기</span>
                       </div>
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
                         if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
@@ -896,8 +917,13 @@ const VENDOR_AUTOFILL: Record<string, { manager?: string; contact?: string }> = 
   "영재":               { contact: "010-5310-0204" },
 };
 
-// 업체명 셀: 프리셋 드롭다운 + 직접입력 (맨 아래 "직접입력" 항목)
-function VendorNameCell({ value, onChange, onAutoFill }: { value: string; onChange: (v: string) => void; onAutoFill?: (fill: { manager?: string; contact?: string }) => void }) {
+// 업체명 셀: 프리셋 드롭다운 + 직접입력
+// onSelect: 프리셋 선택 시 vendorName + manager + contact 를 한 번에 업데이트 (두 번 upd 호출 방지)
+function VendorNameCell({ value, onChange, onSelect }: {
+  value: string;
+  onChange: (v: string) => void;
+  onSelect?: (patch: { vendorName: string; manager: string; contact: string }) => void;
+}) {
   const [open, setOpen] = React.useState(false);
   const [pos, setPos] = React.useState({ top: 0, left: 0, width: 160 });
 
@@ -936,10 +962,13 @@ function VendorNameCell({ value, onChange, onAutoFill }: { value: string; onChan
             <button key={name} type="button"
               onMouseDown={(e) => {
                 e.preventDefault();
-                onChange(name);
-                // 담당자 없는 업체는 manager를 ""로 명시 초기화
                 const fill = VENDOR_AUTOFILL[name] ?? {};
-                if (onAutoFill) onAutoFill({ manager: fill.manager ?? "", contact: fill.contact ?? "" });
+                // 단일 upd 호출로 vendorName + 자동완성 필드를 한 번에 업데이트
+                if (onSelect) {
+                  onSelect({ vendorName: name, manager: fill.manager ?? "", contact: fill.contact ?? "" });
+                } else {
+                  onChange(name);
+                }
                 setOpen(false);
               }}
               className="w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
@@ -2801,9 +2830,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                               <VendorNameCell
                                 value={row.vendorName}
                                 onChange={(v) => upd({ vendorName: v })}
-                                onAutoFill={(fill) => {
-                                  upd({ manager: fill.manager ?? "", contact: fill.contact ?? "" });
-                                }}
+                                onSelect={(patch) => upd(patch)}
                               />
                             </td>
                             {/* 담당자 */}
