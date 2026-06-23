@@ -955,6 +955,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const [driveOpen, setDriveOpen]     = useState(false);
   const [driveLoadingId, setDriveLoadingId] = useState<string | null>(null);
   const [driveError, setDriveError]   = useState<string | null>(null);
+  const [driveTotal, setDriveTotal]   = useState<number | null>(null);
   const driveSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matTableRef   = useRef<HTMLTableElement>(null);
 
@@ -1289,11 +1290,12 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       const url = q.trim() ? `/api/drive-search?q=${encodeURIComponent(q)}` : `/api/drive-search`;
       const res = await fetch(url);
       const data = await res.json();
-      if (data.error) { setDriveError(data.error); setDriveResults([]); }
-      else setDriveResults(data.files ?? []);
+      if (data.error) { setDriveError(data.error); setDriveResults([]); setDriveTotal(null); }
+      else { setDriveResults(data.files ?? []); setDriveTotal(data.total ?? null); }
     } catch (e) {
       setDriveError(String(e));
       setDriveResults([]);
+      setDriveTotal(null);
     } finally {
       setDriveSearching(false);
     }
@@ -1913,9 +1915,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               {driveOpen && (driveResults.length > 0 || driveError || (!driveSearching && driveQuery)) && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto">
                   {driveError ? (
-                    <div className="px-4 py-3 text-xs text-red-500 text-center whitespace-pre-wrap">{driveError}</div>
+                    <div className="px-4 py-3 text-xs text-red-500 whitespace-pre-wrap">{driveError}</div>
                   ) : driveResults.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-400 text-center">일치하는 파일 없음 (40% 이상 유사도 기준)</div>
+                    <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                      일치하는 파일 없음 (40% 이상 유사도 기준)
+                      {driveTotal !== null && (
+                        <div className="text-xs text-gray-300 mt-1">폴더에서 총 {driveTotal}개 파일 확인됨</div>
+                      )}
+                      {driveTotal === 0 && (
+                        <div className="text-xs text-orange-400 mt-1">⚠ 폴더 접근 권한을 확인해주세요</div>
+                      )}
+                    </div>
                   ) : (
                     driveResults.map((f) => (
                       <button

@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 
-// 두 문자열의 유사도 계산 (0~1) — bigram overlap
 function similarity(a: string, b: string): number {
   const normalize = (s: string) =>
     s.toLowerCase().replace(/[\s_\-\.()（）]/g, "");
@@ -10,7 +9,6 @@ function similarity(a: string, b: string): number {
   const nb = normalize(b);
   if (!na || !nb) return 0;
   if (na === nb) return 1;
-  // 포함 관계면 높은 점수
   if (nb.includes(na) || na.includes(nb)) return 0.9;
 
   const bigrams = (s: string) => {
@@ -36,17 +34,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "환경변수 미설정: GOOGLE_API_KEY 또는 GOOGLE_DRIVE_FOLDER_ID" }, { status: 500 });
   }
 
-  try {
-    const params = new URLSearchParams({
-      key: apiKey,
-      q: `'${folderId}' in parents and (mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or mimeType='application/vnd.ms-excel') and trashed=false`,
-      fields: "files(id,name,modifiedTime,size)",
-      pageSize: "200",
-      orderBy: "modifiedTime desc",
-      supportsAllDrives: "true",
-      includeItemsFromAllDrives: "true",
-    });
+  // 공유 드라이브(Shared Drive) 포함 검색을 위한 파라미터
+  const params = new URLSearchParams({
+    key: apiKey,
+    q: `'${folderId}' in parents and trashed=false`,
+    fields: "files(id,name,modifiedTime,size,mimeType)",
+    pageSize: "200",
+    orderBy: "modifiedTime desc",
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+    corpora: "allDrives",
+  });
 
+  try {
     const res = await fetch(
       `https://www.googleapis.com/drive/v3/files?${params}`,
       { cache: "no-store" }
@@ -54,20 +54,24 @@ export async function GET(req: NextRequest) {
 
     if (!res.ok) {
       const err = await res.text();
-      return NextResponse.json({ error: `Drive API 오류: ${err}` }, { status: res.status });
+      return NextResponse.json({ error: `Drive API 오류 (${res.status}): ${err}` }, { status: res.status });
     }
 
     const data = await res.json();
-    const files: { id: string; name: string; modifiedTime: string; size?: string }[] =
-      data.files ?? [];
+    // xlsx/xls 만 필터
+    const all: { id: string; name: string; modifiedTime: string; size?: string; mimeType?: string }[] =
+      (data.files ?? []).filter((f: { mimeType?: string; name?: string }) =>
+        f.mimeType?.includes("spreadsheet") ||
+        f.mimeType?.includes("excel") ||
+        /\.(xlsx?|xls)$/i.test(f.name ?? "")
+      );
 
     if (!q) {
-      return NextResponse.json({ files: files.slice(0, 100) });
+      return NextResponse.json({ files: all.slice(0, 100), total: all.length });
     }
 
-    // 유사도 40% 이상, 높은 순 정렬
     const THRESHOLD = 0.4;
-    const scored = files
+    const scored = all
       .map((f) => {
         const nameNoExt = f.name.replace(/\.(xlsx?|xls)$/i, "");
         const score = similarity(q, nameNoExt);
@@ -76,7 +80,7 @@ export async function GET(req: NextRequest) {
       .filter((f) => f.score >= THRESHOLD)
       .sort((a, b) => b.score - a.score);
 
-    return NextResponse.json({ files: scored, total: files.length });
+    return NextResponse.json({ files: scored, total: all.length });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
