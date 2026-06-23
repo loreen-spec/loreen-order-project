@@ -706,10 +706,13 @@ function LabelDiagramSection({
 // ─── 섹션 헤더 ────────────────────────────────────────────
 function SectionCard({ title, sub, children, className }: { title: string; sub?: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-gray-100 bg-gray-50/60 px-5 py-5 ${className ?? ""}`}>
-      <div className="mb-4">
-        <div className="text-sm font-bold text-gray-700">{title}</div>
-        {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
+    <div className={`rounded-2xl border border-gray-200 bg-white shadow-sm px-6 py-5 ${className ?? ""}`}>
+      <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
+        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-pink-400 to-pink-300 shrink-0" />
+        <div>
+          <div className="text-sm font-bold text-gray-800">{title}</div>
+          {sub && <div className="text-[11px] text-gray-400 mt-0.5">{sub}</div>}
+        </div>
       </div>
       {children}
     </div>
@@ -728,17 +731,17 @@ function SectionHeader({ title, sub }: { title: string; sub?: string }) {
 // ─── 인풋 헬퍼 ───────────────────────────────────────────
 function Field({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
-    <div className="space-y-1">
-      <label className="block text-xs font-semibold text-gray-600">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+    <div className="space-y-1.5">
+      <label className="block text-xs font-semibold text-gray-500 tracking-wide">
+        {label}{required && <span className="text-pink-400 ml-0.5">*</span>}
       </label>
       {children}
     </div>
   );
 }
 
-const inputCls = "w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-indigo-100 transition";
-const selectCls = inputCls + " bg-white";
+const inputCls = "w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition placeholder:text-gray-300";
+const selectCls = inputCls;
 
 // ─── 드롭다운 + 직접입력 컴포넌트 ────────────────────────
 function SelectDropdown({
@@ -1337,7 +1340,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       </div>
 
       {/* ── 탭 콘텐츠 ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-gray-50/50 rounded-2xl p-5">
 
         {/* ── 1. 기본정보 ── */}
         {tab === "기본정보" && (
