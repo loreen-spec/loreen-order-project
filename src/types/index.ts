@@ -91,6 +91,8 @@ export interface WorkOrder {
   // Cost
   totalCost: string;
   salePrice: string;
+  laborCost: string;    // 공임비 (국내생산)
+  packagingCost: string; // 포장비 (국내생산)
 
   // 첨부파일 (PDF 미포함) — materialId로 원부자재 항목에 연결
   attachments?: {
