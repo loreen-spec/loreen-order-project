@@ -704,15 +704,18 @@ function LabelDiagramSection({
 }
 
 // ─── 섹션 헤더 ────────────────────────────────────────────
-function SectionCard({ title, sub, children, className }: { title: string; sub?: string; children: React.ReactNode; className?: string }) {
+function SectionCard({ title, sub, action, children, className }: { title: string; sub?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={`rounded-2xl border border-gray-200 bg-white shadow-sm px-6 py-5 ${className ?? ""}`}>
-      <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
-        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-pink-400 to-pink-300 shrink-0" />
-        <div>
-          <div className="text-sm font-bold text-gray-800">{title}</div>
-          {sub && <div className="text-[11px] text-gray-400 mt-0.5">{sub}</div>}
+      <div className="flex items-center justify-between gap-2.5 mb-5 pb-4 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
+          <div className="w-1 h-4 rounded-full bg-gradient-to-b from-pink-400 to-pink-300 shrink-0" />
+          <div>
+            <div className="text-sm font-bold text-gray-800">{title}</div>
+            {sub && <div className="text-[11px] text-gray-400 mt-0.5">{sub}</div>}
+          </div>
         </div>
+        {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
       </div>
       {children}
     </div>
@@ -1968,32 +1971,34 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
         {/* ── 3. 원부자재 ── */}
         {tab === "원부자재" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <SectionHeader title="원단 및 부자재" sub="요척, 단가, 발주단위 등을 입력하세요" />
-              <div className="flex items-center gap-2">
-                {/* 품종별 템플릿 자동입력 */}
-                <div className="flex items-center gap-1.5 px-3 py-2 border border-pink-200 rounded-xl bg-pink-50">
-                  <span className="text-xs text-pink-500 font-semibold whitespace-nowrap">✨ 품종 자동입력</span>
-                  <select
-                    value={templateType}
-                    onChange={(e) => {
-                      setTemplateType(e.target.value);
-                      if (e.target.value) applyTemplate(e.target.value);
-                    }}
-                    className="text-xs text-gray-600 bg-transparent focus:outline-none cursor-pointer"
-                  >
-                    <option value="">품종 선택</option>
-                    {Object.keys(MATERIAL_TEMPLATES).map((k) => (
-                      <option key={k} value={k}>{k}</option>
-                    ))}
-                  </select>
+            <SectionCard
+              title="원단 및 부자재"
+              sub="요척, 단가, 발주단위 등을 입력하세요"
+              action={
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-2 border border-pink-200 rounded-xl bg-pink-50">
+                    <span className="text-xs text-pink-500 font-semibold whitespace-nowrap">✨ 품종 자동입력</span>
+                    <select
+                      value={templateType}
+                      onChange={(e) => {
+                        setTemplateType(e.target.value);
+                        if (e.target.value) applyTemplate(e.target.value);
+                      }}
+                      className="text-xs text-gray-600 bg-transparent focus:outline-none cursor-pointer"
+                    >
+                      <option value="">품종 선택</option>
+                      {Object.keys(MATERIAL_TEMPLATES).map((k) => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button onClick={addMaterial}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
+                    <Plus size={14} />항목 추가
+                  </button>
                 </div>
-                <button onClick={addMaterial}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
-                  <Plus size={14} />항목 추가
-                </button>
-              </div>
-            </div>
+              }
+            >
 
             {wo.materials.length === 0 ? (
               <div className="border-2 border-dashed border-gray-200 rounded-2xl py-16 flex flex-col items-center text-center">
@@ -2201,12 +2206,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </table>
               </div>
             )}
+            </SectionCard>
           </div>
         )}
 
         {/* ── 4. 라벨·기타 ── */}
         {tab === "라벨·기타" && (
-          <div className="space-y-6">
+          <div className="space-y-4">
 
             {/* 라벨 체크 */}
             <div>
