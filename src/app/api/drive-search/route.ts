@@ -43,7 +43,6 @@ export async function GET(req: NextRequest) {
     orderBy: "modifiedTime desc",
     supportsAllDrives: "true",
     includeItemsFromAllDrives: "true",
-    corpora: "allDrives",
   });
 
   try {
