@@ -1009,37 +1009,44 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
     setAnalyzing(true);
     setAnalyzeResult(null);
     try {
-      // base64에서 헤더 제거 (data:image/jpeg;base64, 부분)
-      const base64 = wo.sketchImage.split(",")[1];
-      const mimeType = wo.sketchImage.split(";")[0].replace("data:", "") || "image/jpeg";
-      const res = await fetch("/api/analyze-sketch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, mimeType }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(JSON.stringify(data.error ?? data).slice(0, 200));
-      if (!Array.isArray(data.materials)) throw new Error("materials 없음: " + JSON.stringify(data).slice(0, 200));
-      // 기존 원부자재에 추가 (중복 카테고리 제외)
+      const base64 = wo.sketchImage.split(",")[1] ?? "";
+      const mimeType = wo.sketchImage.split(";")[0]?.replace("data:", "") || "image/jpeg";
+      let data: any = null;
+      try {
+        const res = await fetch("/api/analyze-sketch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64, mimeType }),
+        });
+        data = await res.json();
+        if (!res.ok || data?.error) throw new Error(String(data?.error ?? "API 오류"));
+      } catch (fetchErr: any) {
+        setAnalyzeResult(`❌ 분석 실패: ${fetchErr.message}`);
+        return;
+      }
+      if (!Array.isArray(data?.materials)) {
+        setAnalyzeResult("❌ 분석 실패: 응답 형식 오류");
+        return;
+      }
       const existingCats = new Set(wo.materials.map((m) => m.category));
       const newMats: WorkOrderMaterial[] = data.materials
-        .filter((m: any) => !existingCats.has(m.category))
+        .filter((m: any) => m?.category && !existingCats.has(m.category))
         .map((m: any) => ({
           id: crypto.randomUUID(),
-          category:  m.category  ?? "",
-          name:      m.name      ?? "",
-          color:     m.color     ?? "",
-          spec:      m.spec      ?? "",
-          yield:     m.yield     ?? "",
-          yieldUnit: m.yieldUnit ?? "YD",
-          unitPrice: m.unitPrice ?? "",
-          orderUnit: m.orderUnit ?? "",
-          notes:     m.notes     ?? "",
+          category:  String(m.category  ?? ""),
+          name:      String(m.name      ?? ""),
+          color:     String(m.color     ?? ""),
+          spec:      String(m.spec      ?? ""),
+          yield:     String(m.yield     ?? ""),
+          yieldUnit: String(m.yieldUnit ?? "YD"),
+          unitPrice: String(m.unitPrice ?? ""),
+          orderUnit: String(m.orderUnit ?? ""),
+          notes:     String(m.notes     ?? ""),
         }));
       setWo((w) => ({ ...w, materials: [...w.materials, ...newMats] }));
       setAnalyzeResult(`✅ ${newMats.length}개 항목 자동 추가됨. 원부자재 탭에서 확인·수정하세요.`);
     } catch (e: any) {
-      setAnalyzeResult(`❌ 분석 실패: ${e.message}`);
+      setAnalyzeResult(`❌ 오류: ${e?.message ?? String(e)}`);
     } finally {
       setAnalyzing(false);
     }
