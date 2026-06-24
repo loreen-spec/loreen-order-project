@@ -196,13 +196,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               </colgroup>
               <tbody>
                 <tr>
-                  <td style={td({ fontSize: FL, color: "#555", padding: "2px 5px", textAlign: "left" })}>
+                  <td style={td({ fontSize: FL, color: "#555", padding: "2px 5px", textAlign: "left", borderRight: "none" })}>
                     SAMPLE NO.&nbsp;<strong style={{ color: "#111" }}>{wo.sampleNo}</strong>
                   </td>
-                  <td style={td({ textAlign: "center", fontSize: "18pt", fontWeight: 900, letterSpacing: "6pt", padding: "4px" })}>
+                  <td style={td({ textAlign: "center", fontSize: "18pt", fontWeight: 900, letterSpacing: "6pt", padding: "4px", borderLeft: "none", borderRight: "none" })}>
                     작 업 지 시 서
                   </td>
-                  <td style={td({ textAlign: "center", verticalAlign: "middle", padding: "3px 6px" })}>
+                  <td style={td({ textAlign: "center", verticalAlign: "middle", padding: "3px 6px", borderLeft: "none" })}>
                     <img
                       src="/ozkiz-logo.png"
                       alt="OZKIZ"
@@ -224,17 +224,14 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             {/* ══ ROW 2: 제품정보 바 ══ */}
             <table style={{ tableLayout: "fixed", flexShrink: 0 }}>
               <colgroup>
-                <col style={{ width: "12%" }} />
+                <col style={{ width: "11%" }} />
                 <col style={{ width: "14%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "6%" }} />
-                <col style={{ width: "5.5%" }} />
+                <col style={{ width: "5%" }} />
                 <col style={{ width: "10%" }} />
-                <col style={{ width: "5.5%" }} />
                 <col style={{ width: "10%" }} />
-                <col style={{ width: "4%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "4%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "12%" }} />
                 <col />
               </colgroup>
               <tbody>
@@ -243,8 +240,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   <td style={lbl()}>상품명</td>
                   <td style={lbl()}>작업처</td>
                   <td style={lbl()}>차수</td>
-                  <td style={lbl()} rowSpan={2}>담당</td>
-                  <td style={td({ verticalAlign: "middle" })} rowSpan={2}>
+                  <td style={lbl()}>담당</td>
+                  <td style={lbl()}>실장</td>
+                  <td style={lbl()}>작성일</td>
+                  <td style={lbl()}>생산이관일</td>
+                  <td style={lbl()}>납품예정일</td>
+                </tr>
+                <tr>
+                  <td style={td({ fontSize: FL })}>{wo.styleNo}</td>
+                  <td style={td({ fontWeight: 700, fontSize: FX })}>{wo.productName}</td>
+                  <td style={td({ fontSize: FX })}>{wo.vendor}</td>
+                  <td style={td({ fontWeight: 900, fontSize: "10pt", color: "#1a56db" })}>{wo.orderCount}차</td>
+                  <td style={td({ verticalAlign: "middle" })}>
                     {(() => {
                       const m = wo.manager?.match(/^([^(]+)(\([^)]+\))?$/);
                       return m ? (
@@ -255,8 +262,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       ) : <div style={{ fontWeight: 700, fontSize: FX }}>{wo.manager}</div>;
                     })()}
                   </td>
-                  <td style={lbl()} rowSpan={2}>실장</td>
-                  <td style={td({ verticalAlign: "middle" })} rowSpan={2}>
+                  <td style={td({ verticalAlign: "middle" })}>
                     {(() => {
                       const m = wo.director?.match(/^([^(]+)(\([^)]+\))?$/);
                       return m ? (
@@ -267,18 +273,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       ) : <div style={{ fontWeight: 700, fontSize: FX }}>{wo.director}</div>;
                     })()}
                   </td>
-                  <td style={lbl()}>작성일</td>
                   <td style={td()}>{wo.issueDate}</td>
-                  <td style={lbl()}>생산이관일</td>
                   <td style={td()}>{wo.productionDate}</td>
-                </tr>
-                <tr>
-                  <td style={td({ fontSize: FL })}>{wo.styleNo}</td>
-                  <td style={td({ fontWeight: 700, fontSize: FX })}>{wo.productName}</td>
-                  <td style={td({ fontSize: FX })}>{wo.vendor}</td>
-                  <td style={td({ fontWeight: 900, fontSize: "10pt", color: "#1a56db" })}>{wo.orderCount}차</td>
-                  <td style={lbl()}>납품예정일</td>
-                  <td colSpan={3} style={td({ color: "#cc0000", fontWeight: 700 })}>{wo.deliveryDate}</td>
+                  <td style={td({ color: "#cc0000", fontWeight: 700 })}>{wo.deliveryDate}</td>
                 </tr>
               </tbody>
             </table>
