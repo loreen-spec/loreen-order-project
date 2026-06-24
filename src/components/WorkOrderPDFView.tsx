@@ -44,9 +44,9 @@ const S = {
 };
 const td  = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.cell, ...x });
 const lbl = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.lbl,  ...x });
-// 원부자재 전용 셀 — 행 고정 높이 내에서 텍스트 줄바꿈 허용, 세로 오버플로만 클리핑
+// 원부자재 전용 셀 — 줄바꿈 금지로 행 높이 균일 유지
 const matTd = (x?: React.CSSProperties): React.CSSProperties => ({
-  ...S.cell, overflow: "hidden", wordBreak: "break-all", lineHeight: 1.2, ...x,
+  ...S.cell, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...x,
 });
 
 function ImgBox({ src, label, style }: { src: string; label: string; style?: React.CSSProperties }) {
@@ -482,18 +482,17 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
                     <table style={{ width: "100%", height: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
                       <colgroup>
-                        <col style={{ width: "13%" }} />
-                        <col style={{ width: "17%" }} />
-                        <col style={{ width: "13%" }} />
+                        <col style={{ width: "12%" }} />
+                        <col style={{ width: "22%" }} />
+                        <col style={{ width: "12%" }} />
                         <col style={{ width: "8%" }} />
-                        <col style={{ width: "10%" }} />
                         <col style={{ width: "9%" }} />
+                        <col style={{ width: "8%" }} />
                         <col style={{ width: "9%" }} />
-                        <col style={{ width: "21%" }} />
+                        <col style={{ width: "20%" }} />
                       </colgroup>
                       <thead>
-                        {/* 헤더 1행 + 데이터 MAT_MIN_ROWS행 = MAT_MIN_ROWS+1행 균등 분배 */}
-                        <tr style={{ height: `${(100 / (MAT_MIN_ROWS + 1)).toFixed(2)}%` }}>
+                        <tr>
                           {["품목","자재명","색상","규격","요척","단가","원단발주","비고"].map((name) => (
                             <th key={name} style={lbl({ fontSize: matHdrFS })}>{name}</th>
                           ))}
@@ -501,7 +500,6 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       </thead>
                       <tbody>
                         {(() => {
-                          const rowH = `${(100 / (MAT_MIN_ROWS + 1)).toFixed(2)}%`;
                           const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
                             a.category === b.category && a.name === b.name;
                           const spans: number[] = wo.materials.map((m, i) => {
@@ -511,7 +509,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             return span;
                           });
                           return wo.materials.map((m, i) => (
-                            <tr key={i} style={{ height: rowH }}>
+                            <tr key={i}>
                               {spans[i] > 0 && (
                                 <td rowSpan={spans[i]} style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
                                   {m.category}
@@ -528,7 +526,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           ));
                         })()}
                         {Array.from({ length: emptyCount }).map((_, i) => (
-                          <tr key={`em${i}`} style={{ height: `${(100 / (MAT_MIN_ROWS + 1)).toFixed(2)}%` }}>
+                          <tr key={`em${i}`}>
                             {Array.from({ length: 8 }).map((__, j) => (
                               <td key={j} style={matTd({ padding: "0 2px" })}>&nbsp;</td>
                             ))}
@@ -541,9 +539,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   {/* 최종원가 — 항상 하단에 고정 표시 */}
                   <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", flexShrink: 0 }}>
                     <colgroup>
-                      <col style={{ width: "13%" }} /><col style={{ width: "17%" }} /><col style={{ width: "13%" }} />
-                      <col style={{ width: "8%" }} /><col style={{ width: "10%" }} />
-                      <col style={{ width: "9%" }} /><col style={{ width: "9%" }} /><col style={{ width: "21%" }} />
+                      <col style={{ width: "12%" }} /><col style={{ width: "22%" }} /><col style={{ width: "12%" }} />
+                      <col style={{ width: "8%" }} /><col style={{ width: "9%" }} />
+                      <col style={{ width: "8%" }} /><col style={{ width: "9%" }} /><col style={{ width: "20%" }} />
                     </colgroup>
                     <tbody>
                       <tr>
