@@ -188,34 +188,32 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
           }}>
 
             {/* ══ ROW 1: 타이틀 ══ */}
-            <table style={{ tableLayout: "fixed", flexShrink: 0 }}>
-              <colgroup>
-                <col style={{ width: "50%" }} />
-                <col style={{ width: "50%" }} />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <td style={td({ textAlign: "center", fontSize: "18pt", fontWeight: 900, letterSpacing: "6pt", padding: "4px", borderRight: "none" })}>
-                    작 업 지 시 서
-                  </td>
-                  <td style={td({ textAlign: "center", verticalAlign: "middle", padding: "3px 6px", borderLeft: "none" })}>
-                    <img
-                      src="/ozkiz-logo.png"
-                      alt="OZKIZ"
-                      style={{ height: "31px", maxWidth: "112px", objectFit: "contain", display: "inline-block" }}
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        target.style.display = "none";
-                        const span = document.createElement("span");
-                        span.style.cssText = "font-size:16pt;font-weight:900;color:#cc0000;letter-spacing:2pt";
-                        span.textContent = "OZKIZ";
-                        target.parentElement?.appendChild(span);
-                      }}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div style={{
+              ...S.cell,
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "4px",
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: "18pt", fontWeight: 900, letterSpacing: "6pt" }}>작 업 지 시 서</span>
+              <div style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)" }}>
+                <img
+                  src="/ozkiz-logo.png"
+                  alt="OZKIZ"
+                  style={{ height: "31px", maxWidth: "112px", objectFit: "contain", display: "inline-block" }}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = "none";
+                    const span = document.createElement("span");
+                    span.style.cssText = "font-size:16pt;font-weight:900;color:#cc0000;letter-spacing:2pt";
+                    span.textContent = "OZKIZ";
+                    target.parentElement?.appendChild(span);
+                  }}
+                />
+              </div>
+            </div>
 
             {/* ══ ROW 2: 제품정보 바 ══ */}
             <table style={{ tableLayout: "fixed", flexShrink: 0 }}>
@@ -289,7 +287,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   style={{ flex: "0 0 50%", minHeight: 0 }} />
 
                 <div style={{ display: "grid", gridTemplateColumns: "38% 1fr", gap: "2px", flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
-                  <ImgBox src={wo.productImage} label="제품사진" style={{ height: "100%" }} />
+                  <div style={{ ...S.cell, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
+                    <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>제품사진</div>
+                    <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa" }}>
+                      {wo.productImage
+                        ? <img src={wo.productImage} alt="제품사진" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                        : <span style={{ fontSize: "7pt", color: "#ccc" }}>제품사진</span>
+                      }
+                    </div>
+                  </div>
                   <div style={{ ...S.cell, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
                     <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>주의사항</div>
                     <div style={{
