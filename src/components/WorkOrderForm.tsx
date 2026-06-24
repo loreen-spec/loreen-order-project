@@ -2535,7 +2535,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             <textarea value={m.name}
                               onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
                               onKeyDown={(e) => {
-                                if (e.shiftKey && e.key === "Tab") {
+                                const isNewLine = (e.shiftKey && e.key === "Tab") || (e.altKey && e.key === "Enter");
+                                if (isNewLine) {
                                   e.preventDefault();
                                   const el = e.currentTarget;
                                   const { selectionStart: s, selectionEnd: end } = el;
