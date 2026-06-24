@@ -2638,6 +2638,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         </td>
                       </tr>
                     ))}
+                    {["메인라벨","케어라벨","취급주의라벨","가격택","품질보증택","폴리백"].map((name) => (
+                      <tr key={name} className="bg-gray-50">
+                        <td className="border border-gray-200 p-1" />
+                        <td className="border border-gray-200 px-2 py-1.5 text-xs text-gray-400 font-medium">{name}</td>
+                        <td colSpan={8} className="border border-gray-200 px-2 py-1.5 text-xs text-gray-300">기본 항목</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -2725,61 +2732,6 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
         {/* ── 4. 라벨·기타 ── */}
         {tab === "라벨·기타" && (
           <div className="space-y-4">
-
-            {/* 라벨 구성 */}
-            <SectionCard title="라벨 구성" sub="부착할 라벨/태그를 선택하세요">
-              <div className="grid grid-cols-4 gap-3">
-                {(Object.entries({
-                  main:         "메인라벨",
-                  care:         "케어라벨",
-                  reorderInfo:  "취급주의라벨",
-                  priceTag:     "가격택",
-                  qualityTag:   "품질보증택",
-                  polybag:      "폴리백",
-                  wappen:       "와펜",
-                  pointLabel:   "포인트라벨",
-                  artworkLabel: "아트웍라벨",
-                }) as [keyof WorkOrder["labels"], string][]).map(([key, label]) => (
-                  <label key={key}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
-                      wo.labels[key] ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-gray-50 hover:border-gray-300"
-                    }`}
-                  >
-                    <input type="checkbox" checked={wo.labels[key]}
-                      onChange={(e) => set("labels", { ...wo.labels, [key]: e.target.checked })}
-                      className="accent-pink-500" />
-                    <span className={`text-sm font-medium ${wo.labels[key] ? "text-pink-700" : "text-gray-600"}`}>{label}</span>
-                  </label>
-                ))}
-              </div>
-
-              {wo.customLabels.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {wo.customLabels.map((name, i) => (
-                    <div key={i} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-pink-400 bg-pink-50">
-                      <span className="text-sm font-medium text-pink-700">{name}</span>
-                      <button
-                        type="button"
-                        onClick={() => set("customLabels", wo.customLabels.filter((_, j) => j !== i))}
-                        className="text-indigo-300 hover:text-red-400 transition-colors ml-1"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-4 flex items-center gap-2">
-                <CustomLabelInput
-                  onAdd={(name) => {
-                    if (name && !wo.customLabels.includes(name)) {
-                      set("customLabels", [...wo.customLabels, name]);
-                    }
-                  }}
-                />
-              </div>
-            </SectionCard>
 
             {/* 라벨 위치 다이어그램 */}
             <SectionCard

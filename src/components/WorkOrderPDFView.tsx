@@ -135,10 +135,12 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     color: "#111",
   };
 
+  const FIXED_LABEL_ROWS = ["메인라벨", "케어라벨", "취급주의라벨", "가격택", "품질보증택", "폴리백"];
+
   /* 원부자재 행 계산 */
   const matCount   = wo.materials.length;
   const compact    = matCount > MAT_MIN_ROWS;
-  const emptyCount = compact ? 0 : MAT_MIN_ROWS - matCount;
+  const emptyCount = compact ? 0 : Math.max(0, MAT_MIN_ROWS - matCount - FIXED_LABEL_ROWS.length);
   const matRatio   = compact ? Math.max(0.6, MAT_MIN_ROWS / matCount) : 1;
   const rowPad     = compact ? `${Math.round(0.9 * matRatio)}px 2px` : "2.5px 2px";
   // 원부자재 셀 폰트: 비압축 시 8pt (FL보다 0.5pt 크게), 압축 시 비율 축소
@@ -222,11 +224,11 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 <col style={{ width: "14%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "4%" }} />
-                <col style={{ width: "26%" }} />
+                <col style={{ width: "27%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "11%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
               </colgroup>
               <tbody>
                 <tr>
@@ -530,6 +532,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             );
                           });
                         })()}
+                        {FIXED_LABEL_ROWS.map((name, i) => (
+                          <tr key={`fl${i}`}>
+                            <td style={matTd({ fontSize: matFS, padding: rowPad, background: "#f5f5f5" })}></td>
+                            <td style={matTd({ fontSize: matFS, padding: rowPad, background: "#f5f5f5" })}>{name}</td>
+                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
+                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
+                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
+                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
+                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
+                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
+                          </tr>
+                        ))}
                         {Array.from({ length: emptyCount }).map((_, i) => (
                           <tr key={`em${i}`}>
                             {Array.from({ length: 8 }).map((__, j) => (
