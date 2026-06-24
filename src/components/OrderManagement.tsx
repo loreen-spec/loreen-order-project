@@ -342,16 +342,20 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
 
   useEffect(() => { load(true); }, [load]);
 
-  const clothes  = useMemo(() => orders.filter((o) => o.board === "의류"), [orders]);
-  const shoes    = useMemo(() => orders.filter((o) => o.board === "슈즈"), [orders]);
-  const etc      = useMemo(() => orders.filter((o) => o.board !== "의류" && o.board !== "슈즈"), [orders]);
-  const totalQty = useMemo(() => orders.reduce((s, o) => s + o.totalQuantity, 0), [orders]);
+  // 현재 카테고리에 해당하는 발주만
+  const filteredOrders = useMemo(
+    () => categoryFilter ? orders.filter((o) => o.board === categoryFilter) : orders,
+    [orders, categoryFilter]
+  );
+  const clothes  = useMemo(() => filteredOrders.filter((o) => o.board === "의류"), [filteredOrders]);
+  const shoes    = useMemo(() => filteredOrders.filter((o) => o.board === "슈즈"), [filteredOrders]);
+  const totalQty = useMemo(() => filteredOrders.reduce((s, o) => s + o.totalQuantity, 0), [filteredOrders]);
 
   const summaryCards = useMemo(() => [
-    { label: "생산요청 총 건수", value: `${orders.length}건`,            icon: Package,   color: "text-indigo-600", bg: "bg-indigo-50" },
+    { label: "생산요청 총 건수", value: `${filteredOrders.length}건`,     icon: Package,   color: "text-indigo-600", bg: "bg-indigo-50" },
     { label: "총 발주 수량",     value: `${totalQty.toLocaleString()}장`, icon: Layers,    color: "text-violet-600", bg: "bg-violet-50" },
     { label: "업데이트",         value: lastUpdated?.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) ?? "—", icon: RefreshCw, color: "text-emerald-600", bg: "bg-emerald-50" },
-  ], [orders.length, totalQty, lastUpdated]);
+  ], [filteredOrders.length, totalQty, lastUpdated]);
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -406,7 +410,7 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
       {/* 카테고리별 보드 */}
       {loading ? (
         <div className="h-64 bg-white rounded-2xl animate-pulse" />
-      ) : orders.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-4xl mb-3">📋</div>
           <div className="font-medium text-gray-500 mb-1">생산 요청 중인 제품이 없어요</div>
