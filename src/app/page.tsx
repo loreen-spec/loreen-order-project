@@ -85,7 +85,7 @@ function WorkOrderSection({ initialPage, categoryFilter }: { initialPage: "list"
 // ─── 메인 앱 ──────────────────────────────────────────────
 export default function App() {
   const [activePage, setActivePage] = useState<SidebarPage>("작업지시서목록");
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("전체");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("의류");
 
   const PAGE_META: Record<SidebarPage, { title: string; sub: string }> = {
     "발주관리":       { title: "발주 관리",         sub: "진행 중인 발주 현황 관리" },

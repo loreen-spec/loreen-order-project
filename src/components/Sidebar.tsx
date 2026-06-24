@@ -13,7 +13,7 @@ export type SidebarPage =
   | "작업지시서목록"
   | "작업지시서작성";
 
-export type CategoryFilter = "전체" | "의류" | "슈즈";
+export type CategoryFilter = "의류" | "슈즈";
 
 interface Props {
   activePage: SidebarPage;
@@ -27,17 +27,14 @@ const NAV = [
     group: "WORK ORDER",
     icon: FileText,
     items: [
-      { key: "작업지시서작성" as SidebarPage, label: "새 작업지시서",    icon: PlusSquare  },
+      { key: "작업지시서작성" as SidebarPage, label: "작업지시서 작성",  icon: PlusSquare  },
       { key: "작업지시서목록" as SidebarPage, label: "작업지시서 목록",  icon: Archive     },
       { key: "발주관리"       as SidebarPage, label: "발주 관리",        icon: ClipboardList },
-      { key: "발주서작성"     as SidebarPage, label: "발주서 작성",      icon: FilePlus    },
-      { key: "발주이력"       as SidebarPage, label: "발주 이력",        icon: History     },
     ],
   },
 ];
 
 const CATEGORIES: { value: CategoryFilter; emoji: string; label: string }[] = [
-  { value: "전체", emoji: "🌟", label: "전체" },
   { value: "의류", emoji: "👗", label: "의류" },
   { value: "슈즈", emoji: "🩴", label: "슈즈" },
 ];
