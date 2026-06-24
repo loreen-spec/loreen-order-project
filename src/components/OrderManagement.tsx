@@ -250,16 +250,12 @@ const NewOrdersBulletin = memo(function NewOrdersBulletin({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 divide-x divide-gray-100">
-          {[1,2].map(i => (
-            <div key={i} className="p-3 space-y-1.5">
-              {[1,2,3].map(j => <div key={j} className="h-7 bg-gray-100 rounded-lg animate-pulse" />)}
-            </div>
-          ))}
+        <div className="p-3 space-y-1.5">
+          {[1,2,3].map(j => <div key={j} className="h-7 bg-gray-100 rounded-lg animate-pulse" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 divide-x divide-gray-100">
-          {(["의류", "슈즈"] as const).map((board) => {
+        <div className="divide-gray-100">
+          {(["의류", "슈즈"] as const).filter(board => !categoryFilter || board === categoryFilter).map((board) => {
             const items = recentProducts.filter(p => p.board === board);
             const bc = BULLETIN_BOARD_COLOR[board];
             return (
