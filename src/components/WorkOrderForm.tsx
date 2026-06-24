@@ -1745,7 +1745,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             <SectionCard title="제품 기본 정보" sub="스타일넘버, 품명, 작업처 등 기본 정보를 입력하세요">
               {/* 좌측: 입력 필드들 | 우측: 제품사진 */}
               <div className="flex gap-5">
-                <div className="flex-1 grid grid-cols-2 gap-4">
+                <div className="flex-1 min-w-0 grid grid-cols-2 gap-4">
                   <Field label="스타일넘버" required>
                     <input value={wo.styleNo} onChange={(e) => set("styleNo", e.target.value)}
                       placeholder="O26WJ07BC600" className={inputCls} />
@@ -1835,11 +1835,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </div>
 
                 {/* 우측: 제품 사진 */}
-                <div className="w-44 shrink-0 flex flex-col gap-2">
+                <div className="w-80 shrink-0 flex flex-col gap-2">
                   <div className="text-xs font-semibold text-gray-600">제품 사진</div>
                   {wo.productImage ? (
                     <div className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex-1">
-                      <img src={wo.productImage} alt="제품사진" className="w-full h-full object-contain" style={{ minHeight: "120px" }} />
+                      <img src={wo.productImage} alt="제품사진" className="w-full h-full object-contain" style={{ minHeight: "240px" }} />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
                         <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 text-xs font-medium rounded-lg shadow hover:bg-gray-50">
                           <Upload size={12} />교체
@@ -1854,7 +1854,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     </div>
                   ) : (
                     <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-pink-300 hover:bg-pink-50/30 transition-all flex-1"
-                      style={{ minHeight: "160px" }}
+                      style={{ minHeight: "240px" }}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload("productImage", f); }}>
                       <input type="file" accept="image/*" className="hidden"
