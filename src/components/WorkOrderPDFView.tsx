@@ -190,16 +190,12 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             {/* ══ ROW 1: 타이틀 ══ */}
             <table style={{ tableLayout: "fixed", flexShrink: 0 }}>
               <colgroup>
-                <col style={{ width: "28%" }} />
-                <col style={{ width: "44%" }} />
-                <col style={{ width: "28%" }} />
+                <col style={{ width: "50%" }} />
+                <col style={{ width: "50%" }} />
               </colgroup>
               <tbody>
                 <tr>
-                  <td style={td({ fontSize: FL, color: "#555", padding: "2px 5px", textAlign: "left", borderRight: "none" })}>
-                    SAMPLE NO.&nbsp;<strong style={{ color: "#111" }}>{wo.sampleNo}</strong>
-                  </td>
-                  <td style={td({ textAlign: "center", fontSize: "18pt", fontWeight: 900, letterSpacing: "6pt", padding: "4px", borderLeft: "none", borderRight: "none" })}>
+                  <td style={td({ textAlign: "center", fontSize: "18pt", fontWeight: 900, letterSpacing: "6pt", padding: "4px", borderRight: "none" })}>
                     작 업 지 시 서
                   </td>
                   <td style={td({ textAlign: "center", verticalAlign: "middle", padding: "3px 6px", borderLeft: "none" })}>
@@ -224,14 +220,14 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             {/* ══ ROW 2: 제품정보 바 ══ */}
             <table style={{ tableLayout: "fixed", flexShrink: 0 }}>
               <colgroup>
-                <col style={{ width: "11%" }} />
+                <col style={{ width: "10%" }} />
                 <col style={{ width: "14%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "5%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "10%" }} />
+                <col style={{ width: "4%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
                 <col style={{ width: "8%" }} />
-                <col style={{ width: "12%" }} />
                 <col />
               </colgroup>
               <tbody>
@@ -240,10 +236,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   <td style={lbl()}>상품명</td>
                   <td style={lbl()}>작업처</td>
                   <td style={lbl()}>차수</td>
+                  <td style={lbl()}>SAMPLE NO.</td>
                   <td style={lbl()}>담당</td>
                   <td style={lbl()}>실장</td>
                   <td style={lbl()}>작성일</td>
-                  <td style={lbl()}>생산이관일</td>
                   <td style={lbl()}>납품예정일</td>
                 </tr>
                 <tr>
@@ -251,6 +247,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   <td style={td({ fontWeight: 700, fontSize: FX })}>{wo.productName}</td>
                   <td style={td({ fontSize: FX })}>{wo.vendor}</td>
                   <td style={td({ fontWeight: 900, fontSize: "10pt", color: "#1a56db" })}>{wo.orderCount}차</td>
+                  <td style={td({ fontSize: FL })}>{wo.sampleNo}</td>
                   <td style={td({ verticalAlign: "middle" })}>
                     {(() => {
                       const m = wo.manager?.match(/^([^(]+)(\([^)]+\))?$/);
@@ -274,7 +271,6 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                     })()}
                   </td>
                   <td style={td()}>{wo.issueDate}</td>
-                  <td style={td()}>{wo.productionDate}</td>
                   <td style={td({ color: "#cc0000", fontWeight: 700 })}>{wo.deliveryDate}</td>
                 </tr>
               </tbody>
