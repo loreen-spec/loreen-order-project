@@ -44,9 +44,9 @@ const S = {
 };
 const td  = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.cell, ...x });
 const lbl = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.lbl,  ...x });
-// 원부자재 전용 셀 — 줄바꿈 금지로 행 높이 균일 유지
+// 원부자재 전용 셀 — 행 고정 높이 내에서 텍스트 줄바꿈 허용, 세로 오버플로만 클리핑
 const matTd = (x?: React.CSSProperties): React.CSSProperties => ({
-  ...S.cell, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...x,
+  ...S.cell, overflow: "hidden", wordBreak: "break-all", lineHeight: 1.2, ...x,
 });
 
 function ImgBox({ src, label, style }: { src: string; label: string; style?: React.CSSProperties }) {
@@ -492,7 +492,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <col style={{ width: "21%" }} />
                       </colgroup>
                       <thead>
-                        <tr>
+                        {/* 헤더 1행 + 데이터 MAT_MIN_ROWS행 = MAT_MIN_ROWS+1행 균등 분배 */}
+                        <tr style={{ height: `${(100 / (MAT_MIN_ROWS + 1)).toFixed(2)}%` }}>
                           {["품목","자재명","색상","규격","요척","단가","원단발주","비고"].map((name) => (
                             <th key={name} style={lbl({ fontSize: matHdrFS })}>{name}</th>
                           ))}
@@ -500,6 +501,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       </thead>
                       <tbody>
                         {(() => {
+                          const rowH = `${(100 / (MAT_MIN_ROWS + 1)).toFixed(2)}%`;
                           const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
                             a.category === b.category && a.name === b.name;
                           const spans: number[] = wo.materials.map((m, i) => {
@@ -509,7 +511,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             return span;
                           });
                           return wo.materials.map((m, i) => (
-                            <tr key={i}>
+                            <tr key={i} style={{ height: rowH }}>
                               {spans[i] > 0 && (
                                 <td rowSpan={spans[i]} style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
                                   {m.category}
@@ -526,7 +528,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           ));
                         })()}
                         {Array.from({ length: emptyCount }).map((_, i) => (
-                          <tr key={`em${i}`}>
+                          <tr key={`em${i}`} style={{ height: `${(100 / (MAT_MIN_ROWS + 1)).toFixed(2)}%` }}>
                             {Array.from({ length: 8 }).map((__, j) => (
                               <td key={j} style={matTd({ padding: "0 2px" })}>&nbsp;</td>
                             ))}
