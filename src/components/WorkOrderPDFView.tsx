@@ -222,11 +222,11 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 <col style={{ width: "14%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "4%" }} />
-                <col style={{ width: "16%" }} />
+                <col style={{ width: "26%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "8%" }} />
-                <col />
+                <col style={{ width: "11%" }} />
               </colgroup>
               <tbody>
                 <tr>
