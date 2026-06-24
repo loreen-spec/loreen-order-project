@@ -110,7 +110,7 @@ export default function App() {
             </div>
           )}
 
-          {activePage === "발주관리"   && <OrderManagement />}
+          {activePage === "발주관리"   && <OrderManagement categoryFilter={categoryFilter} />}
           {activePage === "발주서작성" && <ComingSoon title="발주서 작성" icon={FilePlus} />}
           {activePage === "발주이력"   && <ComingSoon title="발주 이력" icon={History} />}
 

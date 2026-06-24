@@ -313,7 +313,7 @@ function readClientCache(): OrderProduct[] | null {
 }
 
 // ── 메인
-export default function OrderManagement() {
+export default function OrderManagement({ categoryFilter }: { categoryFilter?: "의류" | "슈즈" }) {
   const [orders, setOrders]     = useState<OrderProduct[]>([]);
   const [loading, setLoading]   = useState(true);
   const [fetching, setFetching] = useState(false);
@@ -402,11 +402,9 @@ export default function OrderManagement() {
         </div>
       )}
 
-      {/* 의류 / 슈즈 좌우 분할 */}
+      {/* 카테고리별 보드 */}
       {loading ? (
-        <div className="grid grid-cols-2 gap-4">
-          {[1,2].map((i) => <div key={i} className="h-64 bg-white rounded-2xl animate-pulse" />)}
-        </div>
+        <div className="h-64 bg-white rounded-2xl animate-pulse" />
       ) : orders.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-4xl mb-3">📋</div>
@@ -414,13 +412,12 @@ export default function OrderManagement() {
           <div className="text-xs">노션에서 진행상태를 "생산 요청(국내/해외)"로 변경하면 자동으로 표시됩니다</div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-          <BoardPanel board="의류" products={clothes} />
-          <BoardPanel board="슈즈" products={shoes} />
-          {etc.length > 0 && (
-            <div className="col-span-2">
-              <BoardPanel board="잡화" products={etc} />
-            </div>
+        <div className="flex-1 min-h-0">
+          {(!categoryFilter || categoryFilter === "의류") && (
+            <BoardPanel board="의류" products={clothes} />
+          )}
+          {(!categoryFilter || categoryFilter === "슈즈") && (
+            <BoardPanel board="슈즈" products={shoes} />
           )}
         </div>
       )}
