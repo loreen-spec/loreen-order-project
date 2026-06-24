@@ -499,8 +499,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       </thead>
                       <tbody>
                         {(() => {
-                          const userMats  = wo.materials.filter(m => !m.fixed);
-                          const fixedMats = wo.materials.filter(m =>  m.fixed);
+                          // fixed 플래그가 없는 구버전 데이터 호환 — 이름으로 고정 행 판별
+                          const FIXED_NAMES = ["메인라벨","케어라벨","취급주의라벨","가격택","품질보증택","폴리백"];
+                          const hasFixedFlag = wo.materials.some(m => m.fixed);
+                          const isFixed = (m: typeof wo.materials[0]) =>
+                            hasFixedFlag ? !!m.fixed : FIXED_NAMES.includes(m.name);
+                          const userMats  = wo.materials.filter(m => !isFixed(m));
+                          const fixedMats = wo.materials.filter(m =>  isFixed(m));
                           const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
                             a.category === b.category && a.name === b.name;
                           const spans: number[] = userMats.map((m, i) => {
@@ -534,15 +539,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           return [
                             // 1) 사용자 추가 행
                             ...userMats.map((m, i) => renderRow(m, i, spans)),
-                            // 2) 빈 행
+                            // 2) 빈 행 (고정 행들 아래로 밀어내는 여백)
                             ...Array.from({ length: userEmptyCount }, (_, i) => (
                               <tr key={`em${i}`}>
                                 {Array.from({ length: 8 }).map((__, j) => (
-                                  <td key={j} style={matTd({ padding: "0 2px" })}>&nbsp;</td>
+                                  <td key={j} style={matTd({ padding: rowPad })}>&nbsp;</td>
                                 ))}
                               </tr>
                             )),
-                            // 3) 고정 라벨 행 (항상 하단)
+                            // 3) 고정 라벨 행 — 항상 표 맨 하단
                             ...fixedMats.map((m, i) => renderRow(m, i, fixedMats.map(() => 1))),
                           ];
                         })()}
