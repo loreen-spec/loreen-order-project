@@ -74,6 +74,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const sizes = wo.sizes || [];
   const colTotal = (sz: string) => wo.colorSizeTable.reduce((s, r) => s + (r.sizes[sz] || 0), 0);
 
+  // COL B flex 비율: 컬러 수에 따라 발주표 높이 동적 계산
+  const _colorRows      = wo.colorSizeTable.length;
+  const _colorTotalRows = Math.max(6, _colorRows + 2);  // 헤더+데이터+합계, 최소 6
+  const colBColorFlex   = _colorTotalRows * 3;           // 3 flex = 1행
+  const colBLabelFlex   = 14;
+  const colBSpecFlex    = Math.max(50, 110 - colBColorFlex - colBLabelFlex);
+
   // 선택된 라벨 다이어그램 이미지 로드 (브라우저에서만)
   const [selectedLabelImages, setSelectedLabelImages] = useState<{ name: string; group: string; imageData: string }[]>([]);
   useEffect(() => {
@@ -329,11 +336,11 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 {(() => {
                   const SPEC_MIN = 15;
                   const filled = wo.measurements.filter(m => m.item);
-                  // 빈 줄은 헤더 행을 제외한 실제 데이터 행 기준으로 계산
                   const dataRows = filled.filter(m => !m.isHeader).length;
                   const emptyRows = Math.max(0, SPEC_MIN - dataRows);
+                  // 컬러 수에 따라 발주표 높이 동적 계산 (헤더+데이터+합계 = colorRows+2)
                   return (
-                    <div style={{ flex: "78 0 0", overflow: "hidden", minHeight: 0 }}>
+                    <div style={{ flex: `${colBSpecFlex} 0 0`, overflow: "hidden", minHeight: 0 }}>
                       <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
                         <thead>
                           <tr>
@@ -382,7 +389,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   );
                 })()}
 
-                <div style={{ flex: "18 0 0", minHeight: 0 }}>
+                <div style={{ flex: `${colBColorFlex} 0 0`, minHeight: 0 }}>
                   <table style={{ width: "100%", height: "100%" }}>
                     <thead>
                       <tr>
@@ -432,7 +439,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   const colPct = `${(100 / cols).toFixed(1)}%`;
                   return (
                     <div style={{
-                      flex: "14 0 0", minHeight: 0,
+                      flex: `${colBLabelFlex} 0 0`, minHeight: 0,
                       border: ".3pt solid #888", background: "#fafafa",
                       display: "flex", flexDirection: "row",
                       alignItems: "stretch",
