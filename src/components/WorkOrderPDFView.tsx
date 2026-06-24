@@ -128,7 +128,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const matCount   = wo.materials.length;
   const compact    = matCount > MAT_MIN_ROWS;           // 20줄 초과 시 압축
   const emptyCount = compact ? 0 : MAT_MIN_ROWS - matCount;
-  const rowPad     = compact ? "0.8px 2px" : "2.5px 2px";
+  // 20줄 초과 시 행 높이·폰트 비율 축소 (20줄 기준, 최소 0.6)
+  const matRatio   = compact ? Math.max(0.6, MAT_MIN_ROWS / matCount) : 1;
+  const rowPad     = compact ? `${Math.round(0.8 * matRatio)}px 2px` : "2.5px 2px";
+  const matFS      = compact ? `${(parseFloat(FS) * matRatio).toFixed(1)}pt` : FL;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto py-6 px-4">
@@ -460,9 +463,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               {/* ── COL C: 원부자재 / 라벨체크 / 업체 ── */}
               <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
 
-                {/* 원부자재 테이블 — 항상 20줄 고정 */}
-                <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
-                  <table style={{ width: "100%", height: "100%", tableLayout: "fixed" }}>
+                {/* 원부자재 테이블 — 20줄 고정 영역, 초과 시 폰트/패딩 축소 */}
+                <div style={{ flexShrink: 0, overflow: "hidden" }}>
+                  <table style={{ width: "100%", tableLayout: "fixed" }}>
                     <colgroup>
                       <col style={{ width: "13%" }} />
                       <col style={{ width: "17%" }} />
@@ -494,31 +497,26 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         return wo.materials.map((m, i) => (
                           <tr key={i}>
                             {spans[i] > 0 && (
-                              <td rowSpan={spans[i]} style={td({ fontSize: compact ? FS : FM, padding: rowPad, verticalAlign: "middle" })}>
+                              <td rowSpan={spans[i]} style={td({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
                                 {m.category}
                               </td>
                             )}
-                            <td style={td({ fontSize: compact ? FS : FL, padding: rowPad })}>{m.name}</td>
-                            <td style={td({ fontSize: compact ? FS : FL, padding: rowPad })}>{m.color}</td>
-                            <td style={td({ fontSize: compact ? FS : FL, padding: rowPad })}>{m.spec}</td>
-                            <td style={td({ fontSize: compact ? FS : FL, padding: rowPad })}>{m.yield}</td>
-                            <td style={td({ fontSize: compact ? FS : FL, padding: rowPad })}>{m.unitPrice}</td>
-                            <td style={td({ fontSize: compact ? FS : FL, padding: rowPad })}>{m.orderUnit}</td>
-                            <td style={td({ fontSize: compact ? FS : FL, padding: rowPad, textAlign: "left" })}>{m.notes}</td>
+                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.name}</td>
+                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.color}</td>
+                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.spec}</td>
+                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
+                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.unitPrice}</td>
+                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.orderUnit}</td>
+                            <td style={td({ fontSize: matFS, padding: rowPad, textAlign: "left" })}>{m.notes}</td>
                           </tr>
                         ));
                       })()}
-                      {/* 빈 행으로 20줄 채우기 */}
+                      {/* 빈 행으로 20줄 채우기 — 고정 높이 14px/행 */}
                       {Array.from({ length: emptyCount }).map((_, i) => (
-                        <tr key={`em${i}`}>
-                          <td style={td({ padding: "2.5px 2px" })}>&nbsp;</td>
-                          <td style={td({ padding: "2.5px 2px" })}></td>
-                          <td style={td({ padding: "2.5px 2px" })}></td>
-                          <td style={td({ padding: "2.5px 2px" })}></td>
-                          <td style={td({ padding: "2.5px 2px" })}></td>
-                          <td style={td({ padding: "2.5px 2px" })}></td>
-                          <td style={td({ padding: "2.5px 2px" })}></td>
-                          <td style={td({ padding: "2.5px 2px" })}></td>
+                        <tr key={`em${i}`} style={{ height: "14px" }}>
+                          {Array.from({ length: 8 }).map((__, j) => (
+                            <td key={j} style={td({ padding: "0 2px" })}>&nbsp;</td>
+                          ))}
                         </tr>
                       ))}
                     </tbody>
