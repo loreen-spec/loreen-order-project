@@ -126,12 +126,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
   /* 원부자재 행 계산 */
   const matCount   = wo.materials.length;
-  const compact    = matCount > MAT_MIN_ROWS;           // 20줄 초과 시 압축
+  const compact    = matCount > MAT_MIN_ROWS;
   const emptyCount = compact ? 0 : MAT_MIN_ROWS - matCount;
-  // 20줄 초과 시 행 높이·폰트 비율 축소 (20줄 기준, 최소 0.6)
   const matRatio   = compact ? Math.max(0.6, MAT_MIN_ROWS / matCount) : 1;
-  const rowPad     = compact ? `${Math.round(0.8 * matRatio)}px 2px` : "2.5px 2px";
-  const matFS      = compact ? `${(parseFloat(FS) * matRatio).toFixed(1)}pt` : FL;
+  const rowPad     = compact ? `${Math.round(0.9 * matRatio)}px 2px` : "2.5px 2px";
+  // 원부자재 셀 폰트: 비압축 시 8pt (FL보다 0.5pt 크게), 압축 시 비율 축소
+  const matFS      = compact ? `${(8 * matRatio).toFixed(1)}pt` : "8pt";
+  const matHdrFS   = compact ? `${(7 * matRatio).toFixed(1)}pt` : "7pt";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto py-6 px-4">
@@ -377,7 +378,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   );
                 })()}
 
-                <div style={{ flex: "14 0 0", minHeight: 0 }}>
+                <div style={{ flex: "18 0 0", minHeight: 0 }}>
                   <table style={{ width: "100%", height: "100%" }}>
                     <thead>
                       <tr>
@@ -400,9 +401,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       ))}
                       {Array.from({ length: Math.max(0, 4 - wo.colorSizeTable.length) }).map((_, i) => (
                         <tr key={`e${i}`}>
-                          <td style={td({ padding: "2px 2px" })}>&nbsp;</td>
-                          {sizes.map(s => <td key={s} style={td({ padding: "2px" })}></td>)}
-                          <td style={td({ padding: "2px" })}></td>
+                          <td style={td({ padding: "1.5px 2px" })}>&nbsp;</td>
+                          {sizes.map(s => <td key={s} style={td({ padding: "1.5px" })}></td>)}
+                          <td style={td({ padding: "1.5px" })}></td>
                         </tr>
                       ))}
                     </tbody>
@@ -427,7 +428,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   const colPct = `${(100 / cols).toFixed(1)}%`;
                   return (
                     <div style={{
-                      flex: "18 0 0", minHeight: 0,
+                      flex: "14 0 0", minHeight: 0,
                       border: ".3pt solid #888", background: "#fafafa",
                       display: "flex", flexDirection: "row",
                       alignItems: "stretch",
@@ -463,74 +464,86 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               {/* ── COL C: 원부자재(박스1) / 라벨(박스2) / 업체(박스3) ── */}
               <div style={{ display: "flex", flexDirection: "column", gap: "2px", minHeight: 0 }}>
 
-                {/* ── 박스1: 원부자재 테이블 — 전체의 약 57% 고정, 20줄 초과 시 폰트/패딩 축소 ── */}
+                {/* ── 박스1: 원부자재 테이블 + 최종원가 (57% 고정) ── */}
                 <div style={{ flex: "0 0 57%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                  <table style={{ width: "100%", height: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
-                    <colgroup>
-                      <col style={{ width: "13%" }} />
-                      <col style={{ width: "17%" }} />
-                      <col style={{ width: "13%" }} />
-                      <col style={{ width: "8%" }} />
-                      <col style={{ width: "10%" }} />
-                      <col style={{ width: "9%" }} />
-                      <col style={{ width: "9%" }} />
-                      <col style={{ width: "21%" }} />
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        {["품목","자재명","색상","규격","요척","단가","원단발주","비고"].map((name) => (
-                          <th key={name} style={lbl()}>{name}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
-                          a.category === b.category && a.name === b.name;
-                        const spans: number[] = wo.materials.map((m, i) => {
-                          if (i > 0 && sameGroup(wo.materials[i - 1], m)) return 0;
-                          let span = 1;
-                          while (i + span < wo.materials.length && sameGroup(m, wo.materials[i + span])) span++;
-                          return span;
-                        });
-                        return wo.materials.map((m, i) => (
-                          <tr key={i}>
-                            {spans[i] > 0 && (
-                              <td rowSpan={spans[i]} style={td({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
-                                {m.category}
-                              </td>
-                            )}
-                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.name}</td>
-                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.color}</td>
-                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.spec}</td>
-                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
-                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.unitPrice}</td>
-                            <td style={td({ fontSize: matFS, padding: rowPad })}>{m.orderUnit}</td>
-                            <td style={td({ fontSize: matFS, padding: rowPad, textAlign: "left" })}>{m.notes}</td>
-                          </tr>
-                        ));
-                      })()}
-                      {/* 빈 행 — height:100%로 남은 공간 균등 분배 */}
-                      {Array.from({ length: emptyCount }).map((_, i) => (
-                        <tr key={`em${i}`}>
-                          {Array.from({ length: 8 }).map((__, j) => (
-                            <td key={j} style={td({ padding: "0 2px" })}>&nbsp;</td>
+
+                  {/* 원부자재 데이터 — 남은 공간 채움 */}
+                  <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+                    <table style={{ width: "100%", height: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
+                      <colgroup>
+                        <col style={{ width: "13%" }} />
+                        <col style={{ width: "17%" }} />
+                        <col style={{ width: "13%" }} />
+                        <col style={{ width: "8%" }} />
+                        <col style={{ width: "10%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "21%" }} />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          {["품목","자재명","색상","규격","요척","단가","원단발주","비고"].map((name) => (
+                            <th key={name} style={lbl({ fontSize: matHdrFS })}>{name}</th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                    {/* 최종원가 푸터 */}
-                    <tfoot>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
+                            a.category === b.category && a.name === b.name;
+                          const spans: number[] = wo.materials.map((m, i) => {
+                            if (i > 0 && sameGroup(wo.materials[i - 1], m)) return 0;
+                            let span = 1;
+                            while (i + span < wo.materials.length && sameGroup(m, wo.materials[i + span])) span++;
+                            return span;
+                          });
+                          return wo.materials.map((m, i) => (
+                            <tr key={i}>
+                              {spans[i] > 0 && (
+                                <td rowSpan={spans[i]} style={td({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
+                                  {m.category}
+                                </td>
+                              )}
+                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.name}</td>
+                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.color}</td>
+                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.spec}</td>
+                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
+                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.unitPrice}</td>
+                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.orderUnit}</td>
+                              <td style={td({ fontSize: matFS, padding: rowPad, textAlign: "left" })}>{m.notes}</td>
+                            </tr>
+                          ));
+                        })()}
+                        {Array.from({ length: emptyCount }).map((_, i) => (
+                          <tr key={`em${i}`}>
+                            {Array.from({ length: 8 }).map((__, j) => (
+                              <td key={j} style={td({ padding: "0 2px" })}>&nbsp;</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 최종원가 — 항상 하단에 고정 표시 */}
+                  <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", flexShrink: 0 }}>
+                    <colgroup>
+                      <col style={{ width: "13%" }} /><col style={{ width: "17%" }} /><col style={{ width: "13%" }} />
+                      <col style={{ width: "8%" }} /><col style={{ width: "10%" }} />
+                      <col style={{ width: "9%" }} /><col style={{ width: "9%" }} /><col style={{ width: "21%" }} />
+                    </colgroup>
+                    <tbody>
                       <tr>
-                        <td colSpan={5} style={{ ...S.cell, background: "#f0f4ff", fontWeight: 800, fontSize: FL, letterSpacing: "0.5pt" }}>
+                        <td colSpan={5} style={{ ...S.cell, background: "#f0f4ff", fontWeight: 800, fontSize: FL, letterSpacing: "0.5pt", padding: "2.5px 2px" }}>
                           최종원가
                         </td>
-                        <td colSpan={3} style={{ ...S.cell, background: "#f0f4ff", fontWeight: 900, color: "#1a56db", fontSize: FX }}>
+                        <td colSpan={3} style={{ ...S.cell, background: "#f0f4ff", fontWeight: 900, color: "#1a56db", fontSize: FX, padding: "2.5px 2px" }}>
                           {wo.totalCost}
                         </td>
                       </tr>
-                    </tfoot>
+                    </tbody>
                   </table>
+
                 </div>
 
                 {/* ── 박스2: 라벨 체크 ── */}
@@ -589,8 +602,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   ];
                   const border = "1px solid #e5e7eb";
                   return (
-                    <div style={{ flexShrink: 0, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <div style={{ flex: 1, border: "1px solid #e5e7eb", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <table style={{ width: "100%", height: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                         <colgroup>
                           <col style={{ width: "16%" }} />
                           <col style={{ width: "24%" }} />
@@ -601,18 +614,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <thead>
                           <tr style={{ background: "#f3f4f6" }}>
                             {["종류", "업체명", "담당자", "연락처", "비고"].map((h) => (
-                              <th key={h} style={{ border, padding: rowPad, fontWeight: 700, textAlign: "center", fontSize: matFS }}>{h}</th>
+                              <th key={h} style={{ border, padding: "2.5px 3px", fontWeight: 700, textAlign: "center", fontSize: FL }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {displayRows.map((row) => (
                             <tr key={row.id}>
-                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.materialType}</td>
-                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.vendorName}</td>
-                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{(row as any).manager ?? ""}</td>
-                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.contact}</td>
-                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.notes}</td>
+                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.materialType}</td>
+                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.vendorName}</td>
+                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{(row as any).manager ?? ""}</td>
+                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.contact}</td>
+                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.notes}</td>
                             </tr>
                           ))}
                         </tbody>
