@@ -65,7 +65,7 @@ function ImgBox({ src, label, style }: { src: string; label: string; style?: Rea
 }
 
 /* 원부자재 최소 표시 행 수 */
-const MAT_MIN_ROWS = 23;
+const MAT_MIN_ROWS = 25;
 
 interface LabelPreset { id: string; group: string; name: string; imageData?: string; }
 
@@ -135,10 +135,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     color: "#111",
   };
 
-  /* 원부자재 행 계산 */
+  /* 원부자재 행 계산 — 25줄 초과 시 행 간격 자동 축소 */
   const matCount   = wo.materials.length;
-  const compact    = false;  // 항상 균일한 행 높이 유지
-  const emptyCount = Math.max(0, MAT_MIN_ROWS - matCount);
+  const compact    = matCount > MAT_MIN_ROWS;
+  const emptyCount = compact ? 0 : MAT_MIN_ROWS - matCount;
   const matRatio   = compact ? Math.max(0.6, MAT_MIN_ROWS / matCount) : 1;
   const rowPad     = compact ? `${Math.round(0.9 * matRatio)}px 2px` : "2.5px 2px";
   // 원부자재 셀 폰트: 비압축 시 8pt (FL보다 0.5pt 크게), 압축 시 비율 축소
@@ -471,11 +471,11 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
               </div>
 
-              {/* ── COL C: 원부자재(박스1) / 라벨(박스2) / 업체(박스3) ── */}
+              {/* ── COL C: 원부자재(박스1) / 업체(박스2) ── */}
               <div style={{ display: "flex", flexDirection: "column", gap: "2px", minHeight: 0 }}>
 
-                {/* ── 박스1: 원부자재 테이블 + 최종원가 (57% 고정) ── */}
-                <div style={{ flex: "0 0 57%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                {/* ── 박스1: 원부자재 테이블 + 최종원가 (나머지 공간 전부) ── */}
+                <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
 
                   {/* 원부자재 데이터 — 남은 공간 채움 */}
                   <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
@@ -562,43 +562,43 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
                 </div>
 
-                {/* ── 박스2: 원부자재 업체 정보 — 4줄 고정, 원부자재 표와 동일 간격 ── */}
+                {/* ── 박스2: 원부자재 업체 정보 — 4줄 고정 ── */}
                 {(() => {
                   const rows = wo.vendorInfoTable ?? [];
-                  const VENDOR_ROWS = 3;
+                  const VENDOR_ROWS = 4;
                   const displayRows = rows.length >= VENDOR_ROWS ? rows.slice(0, VENDOR_ROWS) : [
                     ...rows,
                     ...Array.from({ length: VENDOR_ROWS - rows.length }, (_, i) => ({
                       id: `empty-${i}`, materialType: "", vendorName: "", manager: "", contact: "", notes: "",
                     })),
                   ];
-                  const border = "1px solid #e5e7eb";
-                  const vPad = "1px 3px";
+                  const border = ".3pt solid #888";
+                  const vPad = "0.5px 3px";
                   return (
-                    <div style={{ flexShrink: 0, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <div style={{ flexShrink: 0, overflow: "hidden" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                         <colgroup>
                           <col style={{ width: "16%" }} />
                           <col style={{ width: "24%" }} />
                           <col style={{ width: "18%" }} />
                           <col style={{ width: "24%" }} />
-                          <col style={{ width: "18%" }} />
+                          <col />
                         </colgroup>
                         <thead>
-                          <tr style={{ background: "#f3f4f6" }}>
+                          <tr>
                             {["종류", "업체명", "담당자", "연락처", "비고"].map((h) => (
-                              <th key={h} style={{ border, padding: vPad, fontWeight: 700, textAlign: "center", fontSize: FM }}>{h}</th>
+                              <th key={h} style={lbl({ padding: vPad, fontSize: FM })}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {displayRows.map((row) => (
                             <tr key={row.id}>
-                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.materialType}</td>
-                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.vendorName}</td>
-                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{(row as any).manager ?? ""}</td>
-                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.contact}</td>
-                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.notes}</td>
+                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.materialType}</td>
+                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.vendorName}</td>
+                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{(row as any).manager ?? ""}</td>
+                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.contact}</td>
+                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.notes}</td>
                             </tr>
                           ))}
                         </tbody>
