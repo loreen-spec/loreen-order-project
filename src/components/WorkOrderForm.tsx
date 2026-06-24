@@ -2503,7 +2503,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                 }}
                                 onBlur={() => setTimeout(() => setNameOpen(null), 150)}
                                 onKeyDown={(e) => {
-                                  if (e.shiftKey && e.key === "Tab") {
+                                  const isNewLine = (e.shiftKey && e.key === "Tab") || (e.altKey && e.key === "Enter");
+                                  if (isNewLine) {
                                     e.preventDefault();
                                     const el = e.currentTarget;
                                     const { selectionStart: s, selectionEnd: end } = el;

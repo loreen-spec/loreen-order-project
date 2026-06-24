@@ -508,29 +508,28 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             while (i + span < wo.materials.length && sameGroup(m, wo.materials[i + span])) span++;
                             return span;
                           });
-                          return wo.materials.map((m, i) => (
-                            <tr key={i}>
-                              {spans[i] > 0 && (
-                                <td rowSpan={spans[i]} style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
-                                  {m.category}
-                                </td>
-                              )}
-                              <td style={matTd({
-                                fontSize: m.name.includes("\n")
-                                  ? `${(parseFloat(matFS) * (1 / m.name.split("\n").length) * 1.6).toFixed(1)}pt`
-                                  : matFS,
-                                padding: rowPad,
-                                whiteSpace: "pre-line",
-                                lineHeight: 1.25,
-                              })}>{m.name}</td>
-                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.color}</td>
-                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.spec}</td>
-                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
-                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.unitPrice}</td>
-                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.orderUnit}</td>
-                              <td style={matTd({ fontSize: matFS, padding: rowPad, textAlign: "left" })}>{m.notes}</td>
-                            </tr>
-                          ));
+                          return wo.materials.map((m, i) => {
+                            // 자재명 줄 수에 맞게 폰트 비례 축소 → 행 높이 균일 유지
+                            const lines = m.name.split("\n").length;
+                            const rFS   = lines > 1 ? `${(parseFloat(matFS) / lines).toFixed(1)}pt` : matFS;
+                            const rPad  = lines > 1 ? `0px 2px` : rowPad;
+                            return (
+                              <tr key={i}>
+                                {spans[i] > 0 && (
+                                  <td rowSpan={spans[i]} style={matTd({ fontSize: rFS, padding: rPad, verticalAlign: "middle" })}>
+                                    {m.category}
+                                  </td>
+                                )}
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "pre-line", lineHeight: 1.25 })}>{m.name}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.color}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.spec}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.unitPrice}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.orderUnit}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left" })}>{m.notes}</td>
+                              </tr>
+                            );
+                          });
                         })()}
                         {Array.from({ length: emptyCount }).map((_, i) => (
                           <tr key={`em${i}`}>
@@ -611,7 +610,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 {/* ── 박스3: 원부자재 업체 정보 — 4줄 고정, 원부자재 표와 동일 간격 ── */}
                 {(() => {
                   const rows = wo.vendorInfoTable ?? [];
-                  const VENDOR_ROWS = 4;
+                  const VENDOR_ROWS = 3;
                   const displayRows = rows.length >= VENDOR_ROWS ? rows.slice(0, VENDOR_ROWS) : [
                     ...rows,
                     ...Array.from({ length: VENDOR_ROWS - rows.length }, (_, i) => ({
@@ -619,9 +618,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                     })),
                   ];
                   const border = "1px solid #e5e7eb";
+                  const vPad = "1px 3px";
                   return (
-                    <div style={{ flex: 1, border: "1px solid #e5e7eb", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                      <table style={{ width: "100%", height: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <div style={{ flexShrink: 0, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                         <colgroup>
                           <col style={{ width: "16%" }} />
                           <col style={{ width: "24%" }} />
@@ -632,18 +632,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <thead>
                           <tr style={{ background: "#f3f4f6" }}>
                             {["종류", "업체명", "담당자", "연락처", "비고"].map((h) => (
-                              <th key={h} style={{ border, padding: "2.5px 3px", fontWeight: 700, textAlign: "center", fontSize: FL }}>{h}</th>
+                              <th key={h} style={{ border, padding: vPad, fontWeight: 700, textAlign: "center", fontSize: FM }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {displayRows.map((row) => (
                             <tr key={row.id}>
-                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.materialType}</td>
-                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.vendorName}</td>
-                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{(row as any).manager ?? ""}</td>
-                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.contact}</td>
-                              <td style={{ border, padding: "2.5px 3px", fontSize: FL, verticalAlign: "middle" }}>{row.notes}</td>
+                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.materialType}</td>
+                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.vendorName}</td>
+                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{(row as any).manager ?? ""}</td>
+                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.contact}</td>
+                              <td style={{ border, padding: vPad, fontSize: FS, verticalAlign: "middle" }}>{row.notes}</td>
                             </tr>
                           ))}
                         </tbody>
