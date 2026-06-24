@@ -2494,7 +2494,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         <td className="border border-gray-200 p-1 min-w-[110px]">
                           {m.category.includes("안감") ? (
                             <div className="flex items-center gap-0.5">
-                              <input value={m.name}
+                              <textarea value={m.name}
                                 onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
                                 onFocus={(e) => {
                                   const r = e.currentTarget.getBoundingClientRect();
@@ -2502,7 +2502,20 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                   setNameOpen(m.id);
                                 }}
                                 onBlur={() => setTimeout(() => setNameOpen(null), 150)}
-                                onKeyDown={handleMatKeyDown}
+                                onKeyDown={(e) => {
+                                  if (e.shiftKey && e.key === "Tab") {
+                                    e.preventDefault();
+                                    const el = e.currentTarget;
+                                    const { selectionStart: s, selectionEnd: end } = el;
+                                    const newVal = m.name.slice(0, s) + "\n" + m.name.slice(end);
+                                    updateMaterial(m.id, "name", newVal);
+                                    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 1; });
+                                  } else {
+                                    handleMatKeyDown(e as any);
+                                  }
+                                }}
+                                rows={m.name.split("\n").length || 1}
+                                style={{ resize: "none", lineHeight: 1.4 }}
                                 className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
                                 placeholder="자재명"
                               />
@@ -2518,9 +2531,22 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                               </button>
                             </div>
                           ) : (
-                            <input value={m.name}
+                            <textarea value={m.name}
                               onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
-                              onKeyDown={handleMatKeyDown}
+                              onKeyDown={(e) => {
+                                if (e.shiftKey && e.key === "Tab") {
+                                  e.preventDefault();
+                                  const el = e.currentTarget;
+                                  const { selectionStart: s, selectionEnd: end } = el;
+                                  const newVal = m.name.slice(0, s) + "\n" + m.name.slice(end);
+                                  updateMaterial(m.id, "name", newVal);
+                                  requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 1; });
+                                } else {
+                                  handleMatKeyDown(e as any);
+                                }
+                              }}
+                              rows={m.name.split("\n").length || 1}
+                              style={{ resize: "none", lineHeight: 1.4 }}
                               className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
                               placeholder="반사우본"
                             />

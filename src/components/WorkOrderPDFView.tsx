@@ -515,7 +515,14 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                   {m.category}
                                 </td>
                               )}
-                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.name}</td>
+                              <td style={matTd({
+                                fontSize: m.name.includes("\n")
+                                  ? `${(parseFloat(matFS) * (1 / m.name.split("\n").length) * 1.6).toFixed(1)}pt`
+                                  : matFS,
+                                padding: rowPad,
+                                whiteSpace: "pre-line",
+                                lineHeight: 1.25,
+                              })}>{m.name}</td>
                               <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.color}</td>
                               <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.spec}</td>
                               <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
