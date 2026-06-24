@@ -1743,112 +1743,131 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
         {tab === "기본정보" && (
           <div className="space-y-4">
             <SectionCard title="제품 기본 정보" sub="스타일넘버, 품명, 작업처 등 기본 정보를 입력하세요">
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="스타일넘버" required>
-                <input value={wo.styleNo} onChange={(e) => set("styleNo", e.target.value)}
-                  placeholder="O26WJ07BC600" className={inputCls} />
-                {errors.styleNo && <p className="text-xs text-red-500 mt-1">{errors.styleNo}</p>}
-              </Field>
-              <Field label="품명" required>
-                <div className="relative">
-                  <input value={wo.productName} onChange={(e) => handleProductNameChange(e.target.value)}
-                    placeholder="아우터-뉴플래시" className={inputCls} />
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                    {notionFillStatus === "loading" && (
-                      <Loader2 size={13} className="text-pink-400 animate-spin" />
-                    )}
+              {/* 좌측: 입력 필드들 | 우측: 제품사진 */}
+              <div className="flex gap-5">
+                <div className="flex-1 grid grid-cols-2 gap-4">
+                  <Field label="스타일넘버" required>
+                    <input value={wo.styleNo} onChange={(e) => set("styleNo", e.target.value)}
+                      placeholder="O26WJ07BC600" className={inputCls} />
+                    {errors.styleNo && <p className="text-xs text-red-500 mt-1">{errors.styleNo}</p>}
+                  </Field>
+                  <Field label="품명" required>
+                    <div className="relative">
+                      <input value={wo.productName} onChange={(e) => handleProductNameChange(e.target.value)}
+                        placeholder="아우터-뉴플래시" className={inputCls} />
+                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                        {notionFillStatus === "loading" && (
+                          <Loader2 size={13} className="text-pink-400 animate-spin" />
+                        )}
+                        {notionFillStatus === "found" && (
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                            <Sparkles size={10} />노션 연동됨
+                          </span>
+                        )}
+                        {notionFillStatus === "notfound" && (
+                          <span className="text-[10px] text-gray-300">노션 없음</span>
+                        )}
+                      </div>
+                    </div>
                     {notionFillStatus === "found" && (
-                      <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
-                        <Sparkles size={10} />노션 연동됨
-                      </span>
+                      <p className="text-[10px] text-emerald-600 mt-1">
+                        작업처·연도·시즌·카테고리·이미지·발주수량표(1차)가 자동으로 채워졌어요. 수정 가능합니다.
+                      </p>
                     )}
-                    {notionFillStatus === "notfound" && (
-                      <span className="text-[10px] text-gray-300">노션 없음</span>
+                    {errors.productName && <p className="text-xs text-red-500 mt-1">{errors.productName}</p>}
+                  </Field>
+                  <Field label="카테고리">
+                    <SelectDropdown presets={CATEGORIES} value={wo.category} onChange={(v) => set("category", v)} placeholder="직접 입력 (예: 니트, 팬츠…)" />
+                  </Field>
+                  <Field label="작업처(업체명)">
+                    <SelectDropdown presets={VENDORS} value={wo.vendor} onChange={(v) => set("vendor", v)} placeholder="직접 입력" />
+                  </Field>
+                  <Field label="연도">
+                    <select value={wo.year} onChange={(e) => set("year", e.target.value)} className={selectCls}>
+                      {YEARS.map((y) => <option key={y}>{y}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="시즌">
+                    <select value={wo.season} onChange={(e) => set("season", e.target.value)} className={selectCls}>
+                      {SEASONS.map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="SAMPLE NO.">
+                    <input value={wo.sampleNo} onChange={(e) => set("sampleNo", e.target.value)}
+                      placeholder="메직 - 실버후드패딩(그레이딩:26.06.02)" className={inputCls} />
+                  </Field>
+                  <Field label="차수">
+                    <input type="number" min={1} value={wo.orderCount}
+                      onChange={(e) => set("orderCount", Number(e.target.value))} className={inputCls} />
+                  </Field>
+                  <Field label="상태">
+                    <select value={wo.status} onChange={(e) => set("status", e.target.value as WorkOrder["status"])} className={selectCls}>
+                      <option value="draft">작성중</option>
+                      <option value="pending_confirm">컨펌대기</option>
+                      <option value="completed">완료</option>
+                      <option value="custom">직접입력</option>
+                    </select>
+                    {wo.status === "custom" && (
+                      <input value={wo.customStatus || ""} onChange={(e) => set("customStatus", e.target.value)}
+                        placeholder="상태 직접 입력..." className={`${inputCls} mt-1.5`} />
                     )}
-                  </div>
+                  </Field>
+                  <Field label="노션 제품DB 링크">
+                    <input
+                      value={wo.notionProductId || ""}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        const match = raw.match(/([a-f0-9]{32})/i) || raw.match(/notion\.so\/(?:[^/]+-)?([a-f0-9-]{36})/i);
+                        const id = match ? match[1].replace(/-/g, "") : raw;
+                        set("notionProductId", id || raw);
+                      }}
+                      placeholder="노션 페이지 URL 또는 ID를 붙여넣으세요"
+                      className={inputCls}
+                    />
+                    {wo.notionProductId && (
+                      <a href={`https://www.notion.so/${wo.notionProductId.replace(/-/g,"")}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-pink-500 hover:underline mt-1 inline-flex items-center gap-1">
+                        노션에서 열기 →
+                      </a>
+                    )}
+                  </Field>
                 </div>
-                {notionFillStatus === "found" && (
-                  <p className="text-[10px] text-emerald-600 mt-1">
-                    작업처·연도·시즌·카테고리·이미지·발주수량표(1차)가 자동으로 채워졌어요. 수정 가능합니다.
-                  </p>
-                )}
-                {errors.productName && <p className="text-xs text-red-500 mt-1">{errors.productName}</p>}
-              </Field>
-              <Field label="카테고리">
-                <SelectDropdown
-                  presets={CATEGORIES}
-                  value={wo.category}
-                  onChange={(v) => set("category", v)}
-                  placeholder="직접 입력 (예: 니트, 팬츠…)"
-                />
-              </Field>
-              <Field label="작업처(업체명)">
-                <SelectDropdown
-                  presets={VENDORS}
-                  value={wo.vendor}
-                  onChange={(v) => set("vendor", v)}
-                  placeholder="직접 입력"
-                />
-              </Field>
-              <Field label="연도">
-                <select value={wo.year} onChange={(e) => set("year", e.target.value)} className={selectCls}>
-                  {YEARS.map((y) => <option key={y}>{y}</option>)}
-                </select>
-              </Field>
-              <Field label="시즌">
-                <select value={wo.season} onChange={(e) => set("season", e.target.value)} className={selectCls}>
-                  {SEASONS.map((s) => <option key={s}>{s}</option>)}
-                </select>
-              </Field>
-              <Field label="SAMPLE NO.">
-                <input value={wo.sampleNo} onChange={(e) => set("sampleNo", e.target.value)}
-                  placeholder="메직 - 실버후드패딩(그레이딩:26.06.02)" className={inputCls} />
-              </Field>
-              <Field label="차수">
-                <input type="number" min={1} value={wo.orderCount}
-                  onChange={(e) => set("orderCount", Number(e.target.value))} className={inputCls} />
-              </Field>
-              <Field label="상태">
-                <select value={wo.status} onChange={(e) => set("status", e.target.value as WorkOrder["status"])} className={selectCls}>
-                  <option value="draft">작성중</option>
-                  <option value="pending_confirm">컨펌대기</option>
-                  <option value="completed">완료</option>
-                  <option value="custom">직접입력</option>
-                </select>
-                {wo.status === "custom" && (
-                  <input
-                    value={wo.customStatus || ""}
-                    onChange={(e) => set("customStatus", e.target.value)}
-                    placeholder="상태 직접 입력..."
-                    className={`${inputCls} mt-1.5`}
-                  />
-                )}
-              </Field>
-              <Field label="노션 제품DB 링크">
-                <input
-                  value={wo.notionProductId || ""}
-                  onChange={(e) => {
-                    const raw = e.target.value.trim();
-                    // URL에서 페이지 ID 추출 (notion.so/xxx-xxxxxxxx 형식)
-                    const match = raw.match(/([a-f0-9]{32})/i) || raw.match(/notion\.so\/(?:[^/]+-)?([a-f0-9-]{36})/i);
-                    const id = match ? match[1].replace(/-/g, "") : raw;
-                    set("notionProductId", id || raw);
-                  }}
-                  placeholder="노션 페이지 URL 또는 ID를 붙여넣으세요"
-                  className={inputCls}
-                />
-                {wo.notionProductId && (
-                  <a
-                    href={`https://www.notion.so/${wo.notionProductId.replace(/-/g,"")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-pink-500 hover:underline mt-1 inline-flex items-center gap-1"
-                  >
-                    노션에서 열기 →
-                  </a>
-                )}
-              </Field>
-            </div>
+
+                {/* 우측: 제품 사진 */}
+                <div className="w-44 shrink-0 flex flex-col gap-2">
+                  <div className="text-xs font-semibold text-gray-600">제품 사진</div>
+                  {wo.productImage ? (
+                    <div className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex-1">
+                      <img src={wo.productImage} alt="제품사진" className="w-full h-full object-contain" style={{ minHeight: "120px" }} />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
+                        <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 text-xs font-medium rounded-lg shadow hover:bg-gray-50">
+                          <Upload size={12} />교체
+                          <input type="file" accept="image/*" className="hidden"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("productImage", f); }} />
+                        </label>
+                        <button onClick={() => set("productImage", "")}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 shadow">
+                          <X size={12} />삭제
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-pink-300 hover:bg-pink-50/30 transition-all flex-1"
+                      style={{ minHeight: "160px" }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload("productImage", f); }}>
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("productImage", f); }} />
+                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-2">
+                        <ImagePlus size={18} className="text-gray-400" />
+                      </div>
+                      <div className="text-xs font-semibold text-gray-400 text-center">제품 사진<br/>업로드</div>
+                      <div className="text-xs text-gray-300 mt-1">클릭·드래그</div>
+                    </label>
+                  )}
+                </div>
+              </div>
             </SectionCard>
 
             {/* ── 사이즈 스펙 ── */}
@@ -2258,118 +2277,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               })()}
             </SectionCard>
 
-            {/* ── 이미지 업로드 ── */}
-            <SectionCard title="이미지" sub="도식화와 제품 사진을 등록하세요 — PDF에 자동 삽입됩니다">
-              <div className="grid grid-cols-2 gap-5">
-
-                {/* 도식화 */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs font-semibold text-gray-600">도식화 이미지</div>
-                    {wo.sketchImage && (
-                      <button
-                        type="button"
-                        onClick={analyzeSketch}
-                        disabled={analyzing}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all disabled:opacity-60"
-                        style={{ background: analyzing ? "#e5e7eb" : "linear-gradient(135deg, #f472b6, #fb7185)", color: analyzing ? "#9ca3af" : "white" }}
-                      >
-                        {analyzing ? (
-                          <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />분석 중...</>
-                        ) : (
-                          <>✨ AI 원부자재 자동분석</>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                  {analyzeResult && (
-                    <div className={`text-xs px-3 py-2 rounded-xl ${analyzeResult.startsWith("✅") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
-                      {analyzeResult}
-                    </div>
-                  )}
-                  {wo.sketchImage ? (
-                    <div className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
-                      <img src={wo.sketchImage} alt="도식화"
-                        className="w-full object-contain"
-                        style={{ maxHeight: "360px", minHeight: "200px" }} />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
-                        <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 text-xs font-medium rounded-lg shadow hover:bg-gray-50">
-                          <Upload size={12} />교체
-                          <input type="file" accept="image/*" className="hidden"
-                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("sketchImage", f); }} />
-                        </label>
-                        <button onClick={() => set("sketchImage", "")}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 shadow">
-                          <X size={12} />삭제
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label
-                      className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-pink-300 hover:bg-pink-50/30 transition-all"
-                      style={{ minHeight: "280px" }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const f = e.dataTransfer.files?.[0];
-                        if (f) handleImageUpload("sketchImage", f);
-                      }}
-                    >
-                      <input type="file" accept="image/*" className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("sketchImage", f); }} />
-                      <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
-                        <ImagePlus size={22} className="text-gray-400" />
-                      </div>
-                      <div className="text-sm font-semibold text-gray-400">도식화 이미지 업로드</div>
-                      <div className="text-xs text-gray-300 mt-1">클릭 또는 드래그&드롭</div>
-                    </label>
-                  )}
-                </div>
-
-                {/* 제품 사진 */}
-                <div className="space-y-2 flex flex-col">
-                  <div className="text-xs font-semibold text-gray-600">제품 사진</div>
-                  {wo.productImage ? (
-                    <div className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
-                      <img src={wo.productImage} alt="제품사진"
-                        className="w-full object-contain"
-                        style={{ maxHeight: "180px", minHeight: "120px" }} />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
-                        <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 text-xs font-medium rounded-lg shadow hover:bg-gray-50">
-                          <Upload size={12} />교체
-                          <input type="file" accept="image/*" className="hidden"
-                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("productImage", f); }} />
-                        </label>
-                        <button onClick={() => set("productImage", "")}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 shadow">
-                          <X size={12} />삭제
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label
-                      className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-pink-300 hover:bg-pink-50/30 transition-all flex-1"
-                      style={{ minHeight: "160px" }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const f = e.dataTransfer.files?.[0];
-                        if (f) handleImageUpload("productImage", f);
-                      }}
-                    >
-                      <input type="file" accept="image/*" className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("productImage", f); }} />
-                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-2">
-                        <ImagePlus size={18} className="text-gray-400" />
-                      </div>
-                      <div className="text-sm font-semibold text-gray-400">제품 사진 업로드</div>
-                      <div className="text-xs text-gray-300 mt-1">클릭 또는 드래그&드롭</div>
-                    </label>
-                  )}
-                </div>
-
-              </div>
-            </SectionCard>
+            {/* 이미지 섹션 제거 — 도식화는 원부자재 탭으로, 제품사진은 제품기본정보로 이동 */}
 
             {/* ── 비고/기타 작성란 ── */}
             <SectionCard title="비고 / 기타 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 비고란">
@@ -2387,6 +2295,62 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
         {/* ── 3. 원부자재 ── */}
         {tab === "원부자재" && (
           <div className="space-y-4">
+
+            {/* ── 도식화 이미지 ── */}
+            <SectionCard title="도식화 이미지" sub="PDF 좌측에 삽입됩니다">
+              <div className="flex items-start gap-4">
+                {/* 이미지 영역 */}
+                <div className="flex-1">
+                  {wo.sketchImage ? (
+                    <div className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
+                      <img src={wo.sketchImage} alt="도식화" className="w-full object-contain" style={{ maxHeight: "320px", minHeight: "160px" }} />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
+                        <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 text-xs font-medium rounded-lg shadow hover:bg-gray-50">
+                          <Upload size={12} />교체
+                          <input type="file" accept="image/*" className="hidden"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("sketchImage", f); }} />
+                        </label>
+                        <button onClick={() => set("sketchImage", "")}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 shadow">
+                          <X size={12} />삭제
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-pink-300 hover:bg-pink-50/30 transition-all"
+                      style={{ minHeight: "200px" }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload("sketchImage", f); }}>
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload("sketchImage", f); }} />
+                      <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                        <ImagePlus size={22} className="text-gray-400" />
+                      </div>
+                      <div className="text-sm font-semibold text-gray-400">도식화 이미지 업로드</div>
+                      <div className="text-xs text-gray-300 mt-1">클릭 또는 드래그&드롭</div>
+                    </label>
+                  )}
+                </div>
+                {/* AI 분석 버튼 */}
+                {wo.sketchImage && (
+                  <div className="shrink-0 flex flex-col gap-2 pt-1">
+                    <button type="button" onClick={analyzeSketch} disabled={analyzing}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all disabled:opacity-60"
+                      style={{ background: analyzing ? "#e5e7eb" : "linear-gradient(135deg, #f472b6, #fb7185)", color: analyzing ? "#9ca3af" : "white" }}>
+                      {analyzing ? (
+                        <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />분석 중...</>
+                      ) : <>✨ AI 원부자재 자동분석</>}
+                    </button>
+                    {analyzeResult && (
+                      <div className={`text-xs px-3 py-2 rounded-xl ${analyzeResult.startsWith("✅") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                        {analyzeResult}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+
             <SectionCard
               title="원단 및 부자재"
               sub="요척, 단가, 발주단위 등을 입력하세요"
