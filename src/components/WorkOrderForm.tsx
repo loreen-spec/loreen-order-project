@@ -2280,11 +2280,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             {/* 이미지 섹션 제거 — 도식화는 원부자재 탭으로, 제품사진은 제품기본정보로 이동 */}
 
             {/* ── 비고/기타 작성란 ── */}
-            <SectionCard title="비고 / 기타 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 비고란">
+            <SectionCard title="주의사항 작성란" sub="PDF 하단 좌측 — 제품이미지 옆 주의사항란">
               <textarea value={wo.productionNotes}
                 onChange={(e) => set("productionNotes", e.target.value)}
                 rows={4}
-                placeholder="비고, 특이사항 등"
+                placeholder="주의사항, 특이사항 등"
                 className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300"
               />
             </SectionCard>

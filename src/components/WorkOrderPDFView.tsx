@@ -298,7 +298,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 <div style={{ display: "grid", gridTemplateColumns: "38% 1fr", gap: "2px", flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
                   <ImgBox src={wo.productImage} label="제품사진" style={{ height: "100%" }} />
                   <div style={{ ...S.cell, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-                    <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>비고</div>
+                    <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>주의사항</div>
                     <div style={{
                       flex: 1, padding: "3px 4px", textAlign: "left",
                       fontSize: FL, lineHeight: 1.5,
