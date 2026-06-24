@@ -61,7 +61,7 @@ function ImgBox({ src, label, style }: { src: string; label: string; style?: Rea
 }
 
 /* 원부자재 최소 표시 행 수 */
-const MAT_MIN_ROWS = 20;
+const MAT_MIN_ROWS = 23;
 
 interface LabelPreset { id: string; group: string; name: string; imageData?: string; }
 
@@ -577,21 +577,20 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   )}
                 </div>
 
-                {/* ── 박스3: 원부자재 업체 정보 ── */}
+                {/* ── 박스3: 원부자재 업체 정보 — 4줄 고정, 원부자재 표와 동일 간격 ── */}
                 {(() => {
                   const rows = wo.vendorInfoTable ?? [];
-                  const MIN_ROWS = 5;
-                  const displayRows = rows.length >= MIN_ROWS ? rows : [
+                  const VENDOR_ROWS = 4;
+                  const displayRows = rows.length >= VENDOR_ROWS ? rows.slice(0, VENDOR_ROWS) : [
                     ...rows,
-                    ...Array.from({ length: MIN_ROWS - rows.length }, (_, i) => ({
+                    ...Array.from({ length: VENDOR_ROWS - rows.length }, (_, i) => ({
                       id: `empty-${i}`, materialType: "", vendorName: "", manager: "", contact: "", notes: "",
                     })),
                   ];
-                  const cellPad = "1px 3px";
                   const border = "1px solid #e5e7eb";
                   return (
-                    <div style={{ flex: 1, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FS, tableLayout: "fixed" }}>
+                    <div style={{ flexShrink: 0, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                         <colgroup>
                           <col style={{ width: "16%" }} />
                           <col style={{ width: "24%" }} />
@@ -602,18 +601,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <thead>
                           <tr style={{ background: "#f3f4f6" }}>
                             {["종류", "업체명", "담당자", "연락처", "비고"].map((h) => (
-                              <th key={h} style={{ border, padding: cellPad, fontWeight: 700, textAlign: "center", fontSize: FM }}>{h}</th>
+                              <th key={h} style={{ border, padding: rowPad, fontWeight: 700, textAlign: "center", fontSize: matFS }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {displayRows.map((row) => (
                             <tr key={row.id}>
-                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.materialType}</td>
-                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.vendorName}</td>
-                              <td style={{ border, padding: cellPad, fontSize: FS }}>{(row as any).manager ?? ""}</td>
-                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.contact}</td>
-                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.notes}</td>
+                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.materialType}</td>
+                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.vendorName}</td>
+                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{(row as any).manager ?? ""}</td>
+                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.contact}</td>
+                              <td style={{ border, padding: rowPad, fontSize: matFS }}>{row.notes}</td>
                             </tr>
                           ))}
                         </tbody>
