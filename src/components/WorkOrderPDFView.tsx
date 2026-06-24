@@ -460,12 +460,12 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
               </div>
 
-              {/* ── COL C: 원부자재 / 라벨체크 / 업체 ── */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {/* ── COL C: 원부자재(박스1) / 라벨(박스2) / 업체(박스3) ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", minHeight: 0 }}>
 
-                {/* 원부자재 테이블 — 20줄 고정 영역, 초과 시 폰트/패딩 축소 */}
-                <div style={{ flexShrink: 0, overflow: "hidden" }}>
-                  <table style={{ width: "100%", tableLayout: "fixed" }}>
+                {/* ── 박스1: 원부자재 테이블 — flex:1로 남은 공간 채움, 20줄 초과 시 폰트/패딩 축소 ── */}
+                <div style={{ flex: 1, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+                  <table style={{ width: "100%", height: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
                     <colgroup>
                       <col style={{ width: "13%" }} />
                       <col style={{ width: "17%" }} />
@@ -485,11 +485,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                     </thead>
                     <tbody>
                       {(() => {
-                        // 같은 category가 연속되면 첫 행에만 rowSpan 렌더, 나머지는 생략
                         const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
                           a.category === b.category && a.name === b.name;
                         const spans: number[] = wo.materials.map((m, i) => {
-                          if (i > 0 && sameGroup(wo.materials[i - 1], m)) return 0; // 병합됨 → 생략
+                          if (i > 0 && sameGroup(wo.materials[i - 1], m)) return 0;
                           let span = 1;
                           while (i + span < wo.materials.length && sameGroup(m, wo.materials[i + span])) span++;
                           return span;
@@ -511,9 +510,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           </tr>
                         ));
                       })()}
-                      {/* 빈 행으로 20줄 채우기 — 고정 높이 14px/행 */}
+                      {/* 빈 행 — height:100%로 남은 공간 균등 분배 */}
                       {Array.from({ length: emptyCount }).map((_, i) => (
-                        <tr key={`em${i}`} style={{ height: "14px" }}>
+                        <tr key={`em${i}`}>
                           {Array.from({ length: 8 }).map((__, j) => (
                             <td key={j} style={td({ padding: "0 2px" })}>&nbsp;</td>
                           ))}
@@ -534,10 +533,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   </table>
                 </div>
 
-                {/* 라벨 체크 — 고정 9개 전체 너비, 직접추가는 별도 행 */}
-                <div style={{ flexShrink: 0 }}>
-                  {/* 고정 9개: 균등 너비 고정 */}
-                  <table style={{ width: '100%', tableLayout: 'fixed' }}>
+                {/* ── 박스2: 라벨 체크 ── */}
+                <div style={{ flexShrink: 0, border: "1px solid #e5e7eb" }}>
+                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: "collapse" }}>
                     <colgroup>
                       {FIXED_LABELS.map(([, name]) => <col key={name} />)}
                     </colgroup>
@@ -565,40 +563,24 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       </tr>
                     </tbody>
                   </table>
-                  {/* 직접 추가 라벨 */}
                   {hasCustom && (
-                    <table style={{ width: '100%', tableLayout: 'fixed', marginTop: '1px' }}>
-                      <colgroup>
-                        {customLabels.map((_, i) => <col key={i} />)}
-                      </colgroup>
+                    <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: "collapse", marginTop: '1px' }}>
+                      <colgroup>{customLabels.map((_, i) => <col key={i} />)}</colgroup>
                       <thead>
-                        <tr>
-                          {customLabels.map((name, i) => (
-                            <th key={i} style={lbl({ padding: '1px 1px' })}>{name}</th>
-                          ))}
-                        </tr>
+                        <tr>{customLabels.map((name, i) => <th key={i} style={lbl({ padding: '1px 1px' })}>{name}</th>)}</tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          {customLabels.map((_, i) => (
-                            <td key={i} style={td({ fontSize: FX, padding: '2px 1px' })}>✓</td>
-                          ))}
-                        </tr>
-                        <tr>
-                          {customLabels.map((_, i) => (
-                            <td key={i} style={td({ fontSize: FM, color: '#555', padding: '1.5px 1px' })}>1EA</td>
-                          ))}
-                        </tr>
+                        <tr>{customLabels.map((_, i) => <td key={i} style={td({ fontSize: FX, padding: '2px 1px' })}>✓</td>)}</tr>
+                        <tr>{customLabels.map((_, i) => <td key={i} style={td({ fontSize: FM, color: '#555', padding: '1.5px 1px' })}>1EA</td>)}</tr>
                       </tbody>
                     </table>
                   )}
                 </div>
 
-                {/* 원부자재 업체 */}
+                {/* ── 박스3: 원부자재 업체 정보 ── */}
                 {(() => {
                   const rows = wo.vendorInfoTable ?? [];
                   const MIN_ROWS = 5;
-                  // 5줄 미만이면 빈 행으로 채워서 항상 5줄 고정
                   const displayRows = rows.length >= MIN_ROWS ? rows : [
                     ...rows,
                     ...Array.from({ length: MIN_ROWS - rows.length }, (_, i) => ({
@@ -608,13 +590,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   const cellPad = "1px 3px";
                   const border = "1px solid #e5e7eb";
                   return (
-                    <div style={{
-                      ...S.cell, flexShrink: 0,
-                      padding: "3px 5px", fontSize: FL, textAlign: "left",
-                      overflow: "hidden",
-                    }}>
-                      <div style={{ fontWeight: 700, marginBottom: "2px", fontSize: FL }}>원부자재 업체</div>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FL, tableLayout: "fixed" }}>
+                    <div style={{ flexShrink: 0, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FS, tableLayout: "fixed" }}>
                         <colgroup>
                           <col style={{ width: "16%" }} />
                           <col style={{ width: "24%" }} />
@@ -625,18 +602,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <thead>
                           <tr style={{ background: "#f3f4f6" }}>
                             {["종류", "업체명", "담당자", "연락처", "비고"].map((h) => (
-                              <th key={h} style={{ border, padding: cellPad, fontWeight: 600, textAlign: "left" }}>{h}</th>
+                              <th key={h} style={{ border, padding: cellPad, fontWeight: 700, textAlign: "center", fontSize: FM }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {displayRows.map((row) => (
                             <tr key={row.id}>
-                              <td style={{ border, padding: cellPad }}>{row.materialType}</td>
-                              <td style={{ border, padding: cellPad }}>{row.vendorName}</td>
-                              <td style={{ border, padding: cellPad }}>{(row as any).manager ?? ""}</td>
-                              <td style={{ border, padding: cellPad }}>{row.contact}</td>
-                              <td style={{ border, padding: cellPad }}>{row.notes}</td>
+                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.materialType}</td>
+                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.vendorName}</td>
+                              <td style={{ border, padding: cellPad, fontSize: FS }}>{(row as any).manager ?? ""}</td>
+                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.contact}</td>
+                              <td style={{ border, padding: cellPad, fontSize: FS }}>{row.notes}</td>
                             </tr>
                           ))}
                         </tbody>
