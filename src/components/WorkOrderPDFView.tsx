@@ -472,10 +472,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               </div>
 
               {/* ── COL C: 원부자재(박스1) / 업체(박스2) ── */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px", minHeight: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", minHeight: 0, height: "100%" }}>
 
-                {/* ── 박스1: 원부자재 테이블 + 최종원가 (나머지 공간 전부) ── */}
-                <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                {/* ── 박스1: 원부자재 + 최종원가 — COL B spec+color 높이와 동일 */}
+                <div style={{ flex: `${colBSpecFlex + colBColorFlex} 0 0`, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
 
                   {/* 원부자재 데이터 — 남은 공간 채움 */}
                   <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
@@ -562,7 +562,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
                 </div>
 
-                {/* ── 박스2: 원부자재 업체 정보 — 4줄 고정 ── */}
+                {/* ── 박스2: 원부자재 업체 정보 — COL B label 높이와 동일, 4줄 고정 */}
                 {(() => {
                   const rows = wo.vendorInfoTable ?? [];
                   const VENDOR_ROWS = 4;
@@ -575,8 +575,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   const border = ".3pt solid #888";
                   const vPad = "0.5px 3px";
                   return (
-                    <div style={{ flexShrink: 0, overflow: "hidden" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <div style={{ flex: `${colBLabelFlex} 0 0`, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <table style={{ width: "100%", height: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                         <colgroup>
                           <col style={{ width: "16%" }} />
                           <col style={{ width: "24%" }} />
