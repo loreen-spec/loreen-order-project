@@ -17,6 +17,7 @@ export interface WorkOrderMaterial {
   unitPrice: string;
   orderUnit: string;  // 단발주 (1EA, 0.3YD etc.)
   notes: string;
+  fixed?: boolean;    // 고정 기본 행 (메인라벨 등) — 항상 목록 하단 유지
 }
 
 export interface WorkOrderColorSize {

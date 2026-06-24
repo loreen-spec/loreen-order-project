@@ -140,7 +140,10 @@ function emptyOrder(): WorkOrder {
     orderCount: 1, totalQuantity: 0,
     sizes: ["100", "110", "120", "130", "140"],
     measurements: DEFAULT_MEASUREMENTS.map(m => ({ ...m, values: {} })),
-    materials: [],
+    materials: ["메인라벨","케어라벨","취급주의라벨","가격택","품질보증택","폴리백"].map((name) => ({
+      id: `fixed_${name}`, category: "", name, color: "", spec: "",
+      yield: "", yieldUnit: "EA", unitPrice: "", orderUnit: "", notes: "", fixed: true,
+    })),
     colorSizeTable: [],
     labels: { main: true, care: true, reorderInfo: true, priceTag: true, qualityTag: true, polybag: true, wappen: false, pointLabel: false, artworkLabel: false },
     customLabels: [],
@@ -1496,7 +1499,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       category: "", name: "", color: "", spec: "",
       yield: "", yieldUnit: "YD", unitPrice: "", orderUnit: "", notes: "",
     };
-    setWo((w) => ({ ...w, materials: [...w.materials, m] }));
+    setWo((w) => {
+      const fixedIdx = w.materials.findIndex((x) => x.fixed);
+      const insertAt = fixedIdx === -1 ? w.materials.length : fixedIdx;
+      const next = [...w.materials];
+      next.splice(insertAt, 0, m);
+      return { ...w, materials: next };
+    });
   }
 
   function updateMaterial(id: string, key: keyof WorkOrderMaterial, value: string) {
@@ -2403,17 +2412,20 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <tbody>
                     {wo.materials.map((m, idx) => (
                       <tr key={m.id}
-                        onDragEnter={() => onDragEnter(idx)}
-                        onDragOver={(e) => e.preventDefault()}
+                        onDragEnter={() => !m.fixed && onDragEnter(idx)}
+                        onDragOver={(e) => !m.fixed && e.preventDefault()}
                         className={`transition-colors ${
-                          dragOver === idx
+                          !m.fixed && dragOver === idx
                             ? "bg-pink-50 border-t-2 border-t-indigo-400"
-                            : dragIdx.current === idx
+                            : !m.fixed && dragIdx.current === idx
                             ? "opacity-40"
                             : ""
                         }`}
                       >
-                        {/* 드래그 핸들만 draggable */}
+                        {/* 드래그 핸들 — fixed 행은 빈 셀 */}
+                        {m.fixed ? (
+                          <td className="border border-gray-200 p-1" />
+                        ) : (
                         <td draggable
                           onDragStart={() => onDragStart(idx)}
                           onDragEnd={onDragEnd}
@@ -2422,6 +2434,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             ⠿
                           </span>
                         </td>
+                        )}
                         {/* 품목 — fixed 드롭다운 (overflow 컨테이너 탈출) */}
                         <td
                           className="border border-gray-200 p-1 min-w-[120px]"
@@ -2633,16 +2646,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                           </td>
                         ))}
                         <td className="border border-gray-200 p-1 text-center">
-                          <button onClick={() => removeMaterial(m.id)}
-                            className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                          {!m.fixed && (
+                            <button onClick={() => removeMaterial(m.id)}
+                              className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                          )}
                         </td>
-                      </tr>
-                    ))}
-                    {["메인라벨","케어라벨","취급주의라벨","가격택","품질보증택","폴리백"].map((name) => (
-                      <tr key={name} className="bg-gray-50">
-                        <td className="border border-gray-200 p-1" />
-                        <td className="border border-gray-200 px-2 py-1.5 text-xs text-gray-400 font-medium">{name}</td>
-                        <td colSpan={8} className="border border-gray-200 px-2 py-1.5 text-xs text-gray-300">기본 항목</td>
                       </tr>
                     ))}
                   </tbody>

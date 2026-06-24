@@ -135,12 +135,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     color: "#111",
   };
 
-  const FIXED_LABEL_ROWS = ["메인라벨", "케어라벨", "취급주의라벨", "가격택", "품질보증택", "폴리백"];
-
   /* 원부자재 행 계산 */
   const matCount   = wo.materials.length;
-  const compact    = matCount > MAT_MIN_ROWS;
-  const emptyCount = compact ? 0 : Math.max(0, MAT_MIN_ROWS - matCount - FIXED_LABEL_ROWS.length);
+  const compact    = false;  // 항상 균일한 행 높이 유지
+  const emptyCount = Math.max(0, MAT_MIN_ROWS - matCount);
   const matRatio   = compact ? Math.max(0.6, MAT_MIN_ROWS / matCount) : 1;
   const rowPad     = compact ? `${Math.round(0.9 * matRatio)}px 2px` : "2.5px 2px";
   // 원부자재 셀 폰트: 비압축 시 8pt (FL보다 0.5pt 크게), 압축 시 비율 축소
@@ -532,18 +530,6 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             );
                           });
                         })()}
-                        {FIXED_LABEL_ROWS.map((name, i) => (
-                          <tr key={`fl${i}`}>
-                            <td style={matTd({ fontSize: matFS, padding: rowPad, background: "#f5f5f5" })}></td>
-                            <td style={matTd({ fontSize: matFS, padding: rowPad, background: "#f5f5f5" })}>{name}</td>
-                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
-                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
-                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
-                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
-                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
-                            <td style={matTd({ padding: rowPad, background: "#f5f5f5" })}></td>
-                          </tr>
-                        ))}
                         {Array.from({ length: emptyCount }).map((_, i) => (
                           <tr key={`em${i}`}>
                             {Array.from({ length: 8 }).map((__, j) => (
@@ -576,51 +562,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
                 </div>
 
-                {/* ── 박스2: 라벨 체크 ── */}
-                <div style={{ flexShrink: 0, border: "1px solid #e5e7eb" }}>
-                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: "collapse" }}>
-                    <colgroup>
-                      {FIXED_LABELS.map(([, name]) => <col key={name} />)}
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        {FIXED_LABELS.map(([, name]) => (
-                          <th key={name} style={lbl({ padding: '1px 1px' })}>{name}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        {FIXED_LABELS.map(([key, name]) => (
-                          <td key={name} style={td({ fontSize: FX, padding: '2px 1px' })}>
-                            {wo.labels[key] ? '✓' : ''}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr>
-                        {FIXED_LABELS.map(([key, name]) => (
-                          <td key={name} style={td({ fontSize: FM, color: '#555', padding: '1.5px 1px' })}>
-                            {wo.labels[key] ? '1EA' : ' '}
-                          </td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                  {hasCustom && (
-                    <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: "collapse", marginTop: '1px' }}>
-                      <colgroup>{customLabels.map((_, i) => <col key={i} />)}</colgroup>
-                      <thead>
-                        <tr>{customLabels.map((name, i) => <th key={i} style={lbl({ padding: '1px 1px' })}>{name}</th>)}</tr>
-                      </thead>
-                      <tbody>
-                        <tr>{customLabels.map((_, i) => <td key={i} style={td({ fontSize: FX, padding: '2px 1px' })}>✓</td>)}</tr>
-                        <tr>{customLabels.map((_, i) => <td key={i} style={td({ fontSize: FM, color: '#555', padding: '1.5px 1px' })}>1EA</td>)}</tr>
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-
-                {/* ── 박스3: 원부자재 업체 정보 — 4줄 고정, 원부자재 표와 동일 간격 ── */}
+                {/* ── 박스2: 원부자재 업체 정보 — 4줄 고정, 원부자재 표와 동일 간격 ── */}
                 {(() => {
                   const rows = wo.vendorInfoTable ?? [];
                   const VENDOR_ROWS = 3;
