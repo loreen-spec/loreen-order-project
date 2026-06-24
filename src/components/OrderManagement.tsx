@@ -212,10 +212,11 @@ const BULLETIN_BOARD_COLOR = {
 } as const;
 
 const NewOrdersBulletin = memo(function NewOrdersBulletin({
-  orders, loading,
-}: { orders: OrderProduct[]; loading: boolean }) {
+  orders, loading, categoryFilter,
+}: { orders: OrderProduct[]; loading: boolean; categoryFilter?: "의류" | "슈즈" }) {
   const recentProducts = useMemo(() => {
     return orders
+      .filter((product) => !categoryFilter || product.board === categoryFilter)
       .filter((product) => {
         const latestRow = product.rows.filter((r) => r.orderDate).sort((a, b) => (b.orderDate > a.orderDate ? 1 : -1))[0];
         if (!latestRow) return false;
@@ -380,7 +381,7 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
       )}
 
       {/* 새 발주 게시판 */}
-      <NewOrdersBulletin orders={orders} loading={loading} />
+      <NewOrdersBulletin orders={orders} loading={loading} categoryFilter={categoryFilter} />
 
       {/* 요약 카드 */}
       {!loading && (
