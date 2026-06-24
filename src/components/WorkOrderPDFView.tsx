@@ -534,11 +534,11 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           return [
                             // 1) 사용자 추가 행
                             ...userMats.map((m, i) => renderRow(m, i, spans)),
-                            // 2) 빈 행 (고정 라벨 행과 동일 패딩으로 균일 높이)
+                            // 2) 빈 행
                             ...Array.from({ length: userEmptyCount }, (_, i) => (
                               <tr key={`em${i}`}>
                                 {Array.from({ length: 8 }).map((__, j) => (
-                                  <td key={j} style={matTd({ padding: rowPad })}>&nbsp;</td>
+                                  <td key={j} style={matTd({ padding: "0 2px" })}>&nbsp;</td>
                                 ))}
                               </tr>
                             )),
