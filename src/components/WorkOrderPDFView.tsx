@@ -44,6 +44,10 @@ const S = {
 };
 const td  = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.cell, ...x });
 const lbl = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.lbl,  ...x });
+// 원부자재 전용 셀 — 줄바꿈 금지로 행 높이 균일 유지
+const matTd = (x?: React.CSSProperties): React.CSSProperties => ({
+  ...S.cell, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...x,
+});
 
 function ImgBox({ src, label, style }: { src: string; label: string; style?: React.CSSProperties }) {
   return (
@@ -500,24 +504,24 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           return wo.materials.map((m, i) => (
                             <tr key={i}>
                               {spans[i] > 0 && (
-                                <td rowSpan={spans[i]} style={td({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
+                                <td rowSpan={spans[i]} style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle" })}>
                                   {m.category}
                                 </td>
                               )}
-                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.name}</td>
-                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.color}</td>
-                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.spec}</td>
-                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
-                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.unitPrice}</td>
-                              <td style={td({ fontSize: matFS, padding: rowPad })}>{m.orderUnit}</td>
-                              <td style={td({ fontSize: matFS, padding: rowPad, textAlign: "left" })}>{m.notes}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.name}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.color}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.spec}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.unitPrice}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.orderUnit}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, textAlign: "left" })}>{m.notes}</td>
                             </tr>
                           ));
                         })()}
                         {Array.from({ length: emptyCount }).map((_, i) => (
                           <tr key={`em${i}`}>
                             {Array.from({ length: 8 }).map((__, j) => (
-                              <td key={j} style={td({ padding: "0 2px" })}>&nbsp;</td>
+                              <td key={j} style={matTd({ padding: "0 2px" })}>&nbsp;</td>
                             ))}
                           </tr>
                         ))}
