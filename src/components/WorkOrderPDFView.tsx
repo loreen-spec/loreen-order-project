@@ -499,23 +499,25 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       </thead>
                       <tbody>
                         {(() => {
+                          const userMats  = wo.materials.filter(m => !m.fixed);
+                          const fixedMats = wo.materials.filter(m =>  m.fixed);
                           const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
                             a.category === b.category && a.name === b.name;
-                          const spans: number[] = wo.materials.map((m, i) => {
-                            if (i > 0 && sameGroup(wo.materials[i - 1], m)) return 0;
+                          const spans: number[] = userMats.map((m, i) => {
+                            if (i > 0 && sameGroup(userMats[i - 1], m)) return 0;
                             let span = 1;
-                            while (i + span < wo.materials.length && sameGroup(m, wo.materials[i + span])) span++;
+                            while (i + span < userMats.length && sameGroup(m, userMats[i + span])) span++;
                             return span;
                           });
-                          return wo.materials.map((m, i) => {
-                            // 자재명 줄 수에 맞게 폰트 비례 축소 → 행 높이 균일 유지
+                          const userEmptyCount = Math.max(0, MAT_MIN_ROWS - userMats.length - fixedMats.length);
+                          const renderRow = (m: typeof wo.materials[0], i: number, spanArr: number[]) => {
                             const lines = m.name.split("\n").length;
-                            const rFS   = lines > 1 ? `${(parseFloat(matFS) / lines).toFixed(1)}pt` : matFS;
-                            const rPad  = lines > 1 ? `0px 2px` : rowPad;
+                            const rFS  = lines > 1 ? `${(parseFloat(matFS) / lines).toFixed(1)}pt` : matFS;
+                            const rPad = lines > 1 ? `0px 2px` : rowPad;
                             return (
-                              <tr key={i}>
-                                {spans[i] > 0 && (
-                                  <td rowSpan={spans[i]} style={matTd({ fontSize: rFS, padding: rPad, verticalAlign: "middle" })}>
+                              <tr key={m.id ?? i}>
+                                {spanArr[i] > 0 && (
+                                  <td rowSpan={spanArr[i]} style={matTd({ fontSize: rFS, padding: rPad, verticalAlign: "middle" })}>
                                     {m.category}
                                   </td>
                                 )}
@@ -528,15 +530,22 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                 <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left" })}>{m.notes}</td>
                               </tr>
                             );
-                          });
+                          };
+                          return [
+                            // 1) 사용자 추가 행
+                            ...userMats.map((m, i) => renderRow(m, i, spans)),
+                            // 2) 빈 행 (고정 라벨 행과 동일 패딩으로 균일 높이)
+                            ...Array.from({ length: userEmptyCount }, (_, i) => (
+                              <tr key={`em${i}`}>
+                                {Array.from({ length: 8 }).map((__, j) => (
+                                  <td key={j} style={matTd({ padding: rowPad })}>&nbsp;</td>
+                                ))}
+                              </tr>
+                            )),
+                            // 3) 고정 라벨 행 (항상 하단)
+                            ...fixedMats.map((m, i) => renderRow(m, i, fixedMats.map(() => 1))),
+                          ];
                         })()}
-                        {Array.from({ length: emptyCount }).map((_, i) => (
-                          <tr key={`em${i}`}>
-                            {Array.from({ length: 8 }).map((__, j) => (
-                              <td key={j} style={matTd({ padding: "0 2px" })}>&nbsp;</td>
-                            ))}
-                          </tr>
-                        ))}
                       </tbody>
                     </table>
                   </div>
