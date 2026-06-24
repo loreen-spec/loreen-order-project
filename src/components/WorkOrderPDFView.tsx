@@ -463,8 +463,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               {/* ── COL C: 원부자재(박스1) / 라벨(박스2) / 업체(박스3) ── */}
               <div style={{ display: "flex", flexDirection: "column", gap: "2px", minHeight: 0 }}>
 
-                {/* ── 박스1: 원부자재 테이블 — flex:1로 남은 공간 채움, 20줄 초과 시 폰트/패딩 축소 ── */}
-                <div style={{ flex: 1, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+                {/* ── 박스1: 원부자재 테이블 — 전체의 약 57% 고정, 20줄 초과 시 폰트/패딩 축소 ── */}
+                <div style={{ flex: "0 0 57%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                   <table style={{ width: "100%", height: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
                     <colgroup>
                       <col style={{ width: "13%" }} />
@@ -590,7 +590,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   const cellPad = "1px 3px";
                   const border = "1px solid #e5e7eb";
                   return (
-                    <div style={{ flexShrink: 0, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <div style={{ flex: 1, border: "1px solid #e5e7eb", overflow: "hidden" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: FS, tableLayout: "fixed" }}>
                         <colgroup>
                           <col style={{ width: "16%" }} />
