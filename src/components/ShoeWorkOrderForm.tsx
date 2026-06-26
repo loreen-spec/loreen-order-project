@@ -42,6 +42,7 @@ function emptyShoeOrder(): ShoeWorkOrder {
     deliveryDate: "",
     vendorUnitPrice: "",
     productImage: "",
+    detailImage: "",
     sizes: [...DEFAULT_SIZES],
     colorSizeTable: [],
     totalQuantity: 0,
@@ -130,6 +131,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
   >("idle");
   const notionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const detailImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initial) setWo({ ...initial });
@@ -240,9 +242,9 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
   }
 
   // ── 이미지 업로드 ──────────────────────────────────────────
-  function handleImageFile(file: File) {
+  function handleImageFile(file: File, field: "productImage" | "detailImage" = "productImage") {
     const reader = new FileReader();
-    reader.onload = (e) => set("productImage", e.target?.result as string ?? "");
+    reader.onload = (e) => set(field, e.target?.result as string ?? "");
     reader.readAsDataURL(file);
   }
 
@@ -378,54 +380,74 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
         </SectionCard>
 
         {/* ── 대표사진 + 발주수량 ─────────────────────────────── */}
-        <SectionCard title="대표사진 & 발주 수량">
+        <SectionCard title="대표사진 & 디테일사진 & 발주 수량">
           <div className="flex gap-6 items-start">
 
-            {/* 대표사진 */}
-            <div className="flex flex-col gap-2 shrink-0" style={{ width: "180px" }}>
-              <div
-                className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-pink-300 transition-colors flex items-center justify-center"
-                style={{ height: "180px", background: "#fafafa" }}
-                onClick={() => imageInputRef.current?.click()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const file = e.dataTransfer.files[0];
-                  if (file?.type.startsWith("image/")) handleImageFile(file);
-                }}
-                onDragOver={(e) => e.preventDefault()}
-              >
-                {wo.productImage ? (
-                  <img
-                    src={wo.productImage}
-                    alt="대표사진"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="text-center text-gray-400 text-xs px-4">
-                    <Upload size={22} className="mx-auto mb-1 text-gray-300" />
-                    클릭 또는 드래그로
-                    <br />
-                    이미지 업로드
-                  </div>
-                )}
+            {/* 대표사진 + 디테일사진 (세로 배치) */}
+            <div className="flex flex-col gap-3 shrink-0" style={{ width: "180px" }}>
+              {/* 대표사진 */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-gray-500">대표사진</span>
+                <div
+                  className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-pink-300 transition-colors flex items-center justify-center"
+                  style={{ height: "140px", background: "#fafafa" }}
+                  onClick={() => imageInputRef.current?.click()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file?.type.startsWith("image/")) handleImageFile(file, "productImage");
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  {wo.productImage ? (
+                    <img src={wo.productImage} alt="대표사진" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="text-center text-gray-400 text-xs px-4">
+                      <Upload size={18} className="mx-auto mb-1 text-gray-300" />
+                      클릭/드래그
+                    </div>
+                  )}
+                </div>
+                <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f, "productImage"); }} />
+                <input type="text"
+                  value={wo.productImage.startsWith("data:") ? "" : wo.productImage}
+                  onChange={(e) => set("productImage", e.target.value)}
+                  placeholder="URL 직접 입력"
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
               </div>
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleImageFile(f);
-                }}
-              />
-              <input
-                type="text"
-                value={wo.productImage.startsWith("data:") ? "" : wo.productImage}
-                onChange={(e) => set("productImage", e.target.value)}
-                placeholder="이미지 URL 직접 입력"
-                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400"
-              />
+
+              {/* 디테일사진 */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-gray-500">디테일사진</span>
+                <div
+                  className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-blue-300 transition-colors flex items-center justify-center"
+                  style={{ height: "140px", background: "#fafafa" }}
+                  onClick={() => detailImageInputRef.current?.click()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file?.type.startsWith("image/")) handleImageFile(file, "detailImage");
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  {wo.detailImage ? (
+                    <img src={wo.detailImage} alt="디테일사진" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="text-center text-gray-400 text-xs px-4">
+                      <Upload size={18} className="mx-auto mb-1 text-gray-300" />
+                      클릭/드래그
+                    </div>
+                  )}
+                </div>
+                <input ref={detailImageInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f, "detailImage"); }} />
+                <input type="text"
+                  value={wo.detailImage?.startsWith("data:") ? "" : (wo.detailImage ?? "")}
+                  onChange={(e) => set("detailImage", e.target.value)}
+                  placeholder="URL 직접 입력"
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
+              </div>
             </div>
 
             {/* 발주수량 테이블 */}

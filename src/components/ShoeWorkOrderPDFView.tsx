@@ -227,43 +227,92 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
                 }}
               >
 
-                {/* ── COL A: 대표사진 ── */}
+                {/* ── COL A: 대표사진(위) + 디테일사진(아래) ── */}
                 <div
                   style={{
-                    ...S.cell,
                     display: "flex",
                     flexDirection: "column",
-                    overflow: "hidden",
+                    gap: "2px",
+                    minHeight: 0,
                     height: "100%",
                   }}
                 >
-                  <div style={{ ...S.lbl, padding: "2px 4px", flexShrink: 0, textAlign: "left" }}>
-                    대표사진
-                  </div>
+                  {/* 대표사진 */}
                   <div
                     style={{
-                      flex: 1,
+                      flex: "1 0 0",
+                      ...S.cell,
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "#fafafa",
-                      minHeight: 0,
+                      flexDirection: "column",
                       overflow: "hidden",
+                      minHeight: 0,
                     }}
                   >
-                    {wo.productImage ? (
-                      <img
-                        src={wo.productImage}
-                        alt="대표사진"
-                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                      />
-                    ) : (
-                      <span style={{ fontSize: "8pt", color: "#ccc" }}>대표사진</span>
-                    )}
+                    <div style={{ ...S.lbl, padding: "2px 4px", flexShrink: 0, textAlign: "left" }}>
+                      대표사진
+                    </div>
+                    <div
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#fafafa",
+                        minHeight: 0,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {wo.productImage ? (
+                        <img
+                          src={wo.productImage}
+                          alt="대표사진"
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: "8pt", color: "#ccc" }}>대표사진</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 디테일사진 */}
+                  <div
+                    style={{
+                      flex: "1 0 0",
+                      ...S.cell,
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                      minHeight: 0,
+                    }}
+                  >
+                    <div style={{ ...S.lbl, padding: "2px 4px", flexShrink: 0, textAlign: "left" }}>
+                      디테일사진
+                    </div>
+                    <div
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#fafafa",
+                        minHeight: 0,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {wo.detailImage ? (
+                        <img
+                          src={wo.detailImage}
+                          alt="디테일사진"
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: "8pt", color: "#ccc" }}>디테일사진</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* ── COL B: 발주수량 + 부자재 + 주의사항 ── */}
+                {/* ── COL B: 발주수량(위) + 주의사항(아래) ── */}
                 <div
                   style={{
                     display: "flex",
@@ -324,65 +373,20 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
                       </tbody>
                       <tfoot>
                         <tr>
-                          <td
-                            style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px 2px" }}
-                          >
+                          <td style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px 2px" }}>
                             계
                           </td>
                           {wo.sizes.map((sz) => (
-                            <td
-                              key={sz}
-                              style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px" }}
-                            >
+                            <td key={sz} style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px" }}>
                               {colTotal(sz)}
                             </td>
                           ))}
-                          <td
-                            style={{
-                              ...S.cell,
-                              background: "#dde8ff",
-                              fontWeight: 900,
-                              color: "#1a56db",
-                              fontSize: FX,
-                              padding: "1.5px",
-                            }}
-                          >
+                          <td style={{ ...S.cell, background: "#dde8ff", fontWeight: 900, color: "#1a56db", fontSize: FX, padding: "1.5px" }}>
                             {wo.totalQuantity}
                           </td>
                         </tr>
                       </tfoot>
                     </table>
-                  </div>
-
-                  {/* 오즈키즈 제공 부자재 */}
-                  <div
-                    style={{
-                      ...S.cell,
-                      flexShrink: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <div
-                      style={{
-                        ...S.lbl,
-                        padding: "2px 4px",
-                        flexShrink: 0,
-                        textAlign: "left",
-                      }}
-                    >
-                      오즈키즈 제공 부자재
-                    </div>
-                    <div
-                      style={{
-                        padding: "3px 4px",
-                        textAlign: "left",
-                        fontSize: FL,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {wo.suppliedMaterials || "제공 없음"}
-                    </div>
                   </div>
 
                   {/* 주의사항 */}
@@ -393,16 +397,10 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
                       display: "flex",
                       flexDirection: "column",
                       overflow: "hidden",
+                      minHeight: 0,
                     }}
                   >
-                    <div
-                      style={{
-                        ...S.lbl,
-                        padding: "2px 4px",
-                        flexShrink: 0,
-                        textAlign: "left",
-                      }}
-                    >
+                    <div style={{ ...S.lbl, padding: "2px 4px", flexShrink: 0, textAlign: "left" }}>
                       주의 사항
                     </div>
                     <div
@@ -423,55 +421,86 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* ── COL C: 제품 사양 ── */}
+                {/* ── COL C: 제품사양(위) + 오즈키즈 제공 부자재(아래) ── */}
                 <div
                   style={{
-                    ...S.cell,
-                    overflow: "hidden",
-                    height: "100%",
                     display: "flex",
                     flexDirection: "column",
+                    gap: "2px",
+                    minHeight: 0,
+                    height: "100%",
                   }}
                 >
-                  <table
+                  {/* 제품 사양 */}
+                  <div
                     style={{
-                      width: "100%",
-                      height: "100%",
-                      borderCollapse: "collapse",
-                      tableLayout: "fixed",
+                      flex: "3 0 0",
+                      ...S.cell,
+                      overflow: "hidden",
+                      minHeight: 0,
+                      display: "flex",
+                      flexDirection: "column",
                     }}
                   >
-                    <colgroup>
-                      <col style={{ width: "42%" }} />
-                      <col />
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th
-                          colSpan={2}
-                          style={lbl({ padding: "2px 4px", fontSize: FM })}
-                        >
-                          제품 사양
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {wo.specs.map((spec, i) => (
-                        <tr key={i}>
-                          <td style={lbl({ fontSize: FM, padding: "1.5px 3px" })}>{spec.item}</td>
-                          <td
-                            style={td({
-                              fontSize: FL,
-                              padding: "1.5px 3px",
-                              textAlign: "left",
-                            })}
-                          >
-                            {spec.value}
-                          </td>
+                    <table
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderCollapse: "collapse",
+                        tableLayout: "fixed",
+                      }}
+                    >
+                      <colgroup>
+                        <col style={{ width: "42%" }} />
+                        <col />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th colSpan={2} style={lbl({ padding: "2px 4px", fontSize: FM })}>
+                            제품 사양
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {wo.specs.map((spec, i) => (
+                          <tr key={i}>
+                            <td style={lbl({ fontSize: FM, padding: "1.5px 3px" })}>{spec.item}</td>
+                            <td style={td({ fontSize: FL, padding: "1.5px 3px", textAlign: "left" })}>
+                              {spec.value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 오즈키즈 제공 부자재 */}
+                  <div
+                    style={{
+                      flex: "1 0 0",
+                      ...S.cell,
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                      minHeight: 0,
+                    }}
+                  >
+                    <div style={{ ...S.lbl, padding: "2px 4px", flexShrink: 0, textAlign: "left" }}>
+                      오즈키즈 제공 부자재
+                    </div>
+                    <div
+                      style={{
+                        padding: "4px 6px",
+                        textAlign: "left",
+                        fontSize: FL,
+                        lineHeight: 1.5,
+                        flex: 1,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {wo.suppliedMaterials || "제공 없음"}
+                    </div>
+                  </div>
                 </div>
 
               </div>

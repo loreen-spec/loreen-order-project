@@ -153,6 +153,7 @@ export interface ShoeWorkOrder {
 
   notionProductId?: string;
   productImage: string;
+  detailImage: string;
 
   sizes: string[];
   colorSizeTable: ShoeColorSizeRow[];
