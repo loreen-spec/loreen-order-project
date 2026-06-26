@@ -122,6 +122,54 @@ export interface WorkOrder {
   updatedAt: string;
 }
 
+// ─── Shoe Work Order Types ─────────────────────────────────
+export interface ShoeColorSizeRow {
+  color: string;
+  colorCode?: string;
+  sizes: Record<string, number>;
+  total: number;
+}
+
+export interface ShoeSpec {
+  id: string;
+  item: string;
+  value: string;
+}
+
+export interface ShoeWorkOrder {
+  id: string;
+  board: "슈즈";
+  category: "슈즈";
+
+  styleNo: string;
+  productName: string;
+  vendor: string;
+  orderCount: number;
+  manager: string;
+  director: string;
+  orderDate: string;
+  deliveryDate: string;
+  vendorUnitPrice: string;
+
+  notionProductId?: string;
+  productImage: string;
+
+  sizes: string[];
+  colorSizeTable: ShoeColorSizeRow[];
+  totalQuantity: number;
+
+  suppliedMaterials: string;
+  cautions: string;
+  specs: ShoeSpec[];
+
+  status: "draft" | "pending_confirm" | "completed" | "custom";
+  customStatus?: string;
+  directorApproved?: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Product Types ─────────────────────────────────────────
 export interface Product {
   id: string;

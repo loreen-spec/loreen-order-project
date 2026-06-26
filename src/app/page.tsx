@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
 import { FilePlus, History, ClipboardList } from "lucide-react";
-import type { WorkOrder } from "@/types";
+import type { WorkOrder, ShoeWorkOrder } from "@/types";
 import Sidebar, { type SidebarPage, type CategoryFilter } from "@/components/Sidebar";
 import OrderManagement from "@/components/OrderManagement";
 import WorkOrderList from "@/components/WorkOrderList";
 import WorkOrderForm from "@/components/WorkOrderForm";
 import WorkOrderPDFView from "@/components/WorkOrderPDFView";
+import ShoeWorkOrderForm from "@/components/ShoeWorkOrderForm";
+import ShoeWorkOrderPDFView from "@/components/ShoeWorkOrderPDFView";
 
 // ─── 준비중 페이지 ─────────────────────────────────────────
 function ComingSoon({ title, icon: Icon }: { title: string; icon: any }) {
@@ -23,11 +25,18 @@ function ComingSoon({ title, icon: Icon }: { title: string; icon: any }) {
 
 // ─── 작업지시서 섹션 ──────────────────────────────────────
 function WorkOrderSection({ initialPage, categoryFilter }: { initialPage: "list" | "new"; categoryFilter: CategoryFilter }) {
-  const [view, setView]       = useState<"list" | "form" | "pdf">(initialPage === "new" ? "form" : "list");
-  const [editing, setEditing] = useState<WorkOrder | null>(null);
-  const [previewing, setPreview] = useState<WorkOrder | null>(null);
+  const [view, setView]       = useState<"list" | "form">(initialPage === "new" ? "form" : "list");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editing, setEditing] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [previewing, setPreview] = useState<any>(null);
 
-  async function handleSave(wo: WorkOrder) {
+  // 슈즈 작업지시서인지 판별 (board 필드 또는 category 필드로 확인)
+  function isShoeOrder(wo: unknown): wo is ShoeWorkOrder {
+    return (wo as ShoeWorkOrder)?.board === "슈즈";
+  }
+
+  async function handleSave(wo: WorkOrder | ShoeWorkOrder) {
     const res = await fetch("/api/work-orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -43,7 +52,7 @@ function WorkOrderSection({ initialPage, categoryFilter }: { initialPage: "list"
     setEditing(null);
   }
 
-  function handleEdit(wo: WorkOrder) {
+  function handleEdit(wo: WorkOrder | ShoeWorkOrder) {
     setEditing(wo);
     setView("form");
   }
@@ -53,15 +62,29 @@ function WorkOrderSection({ initialPage, categoryFilter }: { initialPage: "list"
     setView("form");
   }
 
-  function handlePreview(wo: WorkOrder) {
+  function handlePreview(wo: WorkOrder | ShoeWorkOrder) {
     setPreview(wo);
   }
 
+  // 현재 폼이 슈즈 모드인지: 사이드바가 슈즈이거나, 편집 중인 항목이 슈즈인 경우
+  const shoeFormMode = categoryFilter === "슈즈" || isShoeOrder(editing);
+
   return (
     <>
-      {previewing && (
-        <WorkOrderPDFView wo={previewing} onClose={() => setPreview(null)} />
+      {/* PDF 미리보기: 슈즈/의류 분기 */}
+      {previewing && isShoeOrder(previewing) && (
+        <ShoeWorkOrderPDFView
+          wo={previewing as ShoeWorkOrder}
+          onClose={() => setPreview(null)}
+        />
       )}
+      {previewing && !isShoeOrder(previewing) && (
+        <WorkOrderPDFView
+          wo={previewing as WorkOrder}
+          onClose={() => setPreview(null)}
+        />
+      )}
+
       {view === "list" && (
         <WorkOrderList
           onNew={handleNew}
@@ -70,9 +93,19 @@ function WorkOrderSection({ initialPage, categoryFilter }: { initialPage: "list"
           categoryFilter={categoryFilter}
         />
       )}
-      {view === "form" && (
+
+      {/* 작업지시서 폼: 슈즈/의류 분기 */}
+      {view === "form" && shoeFormMode && (
+        <ShoeWorkOrderForm
+          initial={isShoeOrder(editing) ? (editing as ShoeWorkOrder) : null}
+          onSave={handleSave}
+          onCancel={() => { setView("list"); setEditing(null); }}
+          onPreview={handlePreview}
+        />
+      )}
+      {view === "form" && !shoeFormMode && (
         <WorkOrderForm
-          initial={editing}
+          initial={editing as WorkOrder | null}
           onSave={handleSave}
           onCancel={() => { setView("list"); setEditing(null); }}
           onPreview={handlePreview}
