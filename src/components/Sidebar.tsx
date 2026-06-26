@@ -47,7 +47,7 @@ export default function Sidebar({ activePage, onNavigate, categoryFilter, onCate
       {/* 로고 */}
       <div className="h-16 flex items-center gap-3 px-5 border-b border-gray-100">
         <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-xl select-none shadow-sm"
-          style={{ background: "linear-gradient(135deg, #fde68a 0%, #fca5a5 60%, #f9a8d4 100%)" }}>
+          style={{ background: "linear-gradient(135deg, #c4b5fd 0%, #836CE0 100%)" }}>
           📋
         </div>
         <div>
@@ -74,9 +74,9 @@ export default function Sidebar({ activePage, onNavigate, categoryFilter, onCate
                 className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-semibold transition-all ${
                   active
                     ? "text-white shadow-sm"
-                    : "bg-gray-50 text-gray-400 hover:bg-pink-50 hover:text-pink-500"
+                    : "bg-gray-50 text-gray-400 hover:bg-violet-50 hover:text-violet-500"
                 }`}
-                style={active ? { background: "linear-gradient(135deg, #f472b6, #fb7185)" } : {}}
+                style={active ? { background: "#836CE0" } : {}}
               >
                 <span className="text-base leading-none">{c.emoji}</span>
                 <span>{c.label}</span>
@@ -97,7 +97,7 @@ export default function Sidebar({ activePage, onNavigate, categoryFilter, onCate
                 onClick={() => setOpen((o) => ({ ...o, [group.group]: !o[group.group] }))}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
               >
-                <Icon size={15} className="text-pink-400" />
+                <Icon size={15} className="text-violet-400" />
                 <span className="flex-1 text-left font-bold text-xs text-gray-500 tracking-widest uppercase">{group.group}</span>
                 {isOpen
                   ? <ChevronDown size={13} className="text-gray-300" />
@@ -115,13 +115,13 @@ export default function Sidebar({ activePage, onNavigate, categoryFilter, onCate
                         onClick={() => onNavigate(item.key)}
                         className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                           active
-                            ? "bg-pink-50 text-pink-700"
+                            ? "bg-violet-50 text-violet-700"
                             : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                         }`}
                       >
-                        <ItemIcon size={15} className={active ? "text-pink-500" : "text-gray-400"} />
+                        <ItemIcon size={15} className={active ? "text-violet-500" : "text-gray-400"} />
                         {item.label}
-                        {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-pink-400" />}
+                        {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400" />}
                       </button>
                     );
                   })}

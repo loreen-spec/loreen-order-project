@@ -159,7 +159,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handlePrint}
-              className="flex items-center gap-1.5 px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
+              className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors"
+              style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}>
               <Printer size={14} />인쇄 / PDF 저장
             </button>
             <button onClick={onClose}

@@ -11,7 +11,7 @@ interface Props { products: Product[] }
 const BOARD_STYLE: Record<string, string> = {
   슈즈: "bg-amber-100 text-amber-700",
   잡화: "bg-emerald-100 text-emerald-700",
-  의류: "bg-indigo-100 text-indigo-700",
+  의류: "bg-violet-100 text-indigo-700",
 };
 
 export default function WeekVendorList({ products }: Props) {
@@ -51,8 +51,8 @@ export default function WeekVendorList({ products }: Props) {
                   onClick={() => setOpenVendor(openVendor === v.vendor ? null : v.vendor)}
                   className="w-full flex items-center gap-2.5 px-3.5 py-3 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-                    <Building2 size={13} className="text-indigo-500" />
+                  <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                    <Building2 size={13} className="text-violet-500" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <div className="font-semibold text-sm text-gray-900 truncate">{v.vendor || "업체미정"}</div>
@@ -76,7 +76,7 @@ export default function WeekVendorList({ products }: Props) {
                       <button
                         key={p.id}
                         onClick={() => setSelected(p)}
-                        className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-indigo-50/50 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-violet-50/50 transition-colors text-left"
                       >
                         <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded ${BOARD_STYLE[p.board] ?? BOARD_STYLE["의류"]}`}>
                           {p.board || "의류"}
@@ -86,7 +86,7 @@ export default function WeekVendorList({ products }: Props) {
                           <div className="text-[10px] text-gray-400">{p.arrivalDate}</div>
                         </div>
                         <div className="shrink-0 text-right">
-                          <div className="text-xs font-bold text-indigo-600">
+                          <div className="text-xs font-bold text-violet-600">
                             {p.orderQuantity > 0 ? `${p.orderQuantity.toLocaleString()}장` : "—"}
                           </div>
                           <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-medium ${STATUS_COLOR[p.status]}`}>

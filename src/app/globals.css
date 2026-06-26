@@ -1,15 +1,24 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 
 @theme {
-  --font-family-sans: 'Inter', system-ui, sans-serif;
-  --font-family-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --color-brand-50: #f0f4ff;
-  --color-brand-100: #e0eaff;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-surface-50: #f8f9fb;
-  --color-surface-100: #f1f3f7;
+  --font-family-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-family-display: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* KC보드 컬러 팔레트 */
+  --color-brand-50:  #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #836CE0;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+
+  --color-surface-50:  #F8F8FB;
+  --color-surface-100: #F2F2F7;
+  --color-surface-200: #E3E3ED;
+
   --shadow-card: 0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.04);
   --shadow-card-hover: 0 4px 12px 0 rgba(0,0,0,0.08);
   --shadow-float: 0 8px 30px rgba(0,0,0,0.12);
@@ -18,8 +27,14 @@
 }
 
 :root {
-  --font-inter: 'Inter', system-ui, sans-serif;
-  --font-plus-jakarta: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --color-primary:       #836CE0;
+  --color-primary-light: #ede9fe;
+  --color-primary-muted: #f5f3ff;
+  --color-fg:            #363649;
+  --color-fg-muted:      #75758A;
+  --color-bg:            #F8F8FB;
+  --color-muted:         #F2F2F7;
+  --color-border:        #E3E3ED;
 }
 
 * {
@@ -27,19 +42,19 @@
 }
 
 html {
-  font-family: var(--font-inter);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background-color: #f8f9fb;
-  color: #111827;
+  background-color: #F8F8FB;
+  color: #363649;
 }
 
 @layer utilities {
   .font-display {
-    font-family: var(--font-plus-jakarta);
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
   .scrollbar-hide {
     -ms-overflow-style: none;

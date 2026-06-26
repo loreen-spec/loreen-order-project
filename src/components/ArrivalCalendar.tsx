@@ -19,7 +19,7 @@ const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 const BOARD_STYLE: Record<string, string> = {
   슈즈: "bg-amber-200/70 text-amber-800",
   잡화: "bg-emerald-200/70 text-emerald-800",
-  의류: "bg-indigo-200/70 text-indigo-900",
+  의류: "bg-violet-200/70 text-indigo-900",
 };
 
 export default function ArrivalCalendar({ products, onDateSelect, selectedDate }: Props) {
@@ -87,14 +87,14 @@ export default function ArrivalCalendar({ products, onDateSelect, selectedDate }
                 key={day.dateStr}
                 onClick={() => handleDateClick(day.dateStr, day.products)}
                 className={`min-h-[58px] rounded-xl p-1.5 text-left transition-all ${
-                  isSelected ? "bg-indigo-600 ring-2 ring-indigo-500 ring-offset-1"
-                  : hasItems ? "bg-indigo-50 hover:bg-indigo-100 cursor-pointer"
+                  isSelected ? "bg-violet-600 ring-2 ring-violet-500 ring-offset-1"
+                  : hasItems ? "bg-violet-50 hover:bg-violet-100 cursor-pointer"
                   : "hover:bg-gray-50 cursor-default"
                 }`}
               >
                 <div className={`text-xs font-semibold mb-1 w-5 h-5 flex items-center justify-center rounded-full ${
-                  isSelected ? "bg-white text-indigo-600"
-                  : today ? "bg-indigo-600 text-white"
+                  isSelected ? "bg-white text-violet-600"
+                  : today ? "bg-violet-600 text-white"
                   : dow === 0 ? "text-red-400"
                   : dow === 6 ? "text-blue-400"
                   : "text-gray-600"
@@ -124,7 +124,7 @@ export default function ArrivalCalendar({ products, onDateSelect, selectedDate }
 
         {/* 범례 */}
         <div className="flex items-center gap-3 pt-2 border-t border-gray-100 flex-wrap">
-          {[["bg-indigo-400","의류"],["bg-amber-400","슈즈"],["bg-emerald-400","잡화"],["bg-red-400","지연"]].map(([c,l]) => (
+          {[["bg-violet-400","의류"],["bg-amber-400","슈즈"],["bg-emerald-400","잡화"],["bg-red-400","지연"]].map(([c,l]) => (
             <div key={l} className="flex items-center gap-1.5 text-xs text-gray-400">
               <div className={`w-2 h-2 rounded-full ${c}`} />{l}
             </div>

@@ -109,7 +109,7 @@ function Inp({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 w-full ${className}`}
+      className={`border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 w-full ${className}`}
     />
   );
 }
@@ -299,7 +299,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors"
           >
             <Save size={14} />저장
           </button>
@@ -355,7 +355,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
                 min={1}
                 value={wo.orderCount}
                 onChange={(e) => set("orderCount", Number(e.target.value) || 1)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 w-full"
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 w-full"
               />
             </Field>
             <Field label="작업처">
@@ -414,7 +414,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
                   value={wo.productImage.startsWith("data:") ? "" : wo.productImage}
                   onChange={(e) => set("productImage", e.target.value)}
                   placeholder="URL 직접 입력"
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400" />
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
               </div>
 
               {/* 디테일사진 */}
@@ -463,7 +463,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
                   </button>
                   <button
                     onClick={addColor}
-                    className="text-xs text-pink-500 hover:text-pink-700 border border-pink-200 rounded-lg px-2 py-1 transition-colors"
+                    className="text-xs text-violet-500 hover:text-pink-700 border border-pink-200 rounded-lg px-2 py-1 transition-colors"
                   >
                     + 색상 추가
                   </button>
@@ -494,7 +494,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
                           value={row.color}
                           onChange={(e) => updateColorRow(idx, "color", e.target.value)}
                           placeholder="색상명"
-                          className="w-full px-2 py-1.5 text-xs focus:outline-none focus:bg-pink-50 bg-transparent"
+                          className="w-full px-2 py-1.5 text-xs focus:outline-none focus:bg-violet-50 bg-transparent"
                         />
                       </td>
                       {wo.sizes.map((sz) => (
@@ -504,7 +504,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
                             min={0}
                             value={row.sizes[sz] ?? 0}
                             onChange={(e) => updateColorRow(idx, sz, e.target.value)}
-                            className="w-full px-1 py-1.5 text-xs text-center focus:outline-none focus:bg-pink-50 bg-transparent"
+                            className="w-full px-1 py-1.5 text-xs text-center focus:outline-none focus:bg-violet-50 bg-transparent"
                           />
                         </td>
                       ))}

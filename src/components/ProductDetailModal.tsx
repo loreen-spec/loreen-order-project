@@ -104,7 +104,7 @@ export default function ProductDetailModal({ product, onClose }: Props) {
             <div className="flex items-center gap-1 text-gray-400 text-xs">
               <Layers size={11} /> 발주수량
             </div>
-            <div className="font-display font-bold text-sm text-indigo-600">{product.orderQuantity.toLocaleString()}장</div>
+            <div className="font-display font-bold text-sm text-violet-600">{product.orderQuantity.toLocaleString()}장</div>
           </div>
         </div>
 
@@ -127,7 +127,7 @@ export default function ProductDetailModal({ product, onClose }: Props) {
           )}
           {comments.map((c) => (
             <div key={c.id} className="flex gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold shrink-0">
+              <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 text-xs font-bold shrink-0">
                 {c.author.charAt(0)}
               </div>
               <div className="flex-1 bg-gray-50 rounded-2xl rounded-tl-sm px-3.5 py-2.5">
@@ -151,19 +151,19 @@ export default function ProductDetailModal({ product, onClose }: Props) {
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
             placeholder="이름"
-            className="w-16 text-xs border border-gray-200 rounded-lg px-2 py-2 text-center bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            className="w-16 text-xs border border-gray-200 rounded-lg px-2 py-2 text-center bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-300"
           />
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={product.status === "delayed" ? "지연 사유를 입력하세요..." : "댓글을 입력하세요..."}
-            className="flex-1 text-sm border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
+            className="flex-1 text-sm border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 bg-gray-50"
           />
           <button
             type="submit"
             disabled={sending || !text.trim()}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors shrink-0"
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors shrink-0"
           >
             <Send size={15} />
           </button>
@@ -174,7 +174,7 @@ export default function ProductDetailModal({ product, onClose }: Props) {
             href={`https://notion.so/${product.notionPageId.replace(/-/g, "")}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-indigo-600 transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-violet-600 transition-colors"
           >
             <ExternalLink size={11} /> 노션에서 보기
           </a>

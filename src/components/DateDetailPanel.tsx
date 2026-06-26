@@ -16,7 +16,7 @@ interface Props {
 const BOARD_STYLE: Record<string, string> = {
   슈즈: "bg-amber-100 text-amber-700",
   잡화: "bg-emerald-100 text-emerald-700",
-  의류: "bg-indigo-100 text-indigo-700",
+  의류: "bg-violet-100 text-indigo-700",
 };
 
 export default function DateDetailPanel({ date, products, onClose }: Props) {
@@ -30,8 +30,8 @@ export default function DateDetailPanel({ date, products, onClose }: Props) {
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-              <Calendar size={15} className="text-indigo-500" />
+            <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+              <Calendar size={15} className="text-violet-500" />
             </div>
             <div>
               <div className="font-bold text-gray-900 text-sm">
@@ -56,7 +56,7 @@ export default function DateDetailPanel({ date, products, onClose }: Props) {
               <button
                 key={p.id}
                 onClick={() => setSelected(p)}
-                className="w-full flex items-start gap-3 bg-gray-50 hover:bg-indigo-50 rounded-xl px-3.5 py-3 transition-colors text-left group"
+                className="w-full flex items-start gap-3 bg-gray-50 hover:bg-violet-50 rounded-xl px-3.5 py-3 transition-colors text-left group"
               >
                 <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5 ${BOARD_STYLE[p.board] ?? BOARD_STYLE["의류"]}`}>
                   {p.board || "의류"}
@@ -66,7 +66,7 @@ export default function DateDetailPanel({ date, products, onClose }: Props) {
                   <div className="text-xs text-gray-400 mt-0.5">{p.vendor || "업체미정"} · {p.category}</div>
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-1.5">
-                  <div className="flex items-center gap-1 text-xs font-bold text-indigo-600">
+                  <div className="flex items-center gap-1 text-xs font-bold text-violet-600">
                     <Layers size={11} />
                     {p.orderQuantity > 0 ? `${p.orderQuantity.toLocaleString()}장` : "—"}
                   </div>

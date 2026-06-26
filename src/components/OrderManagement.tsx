@@ -15,7 +15,7 @@ function parseColorSize(raw: string) {
 }
 
 const BOARD_META: Record<string, { label: string; icon: any; color: string; bg: string; border: string }> = {
-  의류: { label: "의류", icon: Shirt,       color: "text-indigo-600", bg: "bg-indigo-50",  border: "border-indigo-200" },
+  의류: { label: "의류", icon: Shirt,       color: "text-violet-600", bg: "bg-violet-50",  border: "border-violet-200" },
   슈즈: { label: "슈즈", icon: Footprints,  color: "text-amber-600",  bg: "bg-amber-50",   border: "border-amber-200"  },
   잡화: { label: "잡화", icon: ShoppingBag, color: "text-emerald-600",bg: "bg-emerald-50", border: "border-emerald-200" },
 };
@@ -57,7 +57,7 @@ const ColorSizeTable = memo(function ColorSizeTable({ rows }: { rows: OrderProdu
           <tr className="bg-gray-50">
             <th className="text-left px-2.5 py-1.5 text-gray-400 font-medium rounded-tl-lg w-20">색상 ＼ 사이즈</th>
             {sizes.map((sz) => <th key={sz} className="px-2 py-1.5 text-center text-gray-600 font-semibold min-w-[44px]">{sz}</th>)}
-            <th className="px-2.5 py-1.5 text-center text-gray-700 font-bold bg-indigo-50 rounded-tr-lg">합계</th>
+            <th className="px-2.5 py-1.5 text-center text-gray-700 font-bold bg-violet-50 rounded-tr-lg">합계</th>
           </tr>
         </thead>
         <tbody>
@@ -68,12 +68,12 @@ const ColorSizeTable = memo(function ColorSizeTable({ rows }: { rows: OrderProdu
                 const q = qtyMap[`${color}__${sz}`] ?? 0;
                 return <td key={sz} className={`px-2 py-1.5 text-center ${q > 0 ? "text-gray-800 font-medium" : "text-gray-200"}`}>{q > 0 ? q.toLocaleString() : "—"}</td>;
               })}
-              <td className="px-2.5 py-1.5 text-center font-bold text-indigo-700 bg-indigo-50/60">{rowTotals[ci].toLocaleString()}</td>
+              <td className="px-2.5 py-1.5 text-center font-bold text-indigo-700 bg-violet-50/60">{rowTotals[ci].toLocaleString()}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-indigo-50/80 border-t border-indigo-100">
+          <tr className="bg-violet-50/80 border-t border-violet-100">
             <td className="px-2.5 py-1.5 font-bold text-gray-700 text-xs">합계</td>
             {colTotals.map((t, i) => <td key={i} className="px-2 py-1.5 text-center font-bold text-gray-700">{t.toLocaleString()}</td>)}
             <td className="px-2.5 py-1.5 text-center font-bold text-indigo-800">{rowTotals.reduce((a, b) => a + b, 0).toLocaleString()}장</td>
@@ -184,8 +184,8 @@ const BoardPanel = memo(function BoardPanel({ board, products }: { board: string
             <button key={v} onClick={() => setSelectedVendor(v)}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
                 selectedVendor === v
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-500 border border-gray-200 hover:border-indigo-300 hover:text-indigo-600"
+                  ? "bg-violet-600 text-white"
+                  : "bg-white text-gray-500 border border-gray-200 hover:border-indigo-300 hover:text-violet-600"
               }`}
             >
               {v === "전체" ? `전체 (${products.length})` : v}
@@ -207,7 +207,7 @@ const BoardPanel = memo(function BoardPanel({ board, products }: { board: string
 // ── 새 발주 게시판
 const NEW_DAYS = 7;
 const BULLETIN_BOARD_COLOR = {
-  의류: { bg: "bg-indigo-50", text: "text-indigo-600" },
+  의류: { bg: "bg-violet-50", text: "text-violet-600" },
   슈즈: { bg: "bg-amber-50",  text: "text-amber-600"  },
 } as const;
 
@@ -348,7 +348,7 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
   const totalQty = useMemo(() => filteredOrders.reduce((s, o) => s + o.totalQuantity, 0), [filteredOrders]);
 
   const summaryCards = useMemo(() => [
-    { label: "생산요청 총 건수", value: `${filteredOrders.length}건`,     icon: Package,   color: "text-indigo-600", bg: "bg-indigo-50" },
+    { label: "생산요청 총 건수", value: `${filteredOrders.length}건`,     icon: Package,   color: "text-violet-600", bg: "bg-violet-50" },
     { label: "총 발주 수량",     value: `${totalQty.toLocaleString()}장`, icon: Layers,    color: "text-violet-600", bg: "bg-violet-50" },
     { label: "업데이트",         value: lastUpdated?.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) ?? "—", icon: RefreshCw, color: "text-emerald-600", bg: "bg-emerald-50" },
   ], [filteredOrders.length, totalQty, lastUpdated]);
@@ -364,13 +364,13 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
             </span>
           )}
           {fetching && (
-            <span className="flex items-center gap-1.5 text-xs text-indigo-500">
+            <span className="flex items-center gap-1.5 text-xs text-violet-500">
               <Loader2 size={12} className="animate-spin" /> 노션 동기화 중...
             </span>
           )}
         </div>
         <button onClick={() => load(false)} disabled={fetching}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 transition-colors disabled:opacity-50 bg-white border border-gray-100 px-3 py-1.5 rounded-lg"
+          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-violet-600 transition-colors disabled:opacity-50 bg-white border border-gray-100 px-3 py-1.5 rounded-lg"
         >
           <RefreshCw size={12} className={fetching ? "animate-spin" : ""} />새로고침
         </button>

@@ -10,7 +10,7 @@ import type { WorkOrder } from "@/types";
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
   draft:           { label: "작성중",   bg: "bg-gray-100",   text: "text-gray-500",   dot: "bg-gray-400"   },
-  pending_confirm: { label: "컨펌대기", bg: "bg-pink-50",    text: "text-pink-600",   dot: "bg-pink-400"   },
+  pending_confirm: { label: "컨펌대기", bg: "bg-violet-50",  text: "text-violet-600", dot: "bg-violet-400"  },
   completed:       { label: "완료",     bg: "bg-emerald-50", text: "text-emerald-600",dot: "bg-emerald-500" },
   custom:          { label: "기타",     bg: "bg-purple-50",  text: "text-purple-600", dot: "bg-purple-400"  },
   // 구버전 호환
@@ -61,11 +61,11 @@ function FilterDropdown({
         onClick={() => setOpen(o => !o)}
         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border transition-colors whitespace-nowrap ${
           isFiltered
-            ? "bg-pink-500 text-white border-pink-500"
-            : "bg-white text-gray-600 border-gray-200 hover:border-pink-300 hover:text-pink-600"
+            ? "bg-[#836CE0] text-white border-[#836CE0]"
+            : "bg-white text-gray-600 border-gray-200 hover:border-violet-300 hover:text-violet-600"
         }`}
       >
-        <span className={`text-[10px] font-semibold ${isFiltered ? "text-indigo-200" : "text-gray-400"}`}>{label}</span>
+        <span className={`text-[10px] font-semibold ${isFiltered ? "text-violet-200" : "text-gray-400"}`}>{label}</span>
         <span>{isFiltered ? selected?.label : "전체"}</span>
         <ChevronDown size={11} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
@@ -77,7 +77,7 @@ function FilterDropdown({
               onClick={() => { onChange(opt.value); setOpen(false); }}
               className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
                 value === opt.value
-                  ? "bg-pink-50 text-pink-700 font-semibold"
+                  ? "bg-violet-50 text-violet-700 font-semibold"
                   : "text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -278,7 +278,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
         {[
           { label: "전체 작업지시서", value: filtered.length + "건",                                                    color: "text-gray-800"    },
           { label: "작성중",          value: filtered.filter(o=>o.status==="draft").length + "건",           color: "text-gray-500"    },
-          { label: "컨펌대기",        value: filtered.filter(o=>o.status==="pending_confirm").length + "건", color: "text-pink-500"    },
+          { label: "컨펌대기",        value: filtered.filter(o=>o.status==="pending_confirm").length + "건", color: "text-violet-500"  },
           { label: "완료",            value: filtered.filter(o=>o.status==="completed").length + "건",       color: "text-emerald-600" },
         ].map((c) => (
           <div key={c.label} className="bg-white rounded-2xl p-4 border border-gray-100">
@@ -297,12 +297,12 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="스타일넘버, 품명, 업체 검색..."
-              className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-indigo-100"
+              className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-100"
             />
           </div>
           <button
             onClick={onNew}
-            className="flex items-center gap-1.5 px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors" style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}
           >
             <Plus size={14} />새 작업지시서
           </button>
@@ -312,7 +312,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           <div className="flex items-center gap-1 text-gray-400">
             <SlidersHorizontal size={13} />
             {activeFilterCount > 0 && (
-              <span className="w-4 h-4 bg-pink-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              <span className="w-4 h-4 bg-[#836CE0] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
@@ -371,7 +371,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           </div>
           {orders.length === 0 && (
             <button onClick={onNew}
-              className="flex items-center gap-1.5 px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors" style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}
             >
               <Plus size={14} />첫 작업지시서 작성
             </button>
@@ -385,7 +385,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                 {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "작업처", "담당", "납품예정일", "상태"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
                 ))}
-                <th className="px-4 py-3 text-center text-xs font-semibold text-pink-500 whitespace-nowrap">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-violet-500 whitespace-nowrap">
                   {editingDirector ? (
                     <div className="flex items-center gap-1 justify-center">
                       <input
@@ -394,9 +394,9 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                         onKeyDown={(e) => { if (e.key === "Enter") saveDirectorName(); if (e.key === "Escape") setEditingDirector(false); }}
                         placeholder={directorName}
                         autoFocus
-                        className="w-20 px-1.5 py-0.5 text-xs border border-pink-300 rounded-lg focus:outline-none focus:border-pink-400 text-gray-800 font-normal"
+                        className="w-20 px-1.5 py-0.5 text-xs border border-violet-300 rounded-lg focus:outline-none focus:border-violet-400 text-gray-800 font-normal"
                       />
-                      <button onClick={saveDirectorName} className="text-pink-600 hover:text-pink-700"><Check size={12} /></button>
+                      <button onClick={saveDirectorName} className="text-violet-600 hover:text-violet-700"><Check size={12} /></button>
                       <button onClick={() => setEditingDirector(false)} className="text-gray-400 hover:text-gray-600"><X size={12} /></button>
                     </div>
                   ) : (
@@ -404,7 +404,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                       <span>실장 승인</span>
                       <button
                         onClick={() => { setDirectorInput(directorName); setEditingDirector(true); }}
-                        className="text-gray-300 hover:text-pink-500 transition-colors"
+                        className="text-gray-300 hover:text-violet-500 transition-colors"
                         title="승인자 이름 변경"
                       ><Settings2 size={11} /></button>
                     </div>
@@ -422,7 +422,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/30"}`}
                   >
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{o.styleNo || "—"}</td>
-                    <td className="px-4 py-3" style={{ background: "rgba(253, 242, 248, 0.7)" }}>
+                    <td className="px-4 py-3" style={{ background: "rgba(245, 243, 255, 0.5)" }}>
                       {(() => {
                         // notionProductId 직접 링크 우선, 없으면 notionMap 이름 매칭
                         const directId = o.notionProductId?.replace(/-/g, "");
@@ -472,7 +472,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{o.year}/{o.season}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 bg-pink-50 text-pink-700 rounded-lg text-xs font-bold">{o.orderCount}차</span>
+                      <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-lg text-xs font-bold">{o.orderCount}차</span>
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
@@ -501,7 +501,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                           })}
                           {o.status === "custom" && (
                             <input
-                              className="mx-2 mt-1 mb-1 px-2 py-1 text-xs border border-gray-200 rounded-lg w-[calc(100%-16px)] focus:outline-none focus:border-pink-400"
+                              className="mx-2 mt-1 mb-1 px-2 py-1 text-xs border border-gray-200 rounded-lg w-[calc(100%-16px)] focus:outline-none focus:border-violet-400"
                               placeholder="직접 입력..."
                               defaultValue={o.customStatus || ""}
                               onBlur={(e) => updateStatus(o.id, "custom", e.target.value)}
@@ -520,21 +520,21 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                           type="checkbox"
                           checked={!!o.directorApproved}
                           onChange={(e) => toggleApproval(o.id, e.target.checked)}
-                          className="w-4 h-4 accent-pink-500 cursor-pointer"
+                          className="w-4 h-4 accent-violet-500 cursor-pointer"
                         />
                         {o.directorApproved && (
-                          <span className="text-xs font-medium text-pink-600 whitespace-nowrap">{directorName}</span>
+                          <span className="text-xs font-medium text-violet-600 whitespace-nowrap">{directorName}</span>
                         )}
                       </label>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button onClick={() => onPreview(o)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-pink-600 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors"
                           title="미리보기 / PDF"
                         ><Eye size={14} /></button>
                         <button onClick={() => onEdit(o)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-pink-600 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors"
                           title="수정"
                         ><Edit3 size={14} /></button>
                         <button onClick={() => deleteOrder(o.id)}

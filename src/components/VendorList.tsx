@@ -10,7 +10,7 @@ interface Props { vendors: VendorSummary[] }
 const BOARD_STYLE: Record<string, string> = {
   슈즈: "bg-amber-100 text-amber-700",
   잡화: "bg-emerald-100 text-emerald-700",
-  의류: "bg-indigo-100 text-indigo-700",
+  의류: "bg-violet-100 text-indigo-700",
 };
 
 export default function VendorList({ vendors }: Props) {
@@ -33,8 +33,8 @@ export default function VendorList({ vendors }: Props) {
                   className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-                      <Building2 size={15} className="text-indigo-500" />
+                    <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                      <Building2 size={15} className="text-violet-500" />
                     </div>
                     <div className="text-left">
                       <div className="font-medium text-sm text-gray-900">{v.vendor || "업체 미정"}</div>
@@ -59,7 +59,7 @@ export default function VendorList({ vendors }: Props) {
                       <button
                         key={p.id}
                         onClick={() => setSelected(p)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50/50 transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-violet-50/50 transition-colors text-left"
                       >
                         {/* 보드 뱃지 */}
                         <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${BOARD_STYLE[p.board] ?? BOARD_STYLE["의류"]}`}>
@@ -70,7 +70,7 @@ export default function VendorList({ vendors }: Props) {
                           <div className="text-xs text-gray-400 mt-0.5">{p.arrivalDate} · {p.category}</div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                          <span className="flex items-center gap-1 text-xs font-semibold text-violet-600">
                             <Layers size={11} />
                             {p.orderQuantity > 0 ? `${p.orderQuantity.toLocaleString()}장` : "—"}
                           </span>

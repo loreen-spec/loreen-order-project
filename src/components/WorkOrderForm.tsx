@@ -444,14 +444,14 @@ function MaterialAttachList({
           <div key={sec.id} className="border border-gray-100 rounded-2xl bg-white overflow-hidden">
             {/* 헤더 */}
             <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100">
-              {sec.sub && <span className="text-[10px] font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-md flex-shrink-0">{sec.sub}</span>}
-              {sec.isCustom && <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md flex-shrink-0">직접추가</span>}
+              {sec.sub && <span className="text-[10px] font-bold text-violet-500 bg-violet-50 px-1.5 py-0.5 rounded-md flex-shrink-0">{sec.sub}</span>}
+              {sec.isCustom && <span className="text-[10px] font-bold text-violet-500 bg-violet-50 px-1.5 py-0.5 rounded-md flex-shrink-0">직접추가</span>}
               <span className="text-sm font-bold text-gray-800 truncate">{sec.label}</span>
               <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                 {saved && <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={12} />저장됨</span>}
                 <button
                   onClick={() => isOpen ? closeForm(sec.id) : openForm(sec.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${isOpen ? "bg-gray-200 text-gray-600 hover:bg-gray-300" : "bg-pink-500 text-white hover:bg-pink-600"}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${isOpen ? "bg-gray-200 text-gray-600 hover:bg-gray-300" : "bg-violet-500 text-white hover:bg-violet-600"}`}
                 >
                   <Plus size={12} />{isOpen ? "취소" : "올리기"}
                 </button>
@@ -468,12 +468,12 @@ function MaterialAttachList({
 
             {/* 올리기 폼 */}
             {isOpen && (
-              <div className="p-4 border-b border-gray-100 bg-pink-50/30 space-y-3">
+              <div className="p-4 border-b border-gray-100 bg-violet-50/30 space-y-3">
                 {/* 사진 — 여러 장 + 붙여넣기 */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold text-gray-600">사진 <span className="font-normal text-gray-400">(파일 선택 또는 Ctrl+V 붙여넣기)</span></label>
-                    <label className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-pink-600 border border-pink-200 rounded-lg cursor-pointer hover:bg-pink-50 transition-colors">
+                    <label className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-violet-600 border border-violet-200 rounded-lg cursor-pointer hover:bg-violet-50 transition-colors">
                       <Plus size={10} />사진 추가
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
                         if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
@@ -481,7 +481,7 @@ function MaterialAttachList({
                     </label>
                   </div>
                   {draft.imagePreviews.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 p-2 rounded-xl border border-dashed border-indigo-100 transition-colors">
+                    <div className="flex flex-wrap gap-2 p-2 rounded-xl border border-dashed border-violet-100 transition-colors">
                       {draft.imagePreviews.map((src, idx) => (
                         <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex-shrink-0">
                           <img src={src} alt="" className="w-full h-full object-cover cursor-pointer" onClick={() => setLightbox(src)} />
@@ -496,20 +496,20 @@ function MaterialAttachList({
                         </div>
                       ))}
                       {/* + 추가 슬롯 */}
-                      <label className="w-20 h-20 border-2 border-dashed border-indigo-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-pink-400 transition-colors bg-white flex-shrink-0">
-                        <Plus size={16} className="text-indigo-300" />
-                        <span className="text-[9px] text-indigo-300 mt-0.5">추가</span>
+                      <label className="w-20 h-20 border-2 border-dashed border-violet-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-violet-400 transition-colors bg-white flex-shrink-0">
+                        <Plus size={16} className="text-violet-300" />
+                        <span className="text-[9px] text-violet-300 mt-0.5">추가</span>
                         <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
                           if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
                         }} />
                       </label>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-indigo-200 rounded-xl bg-white cursor-pointer hover:border-pink-400 transition-colors">
-                      <div className="flex flex-col items-center gap-1 text-indigo-300">
+                    <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-violet-200 rounded-xl bg-white cursor-pointer hover:border-violet-400 transition-colors">
+                      <div className="flex flex-col items-center gap-1 text-violet-300">
                         <ImageIcon size={20} />
                         <span className="text-[10px]">클릭하여 파일 선택</span>
-                        <span className="text-[9px] text-indigo-200 mt-0.5">또는 이미지 복사 후 Ctrl+V</span>
+                        <span className="text-[9px] text-violet-200 mt-0.5">또는 이미지 복사 후 Ctrl+V</span>
                       </div>
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
                         if (e.target.files?.length) { addImages(sec.id, e.target.files); e.target.value = ""; }
@@ -522,7 +522,7 @@ function MaterialAttachList({
                   <label className="text-xs font-semibold text-gray-600">링크</label>
                   <input value={draft.link} onChange={(e) => setDraft(sec.id, { link: e.target.value })}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-pink-400 bg-white" />
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white" />
                 </div>
                 {/* 비고 */}
                 <div className="space-y-1.5">
@@ -530,11 +530,11 @@ function MaterialAttachList({
                   <textarea value={draft.memo} onChange={(e) => setDraft(sec.id, { memo: e.target.value })}
                     placeholder="두께감, 색상 옵션, 단가, 특이사항 등"
                     rows={2}
-                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 bg-white resize-none" />
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-violet-400 bg-white resize-none" />
                 </div>
                 <div className="flex justify-end gap-2">
                   <button onClick={() => closeForm(sec.id)} className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">취소</button>
-                  <button onClick={() => saveEntry(sec.id)} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"><Save size={11} />저장</button>
+                  <button onClick={() => saveEntry(sec.id)} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors"><Save size={11} />저장</button>
                 </div>
               </div>
             )}
@@ -571,11 +571,11 @@ function MaterialAttachList({
                       {editingId === att.id ? (
                         <input value={editDraft.link} onChange={(e) => setEditDraft(d => ({ ...d, link: e.target.value }))}
                           placeholder="https://..." autoFocus
-                          className="w-full px-2 py-1 text-xs border border-pink-300 rounded-lg focus:outline-none bg-white" />
+                          className="w-full px-2 py-1 text-xs border border-violet-300 rounded-lg focus:outline-none bg-white" />
                       ) : (
                         att.value
                           ? <a href={att.value} target="_blank" rel="noopener noreferrer"
-                              className="text-xs text-pink-600 hover:underline truncate block">{att.value}</a>
+                              className="text-xs text-violet-600 hover:underline truncate block">{att.value}</a>
                           : <span className="text-xs text-gray-300">{att.name}</span>
                       )}
                     </div>
@@ -583,7 +583,7 @@ function MaterialAttachList({
                       {editingId === att.id ? (
                         <input value={editDraft.memo} onChange={(e) => setEditDraft(d => ({ ...d, memo: e.target.value }))}
                           placeholder="비고"
-                          className="w-full px-2 py-1 text-xs border border-pink-300 rounded-lg focus:outline-none bg-white" />
+                          className="w-full px-2 py-1 text-xs border border-violet-300 rounded-lg focus:outline-none bg-white" />
                       ) : (
                         <span className="text-xs text-gray-400 truncate block">{att.memo || ""}</span>
                       )}
@@ -591,12 +591,12 @@ function MaterialAttachList({
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {editingId === att.id ? (
                         <>
-                          <button onClick={() => saveEdit(att.id)} className="px-2 py-1 text-[10px] font-semibold bg-pink-500 text-white rounded-lg hover:bg-pink-600">저장</button>
+                          <button onClick={() => saveEdit(att.id)} className="px-2 py-1 text-[10px] font-semibold bg-violet-500 text-white rounded-lg hover:bg-violet-600">저장</button>
                           <button onClick={() => setEditingId(null)} className="px-2 py-1 text-[10px] text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50">취소</button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEdit(att)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-pink-500 transition-all"><Edit3 size={12} /></button>
+                          <button onClick={() => startEdit(att)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-violet-500 transition-all"><Edit3 size={12} /></button>
                           <button onClick={() => removeAtt(att.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition-all"><Trash2 size={12} /></button>
                         </>
                       )}
@@ -612,22 +612,22 @@ function MaterialAttachList({
       {/* 섹션 추가 버튼 */}
       <div className="pt-1">
         {addingSection ? (
-          <div className="flex items-center gap-2 p-3 border border-dashed border-indigo-200 rounded-2xl bg-indigo-50/30">
+          <div className="flex items-center gap-2 p-3 border border-dashed border-violet-200 rounded-2xl bg-violet-50/30">
             <input
               value={newSectionName}
               onChange={(e) => setNewSectionName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") addCustomSection(); if (e.key === "Escape") setAddingSection(false); }}
               placeholder="섹션 이름 입력 (예: 기타 원단, 참고 사진)"
               autoFocus
-              className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400 bg-white"
+              className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white"
             />
-            <button onClick={addCustomSection} className="px-3 py-2 text-xs font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">추가</button>
+            <button onClick={addCustomSection} className="px-3 py-2 text-xs font-semibold bg-violet-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">추가</button>
             <button onClick={() => { setAddingSection(false); setNewSectionName(""); }} className="px-3 py-2 text-xs text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">취소</button>
           </div>
         ) : (
           <button
             onClick={() => setAddingSection(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-2xl text-xs text-gray-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-2xl text-xs text-gray-400 hover:border-violet-300 hover:text-violet-500 hover:bg-violet-50/30 transition-colors"
           >
             <Plus size={14} />섹션 직접 추가
           </button>
@@ -661,8 +661,8 @@ const LABEL_PRESET_DEFAULT: LabelDiagramPreset[] = [
 const LABEL_GROUPS = ["케어라벨", "메인라벨", "포인트라벨"] as const;
 const GROUP_COLORS: Record<string, { border: string; bg: string; header: string; tag: string }> = {
   "케어라벨":   { border: "border-blue-200",   bg: "bg-blue-50/40",   header: "bg-blue-100   text-blue-700",   tag: "bg-blue-100   text-blue-600"   },
-  "메인라벨":   { border: "border-indigo-200",  bg: "bg-pink-50/40", header: "bg-indigo-100 text-pink-700", tag: "bg-indigo-100 text-pink-600" },
-  "포인트라벨": { border: "border-pink-200",    bg: "bg-pink-50/40",   header: "bg-pink-100   text-pink-700",   tag: "bg-pink-100   text-pink-600"   },
+  "메인라벨":   { border: "border-violet-200",  bg: "bg-violet-50/40", header: "bg-violet-100 text-violet-700", tag: "bg-violet-100 text-violet-600" },
+  "포인트라벨": { border: "border-violet-200",    bg: "bg-violet-50/40",   header: "bg-violet-100   text-violet-700",   tag: "bg-violet-100   text-violet-600"   },
 };
 
 function LabelDiagramSection({
@@ -787,9 +787,9 @@ function LabelDiagramSection({
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => toggleSelect(preset.id)}
-                        className="w-3.5 h-3.5 accent-pink-500 cursor-pointer rounded shrink-0"
+                        className="w-3.5 h-3.5 accent-violet-500 cursor-pointer rounded shrink-0"
                       />
-                      <span className={`text-xs font-semibold truncate ${isChecked ? "text-pink-700" : "text-gray-600"}`}>
+                      <span className={`text-xs font-semibold truncate ${isChecked ? "text-violet-700" : "text-gray-600"}`}>
                         {preset.name}
                       </span>
                       {!isDefault && (
@@ -802,7 +802,7 @@ function LabelDiagramSection({
 
                     {/* 이미지 카드 — 업로드 전용 */}
                     <div className={`relative rounded-xl border-2 overflow-hidden group/img cursor-pointer ${
-                      isChecked ? "border-pink-400 shadow-sm shadow-indigo-100" : "border-gray-200 bg-white"
+                      isChecked ? "border-violet-400 shadow-sm shadow-indigo-100" : "border-gray-200 bg-white"
                     }`}
                       onClick={() => toggleSelect(preset.id)}
                     >
@@ -844,18 +844,18 @@ function LabelDiagramSection({
 
               {/* + 직접추가 카드 */}
               {addingGroup === group ? (
-                <div className="rounded-xl border-2 border-dashed border-pink-300 bg-white p-2 flex flex-col gap-1.5">
+                <div className="rounded-xl border-2 border-dashed border-violet-300 bg-white p-2 flex flex-col gap-1.5">
                   <input
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                     onKeyDown={e => { if(e.key==="Enter") addCustomPreset(group); if(e.key==="Escape") setAddingGroup(null); }}
                     placeholder="이름 입력..."
                     autoFocus
-                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-pink-400"
+                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400"
                   />
                   <div className="flex gap-1">
                     <button onClick={() => addCustomPreset(group)}
-                      className="flex-1 py-1 bg-pink-500 text-white text-[10px] font-semibold rounded-lg hover:bg-pink-600">추가</button>
+                      className="flex-1 py-1 bg-violet-500 text-white text-[10px] font-semibold rounded-lg hover:bg-violet-600">추가</button>
                     <button onClick={() => setAddingGroup(null)}
                       className="flex-1 py-1 bg-gray-100 text-gray-500 text-[10px] rounded-lg hover:bg-gray-200">취소</button>
                   </div>
@@ -863,7 +863,7 @@ function LabelDiagramSection({
               ) : (
                 <button
                   onClick={() => { setAddingGroup(group); setNewName(""); }}
-                  className="rounded-xl border-2 border-dashed border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50/40 transition-all flex flex-col items-center justify-center gap-1 h-[110px] text-gray-400 hover:text-pink-500"
+                  className="rounded-xl border-2 border-dashed border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50/40 transition-all flex flex-col items-center justify-center gap-1 h-[110px] text-gray-400 hover:text-violet-500"
                 >
                   <Plus size={16} />
                   <span className="text-[10px] font-medium">직접추가</span>
@@ -874,7 +874,7 @@ function LabelDiagramSection({
         );
       })}
       {selected.length > 0 && (
-        <p className="text-xs text-pink-600 font-medium">
+        <p className="text-xs text-violet-600 font-medium">
           ✓ {selected.length}개 선택됨 — PDF에 포함됩니다
         </p>
       )}
@@ -898,7 +898,7 @@ function VendorTypeCell({ value, options, onChange }: { value: string; options: 
           setOpen(true);
         }}
         onBlur={() => setTimeout(() => setOpen(false), 180)}
-        className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+        className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
         placeholder="원단"
       />
       <button type="button" tabIndex={-1}
@@ -920,7 +920,7 @@ function VendorTypeCell({ value, options, onChange }: { value: string; options: 
           {options.map((opt) => (
             <button key={opt} type="button"
               onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-violet-50 hover:text-violet-700 transition-colors text-gray-700">
               {opt}
             </button>
           ))}
@@ -969,7 +969,7 @@ function VendorNameCell({ value, onChange, onSelect }: {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => setTimeout(() => setOpen(false), 180)}
-        className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+        className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
         placeholder="업체명 선택 또는 입력"
       />
       {/* 화살표 버튼 클릭으로만 드롭다운 열림 */}
@@ -1000,14 +1000,14 @@ function VendorNameCell({ value, onChange, onSelect }: {
                 }
                 setOpen(false);
               }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-violet-50 hover:text-violet-700 transition-colors text-gray-700">
               {name}
             </button>
           ))}
           <div className="border-t border-gray-100 mt-1 pt-1">
             <button type="button"
               onMouseDown={(e) => { e.preventDefault(); setOpen(false); }}
-              className="w-full text-left px-3 py-1.5 text-xs text-pink-500 font-semibold hover:bg-pink-50 transition-colors">
+              className="w-full text-left px-3 py-1.5 text-xs text-violet-500 font-semibold hover:bg-violet-50 transition-colors">
               ✏ 직접입력
             </button>
           </div>
@@ -1050,14 +1050,14 @@ function Field({ label, children, required }: { label: string; children: React.R
   return (
     <div className="space-y-1.5">
       <label className="block text-xs font-semibold text-gray-500 tracking-wide">
-        {label}{required && <span className="text-pink-400 ml-0.5">*</span>}
+        {label}{required && <span className="text-violet-400 ml-0.5">*</span>}
       </label>
       {children}
     </div>
   );
 }
 
-const inputCls = "w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition placeholder:text-gray-300";
+const inputCls = "w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition placeholder:text-gray-300";
 const selectCls = inputCls;
 
 // ─── 드롭다운 + 직접입력 컴포넌트 ────────────────────────
@@ -1118,12 +1118,12 @@ function SelectDropdown({
               key={p}
               type="button"
               onClick={() => selectPreset(p)}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-pink-50 hover:text-pink-700 ${
-                value === p ? "bg-pink-50 text-pink-700 font-medium" : "text-gray-700"
+              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-violet-50 hover:text-violet-700 ${
+                value === p ? "bg-violet-50 text-violet-700 font-medium" : "text-gray-700"
               }`}
             >
               {p}
-              {value === p && <Check size={13} className="text-pink-500 flex-shrink-0" />}
+              {value === p && <Check size={13} className="text-violet-500 flex-shrink-0" />}
             </button>
           ))}
           <div className="border-t border-gray-100 p-2">
@@ -1133,16 +1133,16 @@ function SelectDropdown({
                 onChange={(e) => setCustom(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submitCustom()}
                 placeholder="직접 입력"
-                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-pink-400"
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400"
               />
               <button
                 type="button"
                 onClick={submitCustom}
-                className="px-2 py-1.5 text-xs bg-pink-500 text-white rounded-lg hover:bg-pink-600 font-medium"
+                className="px-2 py-1.5 text-xs bg-violet-500 text-white rounded-lg hover:bg-violet-600 font-medium"
               >확인</button>
             </div>
             {isCustom && (
-              <div className="mt-1 text-xs text-pink-600 px-1">현재: <strong>{value}</strong></div>
+              <div className="mt-1 text-xs text-violet-600 px-1">현재: <strong>{value}</strong></div>
             )}
           </div>
         </div>
@@ -1167,12 +1167,12 @@ function CustomLabelInput({ onAdd }: { onAdd: (name: string) => void }) {
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
         placeholder="직접 추가 (예: 행택, 특수라벨…)"
-        className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 w-64"
+        className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-violet-400 w-64"
       />
       <button
         type="button"
         onClick={submit}
-        className="flex items-center gap-1 px-3 py-2 text-sm bg-pink-500 text-white rounded-xl hover:bg-pink-600 font-medium"
+        className="flex items-center gap-1 px-3 py-2 text-sm bg-violet-500 text-white rounded-xl hover:bg-violet-600 font-medium"
       >
         <Plus size={14} />추가
       </button>
@@ -1227,7 +1227,7 @@ function SalePanel({ finalCost, salePrice, onSaleChange, inputCls }: {
               <button key={mult} type="button"
                 onClick={() => onSaleChange(val.toLocaleString())}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors whitespace-nowrap ${
-                  active ? "bg-pink-500 border-pink-500 text-white" : "border-pink-300 text-pink-500 bg-pink-50 hover:bg-pink-100"
+                  active ? "bg-violet-500 border-violet-500 text-white" : "border-violet-300 text-violet-500 bg-violet-50 hover:bg-violet-100"
                 }`}>
                 {mult}배수 → {val.toLocaleString()}원
               </button>
@@ -1729,7 +1729,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             <Printer size={14} />PDF 미리보기
           </button>
           <button onClick={handleSave}
-            className="flex items-center gap-1.5 px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors"
           >
             <Save size={14} />저장
           </button>
@@ -1740,7 +1740,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
         {TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${tab===t ? "bg-white text-pink-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${tab===t ? "bg-white text-violet-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
           >{t}</button>
         ))}
       </div>
@@ -1766,7 +1766,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         placeholder="아우터-뉴플래시" className={inputCls} />
                       <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                         {notionFillStatus === "loading" && (
-                          <Loader2 size={13} className="text-pink-400 animate-spin" />
+                          <Loader2 size={13} className="text-violet-400 animate-spin" />
                         )}
                         {notionFillStatus === "found" && (
                           <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
@@ -1836,7 +1836,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     {wo.notionProductId && (
                       <a href={`https://www.notion.so/${wo.notionProductId.replace(/-/g,"")}`}
                         target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-pink-500 hover:underline mt-1 inline-flex items-center gap-1">
+                        className="text-xs text-violet-500 hover:underline mt-1 inline-flex items-center gap-1">
                         노션에서 열기 →
                       </a>
                     )}
@@ -1862,7 +1862,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                       </div>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-pink-300 hover:bg-pink-50/30 transition-all flex-1"
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-all flex-1"
                       style={{ minHeight: "240px" }}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload("productImage", f); }}>
@@ -1894,7 +1894,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             >
             {/* 드라이브 검색 */}
             <div className="relative mb-3">
-              <div className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white focus-within:border-pink-400 focus-within:ring-2 focus-within:ring-pink-100 transition">
+              <div className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition">
                 <Search size={14} className="text-gray-400 shrink-0" />
                 <input
                   value={driveQuery}
@@ -1904,7 +1904,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   className="flex-1 text-sm bg-transparent focus:outline-none placeholder:text-gray-300"
                 />
                 {driveSearching && (
-                  <div className="w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                  <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin shrink-0" />
                 )}
                 {driveQuery && !driveSearching && (
                   <button type="button" onClick={() => { setDriveQuery(""); setDriveResults([]); setDriveOpen(false); }}
@@ -1914,7 +1914,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               <div className="mt-1 flex items-center justify-between pl-1">
                 <span className="text-[11px] text-gray-400">구글 드라이브 패턴실 폴더에서 유사한 파일을 자동으로 찾아줍니다</span>
                 <button type="button" onClick={() => { setDriveOpen(true); fetchDrive(""); }}
-                  className="text-[11px] text-pink-500 hover:text-pink-700 transition-colors">전체 목록 보기</button>
+                  className="text-[11px] text-violet-500 hover:text-violet-700 transition-colors">전체 목록 보기</button>
               </div>
               {driveOpen && (driveResults.length > 0 || driveError || (!driveSearching && driveQuery)) && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto">
@@ -1930,18 +1930,18 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     driveResults.map((f) => (
                       <button key={f.id} type="button" disabled={driveLoadingId === f.id}
                         onClick={() => loadDriveFile(f.id, f.name)}
-                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-pink-50 transition-colors text-left group">
+                        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-violet-50 transition-colors text-left group">
                         <div className="flex items-center gap-2 min-w-0">
                           <FileSpreadsheet size={14} className="text-green-500 shrink-0" />
-                          <span className="text-sm text-gray-700 truncate group-hover:text-pink-700">{f.name}</span>
+                          <span className="text-sm text-gray-700 truncate group-hover:text-violet-700">{f.name}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {f.score !== undefined && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-500 font-medium">{Math.round(f.score * 100)}%</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-500 font-medium">{Math.round(f.score * 100)}%</span>
                           )}
                           {driveLoadingId === f.id
-                            ? <div className="w-3.5 h-3.5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
-                            : <Download size={13} className="text-gray-300 group-hover:text-pink-400" />}
+                            ? <div className="w-3.5 h-3.5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+                            : <Download size={13} className="text-gray-300 group-hover:text-violet-400" />}
                         </div>
                       </button>
                     ))
@@ -1950,7 +1950,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               )}
             </div>
             {/* 엑셀 업로드 영역 */}
-            <div className="border-2 border-dashed border-indigo-200 rounded-2xl p-5 bg-pink-50/40 hover:bg-pink-50 transition-colors cursor-pointer"
+            <div className="border-2 border-dashed border-violet-200 rounded-2xl p-5 bg-violet-50/40 hover:bg-violet-50 transition-colors cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
@@ -1964,25 +1964,25 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               }}>
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${xlsxStatus === "ok" ? "bg-green-100" : xlsxStatus === "error" ? "bg-red-100" : "bg-indigo-100"}`}>
-                  {xlsxStatus === "loading" ? <div className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${xlsxStatus === "ok" ? "bg-green-100" : xlsxStatus === "error" ? "bg-red-100" : "bg-violet-100"}`}>
+                  {xlsxStatus === "loading" ? <div className="w-5 h-5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
                     : xlsxStatus === "ok" ? <CheckCircle2 size={20} className="text-green-600" />
                     : xlsxStatus === "error" ? <AlertCircle size={20} className="text-red-500" />
-                    : <FileSpreadsheet size={20} className="text-pink-500" />}
+                    : <FileSpreadsheet size={20} className="text-violet-500" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-semibold ${xlsxStatus === "ok" ? "text-green-700" : xlsxStatus === "error" ? "text-red-600" : "text-pink-700"}`}>
+                  <div className={`text-sm font-semibold ${xlsxStatus === "ok" ? "text-green-700" : xlsxStatus === "error" ? "text-red-600" : "text-violet-700"}`}>
                     {xlsxStatus === "idle" && "패턴실 엑셀 파일 업로드"}
                     {xlsxStatus === "loading" && "파일 분석 중..."}
                     {xlsxStatus === "ok" && "자동 입력 완료"}
                     {xlsxStatus === "error" && "파일 오류"}
                   </div>
-                  <div className={`text-xs mt-0.5 truncate ${xlsxStatus === "ok" ? "text-green-600" : xlsxStatus === "error" ? "text-red-500" : "text-pink-400"}`}>
+                  <div className={`text-xs mt-0.5 truncate ${xlsxStatus === "ok" ? "text-green-600" : xlsxStatus === "error" ? "text-red-500" : "text-violet-400"}`}>
                     {xlsxStatus === "idle" ? ".xlsx 파일을 드래그하거나 클릭해서 선택 — 파일명이 SAMPLE NO.에, 사이즈 스펙이 표에 자동 입력됩니다" : xlsxMsg}
                   </div>
                 </div>
                 <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors">
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-violet-500 text-white text-xs font-medium rounded-lg hover:bg-violet-600 transition-colors">
                   <Upload size={13} />파일 선택
                 </button>
               </div>
@@ -2004,13 +2004,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 <tbody>
                   {wo.measurements.map((m, idx) => m.isHeader ? (
                     <tr key={idx} onDragEnter={() => onMDragEnter(idx)} onDragOver={(e) => e.preventDefault()}
-                      className={`bg-pink-50 border-t-2 border-indigo-200${mDragOver === idx ? " opacity-50" : ""}`}>
+                      className={`bg-violet-50 border-t-2 border-violet-200${mDragOver === idx ? " opacity-50" : ""}`}>
                       <td draggable onDragStart={() => onMDragStart(idx)} onDragEnd={onMDragEnd}
                         className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
                       <td colSpan={wo.sizes.length + 2} className="border border-gray-200 p-1">
                         <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
                           placeholder="구분명 입력 (예: 상의, 하의, 모자)"
-                          className="w-full px-2 py-1 text-xs font-bold text-pink-700 rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                          className="w-full px-2 py-1 text-xs font-bold text-violet-700 rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" />
                       </td>
                       <td className="border border-gray-200 p-1 text-center">
                         <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
@@ -2023,17 +2023,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         className="border border-gray-200 p-1 text-center cursor-grab text-gray-300 select-none">⠿</td>
                       <td className="border border-gray-200 p-1">
                         <input value={m.item} onChange={(e) => updateMeasurement(idx, "item", e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent font-medium" />
+                          className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent font-medium" />
                       </td>
                       {wo.sizes.map((s) => (
                         <td key={s} className="border border-gray-200 p-1">
                           <input value={m.values[s] || ""} onChange={(e) => updateMeasurement(idx, s, e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                            className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" />
                         </td>
                       ))}
                       <td className="border border-gray-200 p-1">
                         <input value={m.diff} onChange={(e) => updateMeasurement(idx, "diff", e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                          className="w-full px-2 py-1.5 text-xs text-center rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" />
                       </td>
                       <td className="border border-gray-200 p-1 text-center">
                         <button onClick={() => removeMeasurementRow(idx)} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
@@ -2045,10 +2045,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <button onClick={addMeasurementRow} className="flex items-center gap-1.5 text-sm text-pink-600 hover:text-pink-700 transition-colors">
+                <button onClick={addMeasurementRow} className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700 transition-colors">
                   <Plus size={14} />항목 추가
                 </button>
-                <button onClick={addMeasurementHeader} className="flex items-center gap-1.5 text-sm text-pink-400 hover:text-pink-600 transition-colors border border-indigo-200 rounded px-2 py-0.5">
+                <button onClick={addMeasurementHeader} className="flex items-center gap-1.5 text-sm text-violet-400 hover:text-violet-600 transition-colors border border-violet-200 rounded px-2 py-0.5">
                   <Plus size={12} />구분 추가
                 </button>
               </div>
@@ -2064,11 +2064,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 text-sm">
                     <span className="text-gray-500">총</span>
-                    <span className="font-bold text-pink-700 text-lg">{wo.totalQuantity.toLocaleString()}</span>
+                    <span className="font-bold text-violet-700 text-lg">{wo.totalQuantity.toLocaleString()}</span>
                     <span className="text-gray-500">장</span>
                   </div>
                   <button onClick={addColorRow}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
+                    className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors">
                     <Plus size={14} />컬러 추가
                   </button>
                 </div>
@@ -2078,7 +2078,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <div className="text-gray-300 text-3xl mb-3">🎨</div>
                   <div className="text-sm text-gray-400 mb-4">발주 수량표가 비어 있습니다</div>
                   <button onClick={addColorRow}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
+                    className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors">
                     <Plus size={14} />컬러 추가
                   </button>
                 </div>
@@ -2091,7 +2091,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         {wo.sizes.map((s) => (
                           <th key={s} className="border border-gray-200 px-4 py-2.5 text-center text-xs font-semibold text-gray-600 min-w-[70px]">{s}</th>
                         ))}
-                        <th className="border border-gray-200 px-4 py-2.5 text-center text-xs font-semibold text-pink-600 min-w-[70px]">합계</th>
+                        <th className="border border-gray-200 px-4 py-2.5 text-center text-xs font-semibold text-violet-600 min-w-[70px]">합계</th>
                         <th className="border border-gray-200 px-2 py-2 w-8"></th>
                       </tr>
                     </thead>
@@ -2102,17 +2102,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             <input value={row.color}
                               onChange={(e) => updateColorSize(idx, "color", e.target.value)}
                               placeholder="퍼플, 핑크…"
-                              className="w-full px-3 py-1.5 text-sm rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                              className="w-full px-3 py-1.5 text-sm rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" />
                           </td>
                           {wo.sizes.map((s) => (
                             <td key={s} className="border border-gray-200 p-1">
                               <input type="number" min={0}
                                 value={row.sizes[s] || ""}
                                 onChange={(e) => updateColorSize(idx, s, e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm text-center rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" />
+                                className="w-full px-2 py-1.5 text-sm text-center rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" />
                             </td>
                           ))}
-                          <td className="border border-gray-200 p-1 text-center font-bold text-pink-700">{row.total}</td>
+                          <td className="border border-gray-200 p-1 text-center font-bold text-violet-700">{row.total}</td>
                           <td className="border border-gray-200 p-1 text-center">
                             <button onClick={() => removeColorRow(idx)}
                               className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
@@ -2121,14 +2121,14 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-pink-50">
+                      <tr className="bg-violet-50">
                         <td className="border border-gray-200 px-4 py-2 font-bold text-xs text-gray-600">TOTAL</td>
                         {wo.sizes.map((s) => (
                           <td key={s} className="border border-gray-200 px-4 py-2 text-center font-bold text-xs text-gray-700">
                             {wo.colorSizeTable.reduce((sum, r) => sum + (r.sizes[s] || 0), 0)}
                           </td>
                         ))}
-                        <td className="border border-gray-200 px-4 py-2 text-center font-bold text-pink-700">{wo.totalQuantity}</td>
+                        <td className="border border-gray-200 px-4 py-2 text-center font-bold text-violet-700">{wo.totalQuantity}</td>
                         <td className="border border-gray-200"></td>
                       </tr>
                     </tfoot>
@@ -2186,20 +2186,20 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   const vatExcl = basePrice > 0 ? basePrice / 1.1 : 0;
                   const total = basePrice + matSum;
                   return <CostLayout finalCost={total} salePrice={sp} onSaleChange={setSale} inputCls={inputCls} cost={
-                    <div className="border border-pink-200 rounded-2xl bg-pink-50/60 px-5 py-4 space-y-2">
-                      <div className="text-xs text-pink-600 font-semibold mb-1">납품가 (VAT 포함)</div>
+                    <div className="border border-violet-200 rounded-2xl bg-violet-50/60 px-5 py-4 space-y-2">
+                      <div className="text-xs text-violet-600 font-semibold mb-1">납품가 (VAT 포함)</div>
                       <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)}
                         placeholder="23,500" className={inputCls} />
                       {vatExcl > 0 && <div className="text-[11px] text-gray-400">(VAT제외: {Math.round(vatExcl).toLocaleString()}원)</div>}
                       {matSum > 0 && (
-                        <div className="border-t border-pink-200 pt-2 text-xs text-pink-600">
+                        <div className="border-t border-violet-200 pt-2 text-xs text-violet-600">
                           <span className="font-semibold">추가 부자재</span> +{fmtKRW(matSum)}
                         </div>
                       )}
                       {total > 0 && (
-                        <div className="border-t border-pink-200 pt-2 flex items-baseline gap-2">
-                          <span className="text-xs text-pink-500 font-semibold">총 원가</span>
-                          <span className="text-xl font-bold text-pink-700">{fmtKRW(total)}</span>
+                        <div className="border-t border-violet-200 pt-2 flex items-baseline gap-2">
+                          <span className="text-xs text-violet-500 font-semibold">총 원가</span>
+                          <span className="text-xl font-bold text-violet-700">{fmtKRW(total)}</span>
                         </div>
                       )}
                     </div>
@@ -2294,7 +2294,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 onChange={(e) => set("productionNotes", e.target.value)}
                 rows={4}
                 placeholder="주의사항, 특이사항 등"
-                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none placeholder:text-gray-300"
+                className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none placeholder:text-gray-300"
               />
             </SectionCard>
 
@@ -2326,7 +2326,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                       </div>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-pink-300 hover:bg-pink-50/30 transition-all"
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-all"
                       style={{ minHeight: "200px" }}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload("sketchImage", f); }}>
@@ -2345,7 +2345,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <div className="shrink-0 flex flex-col gap-2 pt-1">
                     <button type="button" onClick={analyzeSketch} disabled={analyzing}
                       className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all disabled:opacity-60"
-                      style={{ background: analyzing ? "#e5e7eb" : "linear-gradient(135deg, #f472b6, #fb7185)", color: analyzing ? "#9ca3af" : "white" }}>
+                      style={{ background: analyzing ? "#e5e7eb" : "#836CE0", color: analyzing ? "#9ca3af" : "white" }}>
                       {analyzing ? (
                         <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />분석 중...</>
                       ) : <>✨ AI 원부자재 자동분석</>}
@@ -2365,8 +2365,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               sub="요척, 단가, 발주단위 등을 입력하세요"
               action={
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-2 border border-pink-200 rounded-xl bg-pink-50">
-                    <span className="text-xs text-pink-500 font-semibold whitespace-nowrap">✨ 품종 자동입력</span>
+                  <div className="flex items-center gap-1.5 px-3 py-2 border border-violet-200 rounded-xl bg-violet-50">
+                    <span className="text-xs text-violet-500 font-semibold whitespace-nowrap">✨ 품종 자동입력</span>
                     <select
                       value={templateType}
                       onChange={(e) => {
@@ -2382,7 +2382,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     </select>
                   </div>
                   <button onClick={addMaterial}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
+                    className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors">
                     <Plus size={14} />항목 추가
                   </button>
                 </div>
@@ -2394,7 +2394,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 <div className="text-gray-300 text-3xl mb-3">🧵</div>
                 <div className="text-sm text-gray-400 mb-4">원단/부자재 항목이 없습니다</div>
                 <button onClick={addMaterial}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-sm font-medium rounded-xl hover:bg-pink-600 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors">
                   <Plus size={14} />첫 항목 추가
                 </button>
               </div>
@@ -2416,7 +2416,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         onDragOver={(e) => !m.fixed && e.preventDefault()}
                         className={`transition-colors ${
                           !m.fixed && dragOver === idx
-                            ? "bg-pink-50 border-t-2 border-t-indigo-400"
+                            ? "bg-violet-50 border-t-2 border-t-indigo-400"
                             : !m.fixed && dragIdx.current === idx
                             ? "opacity-40"
                             : ""
@@ -2451,7 +2451,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                 setCatOpen(m.id);
                               }}
                               onBlur={() => setTimeout(() => setCatOpen(null), 200)}
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
                               placeholder="-- 선택 또는 입력 --"
                             />
                             <button type="button" tabIndex={-1}
@@ -2494,7 +2494,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                 }}
                                 rows={m.name.split("\n").length || 1}
                                 style={{ resize: "none", lineHeight: 1.4 }}
-                                className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                                className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
                                 placeholder="자재명"
                               />
                               <button type="button" tabIndex={-1}
@@ -2526,7 +2526,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                               }}
                               rows={m.name.split("\n").length || 1}
                               style={{ resize: "none", lineHeight: 1.4 }}
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
                               placeholder="반사우본"
                             />
                           )}
@@ -2545,7 +2545,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                               }}
                               onBlur={() => setTimeout(() => setColorOpen(null), 200)}
                               onKeyDown={handleMatKeyDown}
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
                               placeholder="BLACK"
                             />
                             <button type="button" tabIndex={-1}
@@ -2566,7 +2566,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                           <input value={m.spec}
                             onChange={(e) => updateMaterial(m.id, "spec", e.target.value)}
                             onKeyDown={handleMatKeyDown}
-                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent min-w-[80px]"
+                            className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent min-w-[80px]"
                             placeholder={`60"`}
                           />
                         </td>
@@ -2576,7 +2576,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             <input value={m.yield}
                               onChange={(e) => updateMaterial(m.id, "yield", e.target.value)}
                               onKeyDown={handleMatKeyDown}
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
                               placeholder="1.5"
                             />
                             {/* YD↔M 변환 버튼 */}
@@ -2595,7 +2595,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                     updateMaterial(m.id, "yieldUnit", "YD");
                                   }
                                 }}
-                                className="flex-shrink-0 px-1 py-0.5 text-[9px] font-bold rounded bg-pink-50 text-pink-500 hover:bg-pink-100 whitespace-nowrap leading-none"
+                                className="flex-shrink-0 px-1 py-0.5 text-[9px] font-bold rounded bg-violet-50 text-violet-500 hover:bg-violet-100 whitespace-nowrap leading-none"
                               >
                                 {m.yieldUnit === "YD" ? "→M" : "→YD"}
                               </button>
@@ -2611,7 +2611,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                 onChange={(e) => updateMaterial(m.id, "yieldUnit", e.target.value)}
                                 placeholder="단위 입력"
                                 autoFocus
-                                className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent"
+                                className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent"
                               />
                               <button type="button"
                                 onClick={() => { setUnitDirect(p => ({ ...p, [m.id]: false })); updateMaterial(m.id, "yieldUnit", "YD"); }}
@@ -2628,7 +2628,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                                   updateMaterial(m.id, "yieldUnit", e.target.value);
                                 }
                               }}
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent cursor-pointer"
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent cursor-pointer"
                             >
                               {YIELD_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                             </select>
@@ -2640,7 +2640,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             <input value={m[f]}
                               onChange={(e) => updateMaterial(m.id, f, e.target.value)}
                               onKeyDown={handleMatKeyDown}
-                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent min-w-[70px]"
+                              className="w-full px-2 py-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent min-w-[70px]"
                               placeholder={f === "unitPrice" ? "단가" : f === "orderUnit" ? "1EA" : ""}
                             />
                           </td>
@@ -2670,7 +2670,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     ...(wo.vendorInfoTable ?? []),
                     { id: Date.now().toString(), materialType: "", vendorName: "", manager: "", contact: "", notes: "" },
                   ])}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white text-xs font-medium rounded-lg hover:bg-violet-600 transition-colors"
                 >
                   <Plus size={12} />행 추가
                 </button>
@@ -2682,7 +2682,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <p className="text-sm">거래 업체 정보를 추가하세요</p>
                   <button type="button"
                     onClick={() => set("vendorInfoTable", [{ id: Date.now().toString(), materialType: "", vendorName: "", manager: "", contact: "", notes: "" }])}
-                    className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-pink-500 text-white text-xs font-medium rounded-lg hover:bg-pink-600 transition-colors">
+                    className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white text-xs font-medium rounded-lg hover:bg-violet-600 transition-colors">
                     <Plus size={12} />첫 업체 추가
                   </button>
                 </div>
@@ -2711,15 +2711,15 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                             </td>
                             <td className="border border-gray-200 p-1 min-w-[90px]">
                               <input value={row.manager ?? ""} onChange={(e) => upd({ manager: e.target.value })}
-                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" placeholder="담당자명" />
+                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" placeholder="담당자명" />
                             </td>
                             <td className="border border-gray-200 p-1 min-w-[120px]">
                               <input value={row.contact} onChange={(e) => upd({ contact: e.target.value })}
-                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" placeholder="010-0000-0000" />
+                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" placeholder="010-0000-0000" />
                             </td>
                             <td className="border border-gray-200 p-1 min-w-[90px]">
                               <input value={row.notes} onChange={(e) => upd({ notes: e.target.value })}
-                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-pink-300 bg-transparent" placeholder="비고" />
+                                className="w-full px-2 py-1.5 text-xs rounded focus:outline-none focus:ring-1 focus:ring-violet-300 bg-transparent" placeholder="비고" />
                             </td>
                             <td className="border border-gray-200 p-1 text-center w-8">
                               <button type="button" onClick={() => set("vendorInfoTable", (wo.vendorInfoTable ?? []).filter((r) => r.id !== row.id))}
@@ -2757,7 +2757,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               <textarea value={wo.fixedNotes}
                 onChange={(e) => set("fixedNotes", e.target.value)}
                 rows={6}
-                className={`w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none font-mono placeholder:text-gray-300`}
+                className={`w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50/50 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none font-mono placeholder:text-gray-300`}
               />
             </SectionCard>
 
@@ -2795,7 +2795,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           {MATERIAL_CATEGORIES.map((c) => (
             <button key={c} type="button"
               onMouseDown={(e) => { e.preventDefault(); updateMaterial(catOpen, "category", c); setCatOpen(null); }}
-              className="w-full text-left px-3 py-2 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors text-gray-700">
+              className="w-full text-left px-3 py-2 text-xs hover:bg-violet-50 hover:text-violet-700 transition-colors text-gray-700">
               {c}
             </button>
           ))}
@@ -2814,8 +2814,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 if (n !== "직접입력") updateMaterial(nameOpen, "name", n);
                 setNameOpen(null);
               }}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors ${
-                n === "직접입력" ? "text-pink-500 font-semibold border-t border-gray-100" : "text-gray-700"
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-violet-50 hover:text-violet-700 transition-colors ${
+                n === "직접입력" ? "text-violet-500 font-semibold border-t border-gray-100" : "text-gray-700"
               }`}>
               {n}
             </button>
@@ -2836,8 +2836,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 if (c !== "기타") updateMaterial(colorOpen, "color", c);
                 setColorOpen(null);
               }}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-pink-50 hover:text-pink-700 transition-colors ${
-                c === "기타" ? "text-pink-500 font-semibold border-t border-gray-100" : "text-gray-700"
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-violet-50 hover:text-violet-700 transition-colors ${
+                c === "기타" ? "text-violet-500 font-semibold border-t border-gray-100" : "text-gray-700"
               }`}>
               {c}
             </button>
@@ -2856,7 +2856,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           <Printer size={14} />PDF 미리보기
         </button>
         <button onClick={handleSave}
-          className="flex items-center gap-1.5 px-5 py-2 bg-pink-500 text-white text-sm font-semibold rounded-xl hover:bg-pink-600 transition-colors">
+          className="flex items-center gap-1.5 px-5 py-2 bg-violet-500 text-white text-sm font-semibold rounded-xl hover:bg-violet-600 transition-colors">
           <Save size={14} />저장
         </button>
       </div>

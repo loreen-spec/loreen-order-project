@@ -18,28 +18,28 @@ export default function WeekBanner({ summary }: Props) {
 
   return (
     <>
-      <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-float overflow-hidden">
+      <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-600 text-white shadow-float overflow-hidden">
         <div className="px-6 py-5 flex items-center justify-between">
           <div>
-            <p className="text-indigo-200 text-xs font-medium tracking-widest uppercase mb-1">이번 주 입고</p>
+            <p className="text-violet-200 text-xs font-medium tracking-widest uppercase mb-1">이번 주 입고</p>
             <h2 className="font-display font-bold text-2xl">{summary.weekLabel}</h2>
           </div>
           <div className="flex gap-4">
             <div className="text-center">
               <div className="text-3xl font-display font-bold">{summary.totalItems}</div>
-              <div className="text-indigo-200 text-xs mt-0.5">건</div>
+              <div className="text-violet-200 text-xs mt-0.5">건</div>
             </div>
             <div className="w-px bg-white/20" />
             <div className="text-center">
               <div className="text-3xl font-display font-bold">{summary.totalQuantity.toLocaleString()}</div>
-              <div className="text-indigo-200 text-xs mt-0.5">장</div>
+              <div className="text-violet-200 text-xs mt-0.5">장</div>
             </div>
             {delayedCount > 0 && (
               <>
                 <div className="w-px bg-white/20" />
                 <div className="text-center">
                   <div className="text-3xl font-display font-bold text-red-300">{delayedCount}</div>
-                  <div className="text-indigo-200 text-xs mt-0.5">지연</div>
+                  <div className="text-violet-200 text-xs mt-0.5">지연</div>
                 </div>
               </>
             )}
@@ -57,7 +57,7 @@ export default function WeekBanner({ summary }: Props) {
         {open && (
           <div className="animate-slide-down px-4 pb-4 space-y-2">
             {summary.products.length === 0 ? (
-              <div className="text-center py-6 text-indigo-200 text-sm">이번 주 입고 예정 없음</div>
+              <div className="text-center py-6 text-violet-200 text-sm">이번 주 입고 예정 없음</div>
             ) : (
               summary.products.map((p) => (
                 <button
@@ -67,10 +67,10 @@ export default function WeekBanner({ summary }: Props) {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate">{p.name}</div>
-                    <div className="text-indigo-200 text-xs mt-0.5">{p.vendor} · {p.arrivalDate}</div>
+                    <div className="text-violet-200 text-xs mt-0.5">{p.vendor} · {p.arrivalDate}</div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-1 text-indigo-100 text-xs">
+                    <div className="flex items-center gap-1 text-violet-100 text-xs">
                       <Layers size={12} />
                       {p.orderQuantity.toLocaleString()}장
                     </div>
