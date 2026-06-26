@@ -228,7 +228,20 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
                       background: "#fafafa", minHeight: 0, overflow: "hidden",
                     }}>
                       {wo.productImage
-                        ? <img src={wo.productImage} alt="대표사진" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                        ? <img
+                            src={wo.productImage}
+                            alt="대표사진"
+                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              if (!wo.notionProductId || img.dataset.retried) return;
+                              img.dataset.retried = "1";
+                              fetch(`/api/notion-image?pageId=${wo.notionProductId}`)
+                                .then(r => r.json())
+                                .then(({ url }) => { if (url) img.src = url; })
+                                .catch(() => {});
+                            }}
+                          />
                         : <span style={{ fontSize: FL, color: "#ccc" }}>대표사진</span>
                       }
                     </div>

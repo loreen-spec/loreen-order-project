@@ -142,6 +142,23 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
     setWo((w) => ({ ...w, [key]: value }));
   }
 
+  // ── 노션 이미지 URL → base64 변환 (만료 URL 문제 방지) ────────
+  async function fetchImageAsBase64(url: string): Promise<string> {
+    try {
+      const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+      if (!res.ok) return url; // 프록시 실패 시 원본 URL 유지
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(url);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return url;
+    }
+  }
+
   // ── 노션 자동완성 ──────────────────────────────────────────
   async function lookupNotion(name: string) {
     if (!name.trim() || name.trim().length < 2) {
@@ -156,11 +173,18 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
       const data = await res.json();
       if (!data) { setNotionStatus("notfound"); return; }
       setNotionStatus("found");
+
+      // 노션 이미지 URL을 base64로 변환해서 저장 (만료 URL 문제 방지)
+      let imageUrl = data.imageUrl || "";
+      if (imageUrl && !imageUrl.startsWith("data:")) {
+        imageUrl = await fetchImageAsBase64(imageUrl);
+      }
+
       setWo((prev) => ({
         ...prev,
         notionProductId: prev.notionProductId || data.notionProductId || "",
         vendor:         prev.vendor || data.vendor || "",
-        productImage:   prev.productImage || data.imageUrl || "",
+        productImage:   prev.productImage || imageUrl,
         sizes:          prev.colorSizeTable.length > 0
           ? prev.sizes
           : data.sizes?.length
@@ -400,7 +424,20 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
                   onDragOver={(e) => e.preventDefault()}
                 >
                   {wo.productImage ? (
-                    <img src={wo.productImage} alt="대표사진" className="w-full h-full object-contain" />
+                    <img
+                      src={wo.productImage}
+                      alt="대표사진"
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (!wo.notionProductId || img.dataset.retried) return;
+                        img.dataset.retried = "1";
+                        fetch(`/api/notion-image?pageId=${wo.notionProductId}`)
+                          .then(r => r.json())
+                          .then(({ url }) => { if (url) { img.src = url; set("productImage", url); } })
+                          .catch(() => {});
+                      }}
+                    />
                   ) : (
                     <div className="text-center text-gray-400 text-xs px-4">
                       <Upload size={18} className="mx-auto mb-1 text-gray-300" />
