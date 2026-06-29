@@ -36,7 +36,7 @@ const NAV = [
 
 const CATEGORIES: { value: CategoryFilter; emoji: string; label: string }[] = [
   { value: "의류", emoji: "👗", label: "의류" },
-  { value: "슈즈", emoji: "🩴", label: "슈즈" },
+  { value: "슈즈", emoji: "👠", label: "슈즈" },
 ];
 
 export default function Sidebar({ activePage, onNavigate, categoryFilter, onCategoryChange }: Props) {
@@ -54,13 +54,14 @@ export default function Sidebar({ activePage, onNavigate, categoryFilter, onCate
               <button
                 key={c.value}
                 onClick={() => onCategoryChange(c.value)}
-                className={`flex-1 flex items-center justify-center py-2 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-semibold transition-all ${
                   active
                     ? "text-white shadow-sm"
                     : "bg-gray-50 text-gray-400 hover:bg-violet-50 hover:text-violet-500"
                 }`}
                 style={active ? { background: "#836CE0" } : {}}
               >
+                <span className="text-base leading-none">{c.emoji}</span>
                 <span>{c.label}</span>
               </button>
             );
