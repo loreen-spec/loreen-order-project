@@ -44,25 +44,8 @@ export default function Sidebar({ activePage, onNavigate, categoryFilter, onCate
 
   return (
     <aside className="w-56 shrink-0 h-screen sticky top-0 bg-white border-r border-gray-100 flex flex-col">
-      {/* 로고 */}
-      <div className="h-16 flex items-center gap-3 px-5 border-b border-gray-100">
-        <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-xl select-none shadow-sm"
-          style={{ background: "linear-gradient(135deg, #c4b5fd 0%, #836CE0 100%)" }}>
-          📋
-        </div>
-        <div>
-          <div
-            className="leading-tight text-xl font-semibold"
-            style={{ fontFamily: "var(--font-fredoka), sans-serif", color: "#e63329", letterSpacing: "0.02em" }}
-          >
-            OZKIZ
-          </div>
-          <div className="text-gray-400 text-[10px] leading-tight -mt-0.5">제품디자인팀</div>
-        </div>
-      </div>
-
       {/* 카테고리 탭 */}
-      <div className="px-3 py-3 border-b border-gray-100">
+      <div className="px-3 pt-4 pb-3 border-b border-gray-100">
         <p className="text-[9px] font-bold text-gray-300 tracking-widest uppercase px-1 mb-2">CATEGORY</p>
         <div className="flex gap-1.5">
           {CATEGORIES.map((c) => {
@@ -71,14 +54,13 @@ export default function Sidebar({ activePage, onNavigate, categoryFilter, onCate
               <button
                 key={c.value}
                 onClick={() => onCategoryChange(c.value)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center py-2 rounded-xl text-xs font-semibold transition-all ${
                   active
                     ? "text-white shadow-sm"
                     : "bg-gray-50 text-gray-400 hover:bg-violet-50 hover:text-violet-500"
                 }`}
                 style={active ? { background: "#836CE0" } : {}}
               >
-                <span className="text-base leading-none">{c.emoji}</span>
                 <span>{c.label}</span>
               </button>
             );
