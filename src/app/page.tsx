@@ -111,21 +111,8 @@ function WorkOrderFullPage({
     <div className="min-h-screen" style={{ background: "#F8F8FB" }}>
       <div className="max-w-screen-2xl mx-auto px-6 lg:px-10 py-8">
 
-        {/* ── 헤더 ───────────────────────────────────────── */}
-        <div className="flex items-end justify-between mb-7 flex-wrap gap-4">
-          <div>
-            <p
-              className="text-[11px] font-bold tracking-[0.18em] uppercase mb-1"
-              style={{ color: "#836CE0" }}
-            >
-              WORK ORDERS
-            </p>
-            <h1 className="text-[28px] font-bold leading-tight" style={{ color: "#363649" }}>
-              작업지시서
-            </h1>
-          </div>
-
-          {/* 카테고리 토글 */}
+        {/* ── 헤더 (카테고리 토글만) ─────────────────────── */}
+        <div className="flex justify-end mb-5">
           <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-gray-200 shadow-sm">
             {([["의류", "👕"], ["슈즈", "🩴"]] as [CategoryFilter, string][]).map(([val, icon]) => (
               <button
