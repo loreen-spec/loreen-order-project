@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import {
-  Search, Plus, FileText,
+  Search, Plus, FileText, PenLine,
   ChevronDown, Eye, Edit3, Trash2,
-  CheckCircle2, Clock, Truck, Settings2, Check, X,
+  CheckCircle2, Clock, Settings2, Check, X,
   ExternalLink, Loader2, SlidersHorizontal
 } from "lucide-react";
 import type { WorkOrder } from "@/types";
@@ -274,18 +274,54 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
       )}
 
       {/* 상단 요약 카드 */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "전체 작업지시서", value: filtered.length + "건",                                                    color: "text-gray-800"    },
-          { label: "작성중",          value: filtered.filter(o=>o.status==="draft").length + "건",           color: "text-gray-500"    },
-          { label: "컨펌대기",        value: filtered.filter(o=>o.status==="pending_confirm").length + "건", color: "text-violet-500"  },
-          { label: "완료",            value: filtered.filter(o=>o.status==="completed").length + "건",       color: "text-emerald-600" },
-        ].map((c) => (
-          <div key={c.label} className="bg-white rounded-2xl p-4 border border-gray-100">
-            <div className="text-xs text-gray-400 mb-1">{c.label}</div>
-            <div className={`text-2xl font-bold ${c.color}`}>{c.value}</div>
-          </div>
-        ))}
+          {
+            label: "전체 작업지시서",
+            value: filtered.length,
+            icon: FileText,
+            iconBg: "bg-violet-100",
+            iconColor: "text-violet-500",
+            numColor: "text-gray-800",
+          },
+          {
+            label: "작성중",
+            value: filtered.filter(o => o.status === "draft").length,
+            icon: PenLine,
+            iconBg: "bg-gray-100",
+            iconColor: "text-gray-500",
+            numColor: "text-gray-600",
+          },
+          {
+            label: "컨펌대기",
+            value: filtered.filter(o => o.status === "pending_confirm").length,
+            icon: Clock,
+            iconBg: "bg-amber-100",
+            iconColor: "text-amber-500",
+            numColor: "text-violet-600",
+          },
+          {
+            label: "완료",
+            value: filtered.filter(o => o.status === "completed").length,
+            icon: CheckCircle2,
+            iconBg: "bg-emerald-100",
+            iconColor: "text-emerald-500",
+            numColor: "text-emerald-600",
+          },
+        ].map((c) => {
+          const Icon = c.icon;
+          return (
+            <div key={c.label} className="bg-white rounded-2xl px-5 py-4 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${c.iconBg}`}>
+                <Icon size={20} className={c.iconColor} />
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 font-medium mb-0.5">{c.label}</div>
+                <div className={`text-2xl font-bold ${c.numColor}`}>{c.value}<span className="text-sm font-semibold ml-0.5">건</span></div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* 필터 + 검색 */}
