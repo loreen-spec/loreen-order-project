@@ -111,40 +111,43 @@ function WorkOrderFullPage({
     <div className="min-h-screen" style={{ background: "#F8F8FB" }}>
       <div className="max-w-screen-2xl mx-auto px-6 lg:px-10 py-8">
 
-        {/* ── 헤더 (카테고리 토글만) ─────────────────────── */}
-        <div className="flex justify-end mb-5">
-          <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-gray-200 shadow-sm">
-            {([["의류", "👕"], ["슈즈", "🩴"]] as [CategoryFilter, string][]).map(([val, icon]) => (
+        {/* ── 탭 + 카테고리 토글 (같은 줄) ─────────────────── */}
+        <div className="flex items-center border-b border-gray-200 mb-6">
+          {/* 왼쪽: 탭 메뉴 */}
+          <div className="flex overflow-x-auto scrollbar-hide">
+            {TABS.map(({ key, label }) => (
               <button
-                key={val}
-                onClick={() => onCategoryChange(val)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all select-none ${
-                  categoryFilter === val ? "text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
+                key={key}
+                onClick={() => handleTabClick(key)}
+                className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                  displayTab === key
+                    ? "border-violet-600 text-violet-600"
+                    : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
                 }`}
-                style={categoryFilter === val ? { background: "#836CE0" } : {}}
               >
-                <span className="text-base leading-none">{icon}</span>
-                {val}
+                {label}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* ── 가로 탭 내비게이션 ─────────────────────────── */}
-        <div className="flex border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
-          {TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => handleTabClick(key)}
-              className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                displayTab === key
-                  ? "border-violet-600 text-violet-600"
-                  : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {/* 오른쪽: 카테고리 토글 */}
+          <div className="ml-auto pb-2 flex-shrink-0">
+            <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-gray-200 shadow-sm">
+              {([["의류", "👕"], ["슈즈", "🩴"]] as [CategoryFilter, string][]).map(([val, icon]) => (
+                <button
+                  key={val}
+                  onClick={() => onCategoryChange(val)}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all select-none ${
+                    categoryFilter === val ? "text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  style={categoryFilter === val ? { background: "#836CE0" } : {}}
+                >
+                  <span className="text-base leading-none">{icon}</span>
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ── PDF 미리보기 오버레이 ──────────────────────── */}
