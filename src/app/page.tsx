@@ -26,8 +26,8 @@ function ComingSoon({ title, icon: Icon }: { title: string; icon: React.ElementT
 type WorkTab = "작업지시서목록" | "작업지시서작성" | "발주관리";
 
 const TABS: { key: WorkTab; label: string }[] = [
-  { key: "작업지시서작성", label: "작업지시서 작성" },
   { key: "작업지시서목록", label: "작업지시서 목록" },
+  { key: "작업지시서작성", label: "작업지시서 작성" },
   { key: "발주관리",       label: "발주 관리" },
 ];
 
