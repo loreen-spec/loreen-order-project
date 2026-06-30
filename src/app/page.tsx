@@ -131,7 +131,7 @@ function WorkOrderFullPage({
         </div>
 
         {/* ── 가로 탭 내비게이션 ─────────────────────────── */}
-        <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
+        <div className="flex border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
           {TABS.map(({ key, label }) => (
             <button
               key={key}
