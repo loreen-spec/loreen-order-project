@@ -295,11 +295,12 @@ const NewOrdersBulletin = memo(function NewOrdersBulletin({
   );
 });
 
-// ── 클라이언트 캐시
+// ── 클라이언트 캐시 (TTL 10분)
 const CLIENT_CACHE_KEY = "orders_cache";
-const CLIENT_CACHE_TTL = 5 * 60 * 1000;
+const CLIENT_CACHE_TTL = 15 * 60 * 1000;
 
 function readClientCache(): OrderProduct[] | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(CLIENT_CACHE_KEY);
     if (!raw) return null;
@@ -307,6 +308,11 @@ function readClientCache(): OrderProduct[] | null {
     if (Date.now() - ts < CLIENT_CACHE_TTL) return data;
   } catch {}
   return null;
+}
+
+function writeClientCache(data: OrderProduct[]) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(CLIENT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch {}
 }
 
 // ── 메인
@@ -317,8 +323,7 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
   const [error, setError]       = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const load = useCallback(async (showFull = false) => {
-    if (showFull && orders.length === 0) setLoading(true);
+  const fetchFromServer = useCallback(async () => {
     setFetching(true);
     setError(null);
     try {
@@ -327,7 +332,7 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
       const list = Array.isArray(data) ? data : [];
       setOrders(list);
       setLastUpdated(new Date());
-      try { localStorage.setItem(CLIENT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: list })); } catch {}
+      writeClientCache(list);
     } catch {
       setError("발주 데이터를 불러오지 못했습니다.");
     } finally {
@@ -336,7 +341,24 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
     }
   }, []);
 
-  useEffect(() => { load(true); }, [load]);
+  // 새로고침 버튼용 (명시적 호출)
+  const load = useCallback((showFull = false) => {
+    if (showFull) setLoading(true);
+    fetchFromServer();
+  }, [fetchFromServer]);
+
+  useEffect(() => {
+    const cached = readClientCache();
+    if (cached && cached.length > 0) {
+      // 캐시 유효 → 즉시 표시, 서버 호출 없음
+      setOrders(cached);
+      setLoading(false);
+    } else {
+      // 캐시 없거나 만료 → 로딩 스피너 후 fetch
+      setLoading(true);
+      fetchFromServer();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 현재 카테고리에 해당하는 발주만
   const filteredOrders = useMemo(
