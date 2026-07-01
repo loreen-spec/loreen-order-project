@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Trash2, Save, X, Eye, Upload } from "lucide-react";
+import { Search, Plus, Trash2, Save, Eye, Upload } from "lucide-react";
 import type { ShoeWorkOrder, ShoeColorSizeRow, ShoeSpec } from "@/types";
 
 // ── 기본값 상수 ─────────────────────────────────────────────
@@ -298,37 +298,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ background: "#f8f9fb" }}>
-
-      {/* ── 헤더 바 ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm px-6 py-4 flex items-center justify-between">
-        <div>
-          <div className="font-bold text-gray-900 text-lg flex items-center gap-2">
-            <span className="text-2xl">🩴</span>슈즈 작업지시서 작성
-          </div>
-          <div className="text-xs text-gray-400 mt-0.5">슈즈 카테고리 전용 작업지시서</div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onCancel}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50"
-          >
-            <X size={14} />취소
-          </button>
-          <button
-            onClick={() => onPreview(wo)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50"
-          >
-            <Eye size={14} />미리보기
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-1.5 px-4 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors"
-          >
-            <Save size={14} />저장
-          </button>
-        </div>
-      </div>
+    <div>
 
       {/* ── 본문 ─────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-6 py-6 flex flex-col gap-5">
@@ -645,6 +615,22 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
             <Plus size={12} /> 사양 항목 추가
           </button>
         </SectionCard>
+
+        {/* ── 하단 버튼 ─────────────────────────────────────── */}
+        <div className="flex items-center justify-end gap-3 pb-6">
+          <button onClick={onCancel}
+            className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            취소
+          </button>
+          <button onClick={() => onPreview(wo)}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            <Eye size={14} />PDF 미리보기
+          </button>
+          <button onClick={handleSave}
+            className="flex items-center gap-1.5 px-5 py-2 bg-violet-500 text-white text-sm font-semibold rounded-xl hover:bg-violet-600 transition-colors">
+            <Save size={14} />저장
+          </button>
+        </div>
 
       </div>
     </div>
