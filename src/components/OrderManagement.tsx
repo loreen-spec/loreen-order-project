@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, memo, useCallback } from "react";
 import {
   ChevronDown, ChevronRight, Loader2, RefreshCw,
   Layers, Calendar, Package, Shirt, Footprints, ShoppingBag,
-  Bell
+  Bell, Check
 } from "lucide-react";
 import type { OrderProduct } from "@/app/api/orders/route";
 import { format, parseISO, differenceInDays, isValid } from "date-fns";
@@ -86,15 +86,63 @@ const ColorSizeTable = memo(function ColorSizeTable({ rows }: { rows: OrderProdu
 
 // ── 제품 카드: memo로 다른 카드 열어도 이 카드는 리렌더 안 함
 const ProductCard = memo(function ProductCard({ product }: { product: OrderProduct }) {
-  const [open, setOpen] = useState(false);
+  const [open,    setOpen]    = useState(false);
+  const [checked, setChecked] = useState(false);
+
   const arrivalDate = product.arrivalDate || product.rows[0]?.arrivalDate;
+
+  // 최신 발주일
+  const orderDate = useMemo(() => {
+    const latest = product.rows
+      .filter((r) => r.orderDate)
+      .sort((a, b) => (b.orderDate > a.orderDate ? 1 : -1))[0];
+    return latest?.orderDate ?? null;
+  }, [product.rows]);
+
+  // 체크 상태 복원 (SSR safe)
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(`order_checked_${product.id}`) === "1") setChecked(true);
+    } catch {}
+  }, [product.id]);
 
   const toggle = useCallback(() => setOpen((v) => !v), []);
 
+  const handleCheck = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setChecked((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(`order_checked_${product.id}`, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  }, [product.id]);
+
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden bg-white">
-      <button onClick={toggle} className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left">
-        {/* 이미지: lazy loading */}
+    <div className={`rounded-xl overflow-hidden border transition-all ${
+      checked ? "border-emerald-200 bg-emerald-50/20" : "border-gray-100 bg-white"
+    }`}>
+      <button
+        onClick={toggle}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50/70 transition-colors text-left"
+      >
+        {/* 발주일 배지 — 이미지 앞 */}
+        <div className="shrink-0 w-10 flex flex-col items-center justify-center gap-0.5">
+          {orderDate ? (
+            <>
+              <span className="text-[9px] text-gray-400 font-medium uppercase leading-none">발주</span>
+              <span className="text-[12px] font-bold text-gray-600 leading-none">
+                {format(parseISO(orderDate), "M/d", { locale: ko })}
+              </span>
+            </>
+          ) : (
+            <span className="text-[9px] text-gray-300">—</span>
+          )}
+        </div>
+
+        {/* 세로 구분선 */}
+        <div className="w-px h-8 bg-gray-100 shrink-0" />
+
+        {/* 이미지 */}
         <div className="shrink-0 w-10 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
           {product.imageUrl ? (
             <img
@@ -109,27 +157,50 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
           )}
         </div>
 
+        {/* 제품명 + 입고일 */}
         <div className="flex-1 min-w-0">
-          <span className="font-semibold text-sm text-gray-900 truncate block">{product.name}</span>
+          <span className={`font-semibold text-sm truncate block transition-colors ${
+            checked ? "text-gray-400 line-through decoration-emerald-400" : "text-gray-900"
+          }`}>
+            {product.name}
+          </span>
           {arrivalDate && (
             <span className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
               <Calendar size={10} />
-              {format(parseISO(arrivalDate), "M/d", { locale: ko })}
+              입고 {format(parseISO(arrivalDate), "M/d", { locale: ko })}
             </span>
           )}
         </div>
 
-        <div className="shrink-0 flex items-center gap-1.5">
+        {/* 우측: 차수 + 수량 + 체크 + 화살표 */}
+        <div className="shrink-0 flex items-center gap-2">
           {product.latestBatch && (
             <span className="text-[10px] bg-orange-50 text-orange-600 border border-orange-100 px-1.5 py-0.5 rounded-md font-bold">
               {product.latestBatch}
             </span>
           )}
-          <span className="flex items-center gap-1 font-bold text-sm text-indigo-700">
+          <span className="flex items-center gap-1 font-bold text-sm text-violet-700">
             <Layers size={12} />
             {product.totalQuantity > 0 ? product.totalQuantity.toLocaleString() : "미정"}
           </span>
-          {open ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+
+          {/* 확인 체크 버튼 */}
+          <button
+            onClick={handleCheck}
+            title={checked ? "확인 취소" : "확인 완료"}
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+              checked
+                ? "bg-emerald-500 border-emerald-500 shadow-sm"
+                : "border-gray-300 hover:border-emerald-400 hover:bg-emerald-50"
+            }`}
+          >
+            {checked && <Check size={11} className="text-white" strokeWidth={3} />}
+          </button>
+
+          {open
+            ? <ChevronDown size={14} className="text-gray-400" />
+            : <ChevronRight size={14} className="text-gray-400" />
+          }
         </div>
       </button>
 
