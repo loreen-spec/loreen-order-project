@@ -110,7 +110,7 @@ function WorkOrderFullPage({
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FB" }}>
       {/* ── 탭 + 카테고리 토글 — sticky 고정 ─────────────────── */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
+      <div className="sticky top-0 z-20 border-b border-gray-200" style={{ background: "#F8F8FB" }}>
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-10">
           <div className="flex items-center">
             {/* 왼쪽: 탭 메뉴 */}
