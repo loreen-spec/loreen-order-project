@@ -110,6 +110,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
 
   const handleCheck = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     setChecked((prev) => {
       const next = !prev;
       try { localStorage.setItem(`order_checked_${product.id}`, next ? "1" : "0"); } catch {}
@@ -172,8 +173,27 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
           )}
         </div>
 
-        {/* 우측: 차수 + 수량 + 체크 + 화살표 */}
+        {/* 우측: 체크 → 차수 → 수량 → 화살표 */}
         <div className="shrink-0 flex items-center gap-2">
+
+          {/* 네모 체크박스 + 전달완료 뱃지 */}
+          <div className="relative flex flex-col items-center" onClick={handleCheck} style={{ cursor: "pointer" }}>
+            {checked && (
+              <span className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-px rounded-full leading-none">
+                전달완료
+              </span>
+            )}
+            <div
+              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                checked
+                  ? "bg-emerald-500 border-emerald-500 shadow-sm"
+                  : "border-gray-300 hover:border-emerald-400 hover:bg-emerald-50 bg-white"
+              }`}
+            >
+              {checked && <Check size={11} className="text-white" strokeWidth={3} />}
+            </div>
+          </div>
+
           {product.latestBatch && (
             <span className="text-[10px] bg-orange-50 text-orange-600 border border-orange-100 px-1.5 py-0.5 rounded-md font-bold">
               {product.latestBatch}
@@ -183,19 +203,6 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
             <Layers size={12} />
             {product.totalQuantity > 0 ? product.totalQuantity.toLocaleString() : "미정"}
           </span>
-
-          {/* 확인 체크 버튼 */}
-          <button
-            onClick={handleCheck}
-            title={checked ? "확인 취소" : "확인 완료"}
-            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-              checked
-                ? "bg-emerald-500 border-emerald-500 shadow-sm"
-                : "border-gray-300 hover:border-emerald-400 hover:bg-emerald-50"
-            }`}
-          >
-            {checked && <Check size={11} className="text-white" strokeWidth={3} />}
-          </button>
 
           {open
             ? <ChevronDown size={14} className="text-gray-400" />
