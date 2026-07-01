@@ -124,27 +124,27 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
     }`}>
       <button
         onClick={toggle}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50/70 transition-colors text-left"
+        className="w-full flex items-center px-3 py-2.5 hover:bg-gray-50/70 transition-colors text-left"
       >
-        {/* 발주일 배지 — 이미지 앞 */}
-        <div className="shrink-0 w-10 flex flex-col items-center justify-center gap-0.5">
+        {/* COL 1: 발주일 — 고정 너비 */}
+        <div className="shrink-0 w-12 flex flex-col items-center justify-center gap-0.5 mr-2">
           {orderDate ? (
             <>
-              <span className="text-[9px] text-gray-400 font-medium uppercase leading-none">발주</span>
-              <span className="text-[12px] font-bold text-gray-600 leading-none">
+              <span className="text-[10px] text-gray-400 font-semibold uppercase leading-none tracking-wide">발주</span>
+              <span className="text-[13px] font-bold text-gray-700 leading-none mt-0.5">
                 {format(parseISO(orderDate), "M/d", { locale: ko })}
               </span>
             </>
           ) : (
-            <span className="text-[9px] text-gray-300">—</span>
+            <span className="text-xs text-gray-300">—</span>
           )}
         </div>
 
         {/* 세로 구분선 */}
-        <div className="w-px h-8 bg-gray-100 shrink-0" />
+        <div className="w-px h-8 bg-gray-100 shrink-0 mr-2.5" />
 
-        {/* 이미지 */}
-        <div className="shrink-0 w-10 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
+        {/* COL 2: 이미지 — 고정 너비 */}
+        <div className="shrink-0 w-10 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-100 mr-3">
           {product.imageUrl ? (
             <img
               src={product.imageUrl}
@@ -158,7 +158,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
           )}
         </div>
 
-        {/* 제품명 + 입고일 */}
+        {/* COL 3: 제품명 + 입고일 — flex-1로 남은 공간 차지 */}
         <div className="flex-1 min-w-0">
           <span className={`font-semibold text-sm truncate block transition-colors ${
             checked ? "text-gray-400 line-through decoration-emerald-400" : "text-gray-900"
@@ -173,37 +173,49 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
           )}
         </div>
 
-        {/* 우측: 체크 → 차수 → 수량 → 화살표 */}
-        <div className="shrink-0 flex items-center gap-2">
-
-          {/* 네모 체크박스 + 전달완료 뱃지 */}
-          <div className="relative flex flex-col items-center" onClick={handleCheck} style={{ cursor: "pointer" }}>
-            {checked && (
-              <span className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-px rounded-full leading-none">
-                전달완료
-              </span>
-            )}
-            <div
-              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                checked
-                  ? "bg-emerald-500 border-emerald-500 shadow-sm"
-                  : "border-gray-300 hover:border-emerald-400 hover:bg-emerald-50 bg-white"
-              }`}
-            >
-              {checked && <Check size={11} className="text-white" strokeWidth={3} />}
-            </div>
-          </div>
-
-          {product.latestBatch && (
-            <span className="text-[10px] bg-orange-50 text-orange-600 border border-orange-100 px-1.5 py-0.5 rounded-md font-bold">
-              {product.latestBatch}
+        {/* COL 4: 체크박스 — 고정 너비 w-8, 중앙정렬 */}
+        <div
+          className="shrink-0 w-8 flex flex-col items-center justify-center relative"
+          onClick={handleCheck}
+          style={{ cursor: "pointer" }}
+        >
+          {checked && (
+            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1 py-px rounded-full leading-none">
+              전달완료
             </span>
           )}
+          <div
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+              checked
+                ? "bg-emerald-500 border-emerald-500 shadow-sm"
+                : "border-gray-300 hover:border-emerald-400 hover:bg-emerald-50 bg-white"
+            }`}
+          >
+            {checked && <Check size={11} className="text-white" strokeWidth={3} />}
+          </div>
+        </div>
+
+        {/* COL 5: 차수 — 고정 너비 w-10, 중앙정렬 */}
+        <div className="shrink-0 w-10 flex items-center justify-center">
+          {product.latestBatch ? (
+            <span className="text-[10px] bg-orange-50 text-orange-600 border border-orange-100 px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap">
+              {product.latestBatch}
+            </span>
+          ) : (
+            <span className="text-[10px] text-gray-200">—</span>
+          )}
+        </div>
+
+        {/* COL 6: 수량 — 고정 너비 w-20, 우측정렬 */}
+        <div className="shrink-0 w-20 flex items-center justify-end">
           <span className="flex items-center gap-1 font-bold text-sm text-violet-700">
             <Layers size={12} />
             {product.totalQuantity > 0 ? product.totalQuantity.toLocaleString() : "미정"}
           </span>
+        </div>
 
+        {/* COL 7: 화살표 — 고정 너비 w-5 */}
+        <div className="shrink-0 w-5 flex items-center justify-center ml-1">
           {open
             ? <ChevronDown size={14} className="text-gray-400" />
             : <ChevronRight size={14} className="text-gray-400" />
