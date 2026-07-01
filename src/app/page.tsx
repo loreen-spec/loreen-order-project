@@ -204,8 +204,8 @@ function WorkOrderFullPage({
           />
         )}
 
-      </div>{/* 본문 영역 끝 */}
-    </div>{/* 루트 끝 */}
+      </div>
+    </div>
   );
 }
 
