@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo, memo, useCallback } from "react";
+import { useEffect, useState, useMemo, memo, useCallback, useRef } from "react";
 import {
   ChevronDown, ChevronRight, Loader2, RefreshCw,
   Layers, Calendar, Package, Shirt, Footprints, ShoppingBag,
@@ -464,6 +464,7 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
   const [error, setError]       = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
+  const recentChanges = useRef<Record<string, number>>({});
 
   const fetchFromServer = useCallback(async () => {
     setFetching(true);
@@ -494,22 +495,38 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
     const syncApprovals = () => {
       fetch("/api/approvals")
         .then((r) => r.json())
-        .then((data) => { if (data && typeof data === "object") setApprovals(data); })
+        .then((data) => {
+          if (!data || typeof data !== "object") return;
+          const now = Date.now();
+          setApprovals((prev) => {
+            const merged = { ...data };
+            // 최근 3초 안에 내가 직접 바꾼 항목은 서버 값으로 덮어쓰지 않음
+            Object.entries(recentChanges.current).forEach(([id, ts]) => {
+              if (now - ts < 3000 && id in prev) {
+                merged[id] = prev[id];
+              }
+            });
+            return merged;
+          });
+        })
         .catch(() => {});
     };
-    syncApprovals(); // 초기 로드
-    const timer = setInterval(syncApprovals, 5000); // 5초마다 동기화
+    syncApprovals();
+    const timer = setInterval(syncApprovals, 5000);
     return () => clearInterval(timer);
   }, []);
 
-  // 체크 변경 → 서버 저장 + 로컬 상태 업데이트
+  // 체크 변경 → 즉시 로컬 반영 + 서버 저장
   const handleCheckChange = useCallback((id: string, checked: boolean) => {
+    recentChanges.current[id] = Date.now(); // 변경 시각 기록
     setApprovals((prev) => ({ ...prev, [id]: checked }));
     fetch("/api/approvals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, checked }),
-    }).catch(() => {});
+    }).catch(() => {
+      console.error("[approvals] 저장 실패:", id, checked);
+    });
   }, []);
 
   useEffect(() => {
