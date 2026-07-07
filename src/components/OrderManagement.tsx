@@ -454,12 +454,17 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
     fetchFromServer();
   }, [fetchFromServer]);
 
-  // 체크 상태 서버에서 로드
+  // 체크 상태 서버에서 로드 + 5초마다 폴링 (다른 PC 변경사항 자동 반영)
   useEffect(() => {
-    fetch("/api/approvals")
-      .then((r) => r.json())
-      .then((data) => { if (data && typeof data === "object") setApprovals(data); })
-      .catch(() => {});
+    const syncApprovals = () => {
+      fetch("/api/approvals")
+        .then((r) => r.json())
+        .then((data) => { if (data && typeof data === "object") setApprovals(data); })
+        .catch(() => {});
+    };
+    syncApprovals(); // 초기 로드
+    const timer = setInterval(syncApprovals, 5000); // 5초마다 동기화
+    return () => clearInterval(timer);
   }, []);
 
   // 체크 변경 → 서버 저장 + 로컬 상태 업데이트
