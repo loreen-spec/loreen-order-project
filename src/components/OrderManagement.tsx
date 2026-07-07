@@ -96,6 +96,7 @@ const ProductCard = memo(function ProductCard({
 }) {
   const [open,    setOpen]    = useState(false);
   const [checked, setChecked] = useState(initialChecked);
+  const [zoomImg, setZoomImg] = useState<string | null>(null);
 
   // 부모에서 전달된 초기값이 바뀌면 동기화
   useEffect(() => { setChecked(initialChecked); }, [initialChecked]);
@@ -146,15 +147,26 @@ const ProductCard = memo(function ProductCard({
         <div className="w-px h-8 bg-gray-100 shrink-0 mr-2.5" />
 
         {/* COL 2: 이미지 — 고정 너비 */}
-        <div className="shrink-0 w-10 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-100 mr-3">
+        <div
+          className="shrink-0 w-10 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-100 mr-3 relative group"
+          onClick={(e) => {
+            if (product.imageUrl) { e.stopPropagation(); setZoomImg(product.imageUrl); }
+          }}
+          style={product.imageUrl ? { cursor: "zoom-in" } : {}}
+        >
           {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover"
-            />
+            <>
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="text-white text-[8px] font-bold">확대</span>
+              </div>
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-300 text-[9px]">없음</div>
           )}
@@ -232,6 +244,29 @@ const ProductCard = memo(function ProductCard({
             ? <p className="text-xs text-gray-400 py-2 text-center">데이터 없음</p>
             : <ColorSizeTable rows={product.rows} />
           }
+        </div>
+      )}
+
+      {/* 이미지 확대 모달 */}
+      {zoomImg && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setZoomImg(null)}
+        >
+          <div className="relative max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={zoomImg}
+              alt={product.name}
+              className="w-full rounded-2xl shadow-2xl object-contain max-h-[80vh]"
+            />
+            <div className="mt-3 text-center text-white text-sm font-semibold drop-shadow">{product.name}</div>
+            <button
+              onClick={() => setZoomImg(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg text-gray-600 hover:text-gray-900"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
     </div>
