@@ -85,9 +85,20 @@ const ColorSizeTable = memo(function ColorSizeTable({ rows }: { rows: OrderProdu
 });
 
 // ── 제품 카드: memo로 다른 카드 열어도 이 카드는 리렌더 안 함
-const ProductCard = memo(function ProductCard({ product }: { product: OrderProduct }) {
+const ProductCard = memo(function ProductCard({
+  product,
+  initialChecked,
+  onCheckChange,
+}: {
+  product: OrderProduct;
+  initialChecked: boolean;
+  onCheckChange: (id: string, checked: boolean) => void;
+}) {
   const [open,    setOpen]    = useState(false);
-  const [checked, setChecked] = useState(false);
+  const [checked, setChecked] = useState(initialChecked);
+
+  // 부모에서 전달된 초기값이 바뀌면 동기화
+  useEffect(() => { setChecked(initialChecked); }, [initialChecked]);
 
   const arrivalDate = product.arrivalDate || product.rows[0]?.arrivalDate;
 
@@ -99,24 +110,15 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
     return latest?.orderDate ?? null;
   }, [product.rows]);
 
-  // 체크 상태 복원 (SSR safe)
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(`order_checked_${product.id}`) === "1") setChecked(true);
-    } catch {}
-  }, [product.id]);
-
   const toggle = useCallback(() => setOpen((v) => !v), []);
 
   const handleCheck = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setChecked((prev) => {
-      const next = !prev;
-      try { localStorage.setItem(`order_checked_${product.id}`, next ? "1" : "0"); } catch {}
-      return next;
-    });
-  }, [product.id]);
+    const next = !checked;
+    setChecked(next);
+    onCheckChange(product.id, next);
+  }, [checked, product.id, onCheckChange]);
 
   return (
     <div className={`rounded-xl overflow-hidden border transition-all ${
@@ -237,7 +239,14 @@ const ProductCard = memo(function ProductCard({ product }: { product: OrderProdu
 });
 
 // ── 보드 패널: 업체 필터 포함
-const BoardPanel = memo(function BoardPanel({ board, products }: { board: string; products: OrderProduct[] }) {
+const BoardPanel = memo(function BoardPanel({
+  board, products, approvals, onCheckChange,
+}: {
+  board: string;
+  products: OrderProduct[];
+  approvals: Record<string, boolean>;
+  onCheckChange: (id: string, checked: boolean) => void;
+}) {
   const meta = BOARD_META[board] ?? BOARD_META["의류"];
   const Icon = meta.icon;
   const [selectedVendor, setSelectedVendor] = useState("전체");
@@ -287,7 +296,14 @@ const BoardPanel = memo(function BoardPanel({ board, products }: { board: string
       <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0" style={{ maxHeight: "calc(100vh - 340px)" }}>
         {filtered.length === 0
           ? <div className="text-center py-10 text-gray-300 text-sm">해당 업체 제품 없음</div>
-          : filtered.map((p) => <ProductCard key={p.id} product={p} />)
+          : filtered.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                initialChecked={!!approvals[p.id]}
+                onCheckChange={onCheckChange}
+              />
+            ))
         }
       </div>
     </div>
@@ -412,6 +428,7 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
   const [fetching, setFetching] = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [approvals, setApprovals] = useState<Record<string, boolean>>({});
 
   const fetchFromServer = useCallback(async () => {
     setFetching(true);
@@ -436,6 +453,24 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
     if (showFull) setLoading(true);
     fetchFromServer();
   }, [fetchFromServer]);
+
+  // 체크 상태 서버에서 로드
+  useEffect(() => {
+    fetch("/api/approvals")
+      .then((r) => r.json())
+      .then((data) => { if (data && typeof data === "object") setApprovals(data); })
+      .catch(() => {});
+  }, []);
+
+  // 체크 변경 → 서버 저장 + 로컬 상태 업데이트
+  const handleCheckChange = useCallback((id: string, checked: boolean) => {
+    setApprovals((prev) => ({ ...prev, [id]: checked }));
+    fetch("/api/approvals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, checked }),
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const cached = readClientCache();
@@ -527,10 +562,10 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
       ) : (
         <div className="flex-1 min-h-0">
           {(!categoryFilter || categoryFilter === "의류") && (
-            <BoardPanel board="의류" products={clothes} />
+            <BoardPanel board="의류" products={clothes} approvals={approvals} onCheckChange={handleCheckChange} />
           )}
           {(!categoryFilter || categoryFilter === "슈즈") && (
-            <BoardPanel board="슈즈" products={shoes} />
+            <BoardPanel board="슈즈" products={shoes} approvals={approvals} onCheckChange={handleCheckChange} />
           )}
         </div>
       )}
