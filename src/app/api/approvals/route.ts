@@ -5,42 +5,46 @@ import path from "path";
 const DATA_DIR  = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "approvals.json");
 
-// 서버 메모리 캐시 (재시작 전까지 유지)
-const memStore: Record<string, boolean> = {};
-let loaded = false;
-
-function load() {
-  if (loaded) return;
-  loaded = true;
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-      Object.assign(memStore, parsed);
-    }
-  } catch {}
+function ensureDir() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function save() {
+function readFile(): Record<string, boolean> {
   try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify(memStore, null, 2), "utf-8");
-  } catch {}
+    ensureDir();
+    if (!fs.existsSync(DATA_FILE)) return {};
+    const raw = fs.readFileSync(DATA_FILE, "utf-8").trim();
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("[approvals] read error:", e);
+    return {};
+  }
 }
 
-// GET /api/approvals
+function writeFile(data: Record<string, boolean>) {
+  try {
+    ensureDir();
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (e) {
+    console.error("[approvals] write error:", e);
+  }
+}
+
+// GET /api/approvals — 파일에서 직접 읽기
 export async function GET() {
-  load();
-  return NextResponse.json(memStore);
+  const data = readFile();
+  return NextResponse.json(data);
 }
 
 // POST /api/approvals  { id, checked }
 export async function POST(req: Request) {
-  load();
   const { id, checked } = await req.json();
   if (!id || typeof checked !== "boolean") {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
-  memStore[id] = checked;
-  save();
+  const data = readFile();
+  data[id] = checked;
+  writeFile(data);
   return NextResponse.json({ ok: true });
 }
