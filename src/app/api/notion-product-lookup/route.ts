@@ -55,37 +55,49 @@ export async function GET(req: Request) {
       imageUrl = f.type === "external" ? f.external?.url : f.file?.url;
     }
 
-    // ② 발주DB에서 이 제품의 1차 발주 행 가져오기
-    const orderRes: any = await notion.databases.query({
-      database_id: ORDER_DB,
-      filter: {
-        and: [
-          { property: "관계형 title", relation: { contains: productPageId } },
-          { property: "k.발주차수", select: { equals: "1차" } },
-        ],
-      },
-      page_size: 100,
-    });
+    // ② 발주DB에서 이 제품의 모든 발주 행 가져오기 (차수 필터 없이, 페이지네이션)
+    const orderRows: any[] = [];
+    let cursor: string | undefined;
+    do {
+      const orderRes: any = await notion.databases.query({
+        database_id: ORDER_DB,
+        filter: { property: "관계형 title", relation: { contains: productPageId } },
+        start_cursor: cursor,
+        page_size: 100,
+      });
+      orderRows.push(...orderRes.results);
+      cursor = orderRes.has_more ? orderRes.next_cursor : undefined;
+    } while (cursor);
 
-    // ③ 색상/사이즈 파싱: ":베이지, :140" → color="베이지", size="140"
+    // 차수 읽기 (select 또는 rich_text 모두 지원)
+    const getBatch = (rp: any): string =>
+      rp["k.발주차수"]?.select?.name ??
+      rp["k.발주차수"]?.rich_text?.[0]?.plain_text ??
+      "";
+    const batchNum = (b: string) => parseInt(b.replace(/[^0-9]/g, "")) || 0;
+
+    // 대상 차수 결정: 1차 우선, 없으면 가장 이른 차수
+    const availableNums = Array.from(
+      new Set(orderRows.map((r) => batchNum(getBatch(r.properties))).filter((n) => n > 0)),
+    ).sort((a, b) => a - b);
+    const targetNum = availableNums.includes(1) ? 1 : (availableNums[0] ?? 0);
+
+    // ③ 색상/사이즈 파싱: ":베이지, :140" → color="베이지", size="140" (콤마 분리)
     function parseColorSize(raw: string): { color: string; size: string } | null {
-      // 콜론 기준으로 분리, 앞뒤 공백·이모지 정리
-      const clean = raw.replace(/[^\w가-힣,. :/\-]/g, "").trim();
-      // ":컬러, :사이즈" 패턴
-      const m = clean.match(/:([^,]+),\s*:(\S+)/);
-      if (m) return { color: m[1].trim(), size: m[2].trim() };
-      // 콜론 없이 "컬러/사이즈" 패턴
-      const m2 = clean.match(/^([^/,]+)[/,]\s*(\S+)/);
-      if (m2) return { color: m2[1].trim(), size: m2[2].trim() };
-      return null;
+      const parts = raw.split(",").map((s) => s.replace(/^:/, "").trim());
+      const color = parts[0] ?? "";
+      const size  = parts[1] ?? "";
+      if (!color || !size) return null;
+      return { color, size };
     }
 
-    // ④ colorSizeTable 구성
+    // ④ colorSizeTable 구성 (대상 차수 행만)
     const colorMap = new Map<string, Record<string, number>>();
     const sizeSet  = new Set<string>();
 
-    for (const row of orderRes.results as any[]) {
+    for (const row of orderRows) {
       const rp = row.properties;
+      if (batchNum(getBatch(rp)) !== targetNum) continue; // 대상 차수만
       const csRaw = (rp["f.색상/사이즈"]?.rich_text ?? []).map((t: any) => t.plain_text).join("");
       const qty   = rp["g.발주수량"]?.number ?? 0;
       const parsed = parseColorSize(csRaw);

@@ -278,6 +278,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   // 차수 선택 → 총 발주수량 + 발주일 + 차수 반영 후 저장
   async function applyBatch(id: string, b: Batch) {
+    setBatchPopup(null); // 선택 즉시 모달 닫기
     const patch = {
       orderCount: b.batchNum,
       totalQuantity: b.totalQuantity,
@@ -288,7 +289,6 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     const next = orders.map((o) => (o.id !== id ? o : { ...o, ...patch }));
     setOrders(next);
     syncLocal(next);
-    setBatchPopup(null);
     await fetch(`/api/work-orders/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
