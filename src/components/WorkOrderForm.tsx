@@ -1536,14 +1536,41 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   }
 
   // ─── 측정치 ───────────────────────────────────────────
+  // 그레이딩 자동계산: 기준(첫 사이즈)값 + 순번×편차 → 나머지 사이즈 채움
+  function computeGrading(
+    values: Record<string, string>,
+    diff: string,
+    sizes: string[],
+  ): Record<string, string> {
+    const baseKey = sizes[0];
+    const baseVal = parseFloat(values[baseKey]);
+    const step = parseFloat(diff);
+    if (isNaN(baseVal) || isNaN(step)) return values; // 기준값/편차 없으면 그대로
+    const out = { ...values };
+    sizes.forEach((s, i) => {
+      if (i === 0) return; // 기준 사이즈는 유지
+      const v = baseVal + step * i;
+      out[s] = Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100);
+    });
+    return out;
+  }
+
   function updateMeasurement(idx: number, field: string, value: string) {
     setWo((w) => ({
       ...w,
       measurements: w.measurements.map((m, i) => {
         if (i !== idx) return m;
-        if (field === "diff") return { ...m, diff: value };
-        if (field === "item") return { ...m, item: value };
-        return { ...m, values: { ...m.values, [field]: value } };
+        let next: WorkOrderMeasurement;
+        if (field === "diff") next = { ...m, diff: value };
+        else if (field === "item") next = { ...m, item: value };
+        else next = { ...m, values: { ...m.values, [field]: value } };
+
+        // 기준값(첫 사이즈) 또는 편차 변경 시 그레이딩 자동 계산
+        const baseKey = w.sizes[0];
+        if (!next.isHeader && (field === "diff" || field === baseKey)) {
+          next = { ...next, values: computeGrading(next.values, next.diff, w.sizes) };
+        }
+        return next;
       }),
     }));
   }
@@ -1987,8 +2014,12 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 </button>
               </div>
             </div>
+            {/* 그레이딩 자동계산 안내 */}
+            <div className="mt-4 flex items-center gap-1.5 text-xs text-violet-600 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
+              ↻ <span><b>{wo.sizes[0] || "기준"}호</b> 값과 <b>편차</b>를 입력하면 나머지 사이즈가 자동 계산됩니다. (모든 칸은 직접 수정 가능)</span>
+            </div>
             {/* 스펙 테이블 */}
-            <div className="overflow-x-auto mt-5">
+            <div className="overflow-x-auto mt-3">
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
@@ -1997,7 +2028,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     {wo.sizes.map((s) => (
                       <th key={s} className="border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-600 w-20">{s}</th>
                     ))}
-                    <th className="border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-600 w-16">편차</th>
+                    <th className="border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-600 w-16" title={`${wo.sizes[0] || "기준"}호 값 + 편차로 나머지 사이즈 자동계산`}>편차 ↻</th>
                     <th className="border border-gray-200 px-2 py-2 w-8"></th>
                   </tr>
                 </thead>
