@@ -371,21 +371,28 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                 </div>
               ) : (
                 <div className="py-1">
-                  {batchPopup.batches.map((b) => (
-                    <button
-                      key={b.batch}
-                      onClick={() => applyBatch(batchPopup.id, b)}
-                      className={`w-full text-left px-5 py-3 text-sm flex items-center justify-between gap-3 hover:bg-violet-50 transition-colors border-b border-gray-50 ${
-                        batchTarget?.orderCount === b.batchNum ? "bg-violet-50/60" : ""
-                      }`}
-                    >
-                      <span className="font-bold text-violet-700 w-12">{b.batch}</span>
-                      <span className="text-gray-800 font-semibold flex-1 text-right">
-                        {b.totalQuantity.toLocaleString()}장
-                      </span>
-                      <span className="text-gray-400 text-xs w-24 text-right">{b.orderDate || "—"}</span>
-                    </button>
-                  ))}
+                  {batchPopup.batches.map((b) => {
+                    const selected = batchTarget?.orderCount === b.batchNum;
+                    return (
+                      <button
+                        key={b.batch}
+                        onClick={() => applyBatch(batchPopup.id, b)}
+                        className={`w-full text-left px-5 py-3 text-sm flex items-center gap-3 transition-colors border-b border-gray-50 ${
+                          selected ? "bg-violet-100" : "hover:bg-violet-50"
+                        }`}
+                      >
+                        <span className="w-4 text-violet-600 font-bold">{selected ? "✓" : ""}</span>
+                        <span className={`font-bold w-12 ${selected ? "text-violet-800" : "text-violet-700"}`}>{b.batch}</span>
+                        <span className="text-gray-800 font-semibold flex-1 text-right">
+                          {b.totalQuantity.toLocaleString()}장
+                        </span>
+                        <span className="text-gray-400 text-xs w-24 text-right">{b.orderDate || "—"}</span>
+                        {selected && (
+                          <span className="text-[10px] font-bold text-violet-600 bg-white border border-violet-200 rounded-full px-1.5 py-0.5 ml-1">현재</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
