@@ -124,6 +124,21 @@ export async function GET(req: Request) {
 
     const totalQuantity = colorSizeTable.reduce((s, r) => s + r.total, 0);
 
+    // 진단용: 대상 차수 행들의 색상/사이즈 원본값 (임시)
+    const _debug = {
+      targetNum,
+      availableNums,
+      totalRows: orderRows.length,
+      targetRawSamples: orderRows
+        .filter((r) => batchNum(getBatch(r.properties)) === targetNum)
+        .slice(0, 8)
+        .map((r) => ({
+          raw: (r.properties["f.색상/사이즈"]?.rich_text ?? []).map((t: any) => t.plain_text).join(""),
+          type: r.properties["f.색상/사이즈"]?.type ?? null,
+          qty: r.properties["g.발주수량"]?.number ?? null,
+        })),
+    };
+
     return NextResponse.json({
       notionProductId: productPageId.replace(/-/g, ""),
       productName:     getText(p["제품명"]),
@@ -137,6 +152,7 @@ export async function GET(req: Request) {
       sizes,
       colorSizeTable,
       totalQuantity,
+      _debug,
     });
   } catch (e: any) {
     console.error("notion-product-lookup error:", e?.message);
