@@ -330,8 +330,69 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   const totalQty = filtered.reduce((s, o) => s + (o.totalQuantity || 0), 0);
 
+  // 팝업 대상 작업지시서 (모달 헤더 표시용)
+  const batchTarget = batchPopup ? orders.find((o) => o.id === batchPopup.id) : null;
+
   return (
     <div className="space-y-5">
+      {/* ── 발주 DB 차수 선택 모달 ─────────────────────────── */}
+      {batchPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+          onClick={() => setBatchPopup(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[80vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-800">발주 DB 차수 선택</div>
+                <div className="text-xs text-gray-400 mt-0.5 truncate max-w-[240px]">
+                  {batchTarget?.productName || ""}
+                </div>
+              </div>
+              <button
+                onClick={() => setBatchPopup(null)}
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none px-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto">
+              {batchPopup.loading ? (
+                <div className="px-5 py-8 text-sm text-gray-400 flex items-center justify-center gap-2">
+                  <Loader2 size={16} className="animate-spin" /> 발주 DB 조회 중...
+                </div>
+              ) : batchPopup.batches.length === 0 ? (
+                <div className="px-5 py-8 text-sm text-gray-400 text-center">
+                  {batchPopup.error ? "조회에 실패했습니다" : "발주 내역이 없습니다"}
+                </div>
+              ) : (
+                <div className="py-1">
+                  {batchPopup.batches.map((b) => (
+                    <button
+                      key={b.batch}
+                      onClick={() => applyBatch(batchPopup.id, b)}
+                      className={`w-full text-left px-5 py-3 text-sm flex items-center justify-between gap-3 hover:bg-violet-50 transition-colors border-b border-gray-50 ${
+                        batchTarget?.orderCount === b.batchNum ? "bg-violet-50/60" : ""
+                      }`}
+                    >
+                      <span className="font-bold text-violet-700 w-12">{b.batch}</span>
+                      <span className="text-gray-800 font-semibold flex-1 text-right">
+                        {b.totalQuantity.toLocaleString()}장
+                      </span>
+                      <span className="text-gray-400 text-xs w-24 text-right">{b.orderDate || "—"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Supabase 연결 오류 배너 */}
       {loadError && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center gap-2">
@@ -573,49 +634,15 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{o.year}/{o.season}</td>
-                    <td className="px-4 py-3 relative">
+                    <td className="px-4 py-3">
                       <button
-                        onClick={() => (batchPopup?.id === o.id ? setBatchPopup(null) : openBatchPopup(o))}
+                        onClick={() => openBatchPopup(o)}
                         title="발주 DB에서 차수 불러오기"
                         className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-lg text-xs font-bold hover:bg-violet-100 hover:ring-1 hover:ring-violet-300 transition-all inline-flex items-center gap-1"
                       >
                         {o.orderCount}차
                         <ChevronDown size={10} className="opacity-60" />
                       </button>
-
-                      {/* 차수 선택 팝업 */}
-                      {batchPopup?.id === o.id && (
-                        <div className="absolute left-4 top-full mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 min-w-[200px]">
-                          <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 border-b border-gray-100 mb-1">
-                            발주 DB 차수 (클릭 시 반영)
-                          </div>
-                          {batchPopup.loading ? (
-                            <div className="px-3 py-3 text-xs text-gray-400 flex items-center gap-2">
-                              <Loader2 size={12} className="animate-spin" /> 발주 DB 조회 중...
-                            </div>
-                          ) : batchPopup.batches.length === 0 ? (
-                            <div className="px-3 py-3 text-xs text-gray-400">
-                              {batchPopup.error ? "조회 실패" : "발주 내역이 없습니다"}
-                            </div>
-                          ) : (
-                            <div className="max-h-60 overflow-y-auto">
-                              {batchPopup.batches.map((b) => (
-                                <button
-                                  key={b.batch}
-                                  onClick={() => applyBatch(o.id, b)}
-                                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-3 hover:bg-violet-50 transition-colors ${
-                                    o.orderCount === b.batchNum ? "bg-violet-50/60" : ""
-                                  }`}
-                                >
-                                  <span className="font-bold text-violet-700">{b.batch}</span>
-                                  <span className="text-gray-700 font-semibold">{b.totalQuantity.toLocaleString()}장</span>
-                                  <span className="text-gray-400">{b.orderDate || "—"}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
