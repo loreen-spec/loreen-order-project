@@ -251,6 +251,51 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     }).catch(() => null);
   }
 
+  // ── 발주 DB 차수 팝업 ─────────────────────────────────────
+  type Batch = { batch: string; batchNum: number; totalQuantity: number; orderDate: string };
+  const [batchPopup, setBatchPopup] = useState<{
+    id: string; loading: boolean; batches: Batch[]; error: boolean;
+  } | null>(null);
+
+  async function openBatchPopup(o: WorkOrder) {
+    setBatchPopup({ id: o.id, loading: true, batches: [], error: false });
+    try {
+      const qs = o.notionProductId
+        ? `pageId=${encodeURIComponent(o.notionProductId)}`
+        : `name=${encodeURIComponent(o.productName || "")}`;
+      const res = await fetch(`/api/order-batches?${qs}`, { cache: "no-store" });
+      const data = await res.json();
+      setBatchPopup({
+        id: o.id,
+        loading: false,
+        batches: Array.isArray(data.batches) ? data.batches : [],
+        error: false,
+      });
+    } catch {
+      setBatchPopup({ id: o.id, loading: false, batches: [], error: true });
+    }
+  }
+
+  // 차수 선택 → 총 발주수량 + 발주일 + 차수 반영 후 저장
+  async function applyBatch(id: string, b: Batch) {
+    const patch = {
+      orderCount: b.batchNum,
+      totalQuantity: b.totalQuantity,
+      issueDate: b.orderDate,   // 의류 PDF 날짜 필드
+      orderDate: b.orderDate,   // 슈즈 날짜 필드
+      updatedAt: new Date().toISOString(),
+    };
+    const next = orders.map((o) => (o.id !== id ? o : { ...o, ...patch }));
+    setOrders(next);
+    syncLocal(next);
+    setBatchPopup(null);
+    await fetch(`/api/work-orders/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).catch(() => null);
+  }
+
   function saveDirectorName() {
     const name = directorInput.trim();
     if (!name) return;
@@ -528,8 +573,47 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{o.year}/{o.season}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-lg text-xs font-bold">{o.orderCount}차</span>
+                    <td className="px-4 py-3 relative">
+                      <button
+                        onClick={() => (batchPopup?.id === o.id ? setBatchPopup(null) : openBatchPopup(o))}
+                        title="발주 DB에서 차수 불러오기"
+                        className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-lg text-xs font-bold hover:bg-violet-100 hover:ring-1 hover:ring-violet-300 transition-all inline-flex items-center gap-1"
+                      >
+                        {o.orderCount}차
+                        <ChevronDown size={10} className="opacity-60" />
+                      </button>
+
+                      {/* 차수 선택 팝업 */}
+                      {batchPopup?.id === o.id && (
+                        <div className="absolute left-4 top-full mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 min-w-[200px]">
+                          <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 border-b border-gray-100 mb-1">
+                            발주 DB 차수 (클릭 시 반영)
+                          </div>
+                          {batchPopup.loading ? (
+                            <div className="px-3 py-3 text-xs text-gray-400 flex items-center gap-2">
+                              <Loader2 size={12} className="animate-spin" /> 발주 DB 조회 중...
+                            </div>
+                          ) : batchPopup.batches.length === 0 ? (
+                            <div className="px-3 py-3 text-xs text-gray-400">
+                              {batchPopup.error ? "조회 실패" : "발주 내역이 없습니다"}
+                            </div>
+                          ) : (
+                            batchPopup.batches.map((b) => (
+                              <button
+                                key={b.batch}
+                                onClick={() => applyBatch(o.id, b)}
+                                className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-3 hover:bg-violet-50 transition-colors ${
+                                  o.orderCount === b.batchNum ? "bg-violet-50/60" : ""
+                                }`}
+                              >
+                                <span className="font-bold text-violet-700">{b.batch}</span>
+                                <span className="text-gray-700 font-semibold">{b.totalQuantity.toLocaleString()}장</span>
+                                <span className="text-gray-400">{b.orderDate || "—"}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
