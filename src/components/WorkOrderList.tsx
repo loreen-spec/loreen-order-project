@@ -598,19 +598,21 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                               {batchPopup.error ? "조회 실패" : "발주 내역이 없습니다"}
                             </div>
                           ) : (
-                            batchPopup.batches.map((b) => (
-                              <button
-                                key={b.batch}
-                                onClick={() => applyBatch(o.id, b)}
-                                className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-3 hover:bg-violet-50 transition-colors ${
-                                  o.orderCount === b.batchNum ? "bg-violet-50/60" : ""
-                                }`}
-                              >
-                                <span className="font-bold text-violet-700">{b.batch}</span>
-                                <span className="text-gray-700 font-semibold">{b.totalQuantity.toLocaleString()}장</span>
-                                <span className="text-gray-400">{b.orderDate || "—"}</span>
-                              </button>
-                            ))
+                            <div className="max-h-60 overflow-y-auto">
+                              {batchPopup.batches.map((b) => (
+                                <button
+                                  key={b.batch}
+                                  onClick={() => applyBatch(o.id, b)}
+                                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-3 hover:bg-violet-50 transition-colors ${
+                                    o.orderCount === b.batchNum ? "bg-violet-50/60" : ""
+                                  }`}
+                                >
+                                  <span className="font-bold text-violet-700">{b.batch}</span>
+                                  <span className="text-gray-700 font-semibold">{b.totalQuantity.toLocaleString()}장</span>
+                                  <span className="text-gray-400">{b.orderDate || "—"}</span>
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </div>
                       )}
