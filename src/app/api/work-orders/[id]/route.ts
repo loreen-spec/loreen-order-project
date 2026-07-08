@@ -7,13 +7,19 @@ import { supabase } from "@/lib/supabase";
 
 // DELETE /api/work-orders/[id]
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  const { error } = await supabase
+  const id = decodeURIComponent(params.id);
+
+  // .select()로 실제 삭제된 행을 반환받아 매칭 여부 확인
+  const { data, error } = await supabase
     .from("work_orders")
     .delete()
-    .eq("id", params.id);
+    .eq("id", id)
+    .select("id");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  const deletedCount = data?.length ?? 0;
+  return NextResponse.json({ ok: true, receivedId: id, deletedCount });
 }
 
 // PATCH /api/work-orders/[id] — 부분 업데이트 (상태변경 등)

@@ -192,7 +192,28 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     const next = orders.filter((o) => o.id !== id);
     setOrders(next);
     syncLocal(next);
-    await fetch(`/api/work-orders/${id}`, { method: "DELETE" }).catch(() => null);
+
+    try {
+      const res = await fetch(`/api/work-orders/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || body?.deletedCount === 0) {
+        alert(`삭제가 서버에 반영되지 않았습니다.\nid: ${id}\n관리자에게 문의해주세요.`);
+      }
+    } catch {
+      alert("삭제 요청 실패 (네트워크). 다시 시도해주세요.");
+    }
+
+    // 서버 기준으로 최신 목록 재동기화 (localStorage 잔상 제거)
+    try {
+      const r = await fetch("/api/work-orders");
+      if (r.ok) {
+        const data = await r.json();
+        if (Array.isArray(data)) {
+          setOrders(data);
+          syncLocal(data);
+        }
+      }
+    } catch {}
   }
 
   async function toggleApproval(id: string, approved: boolean) {
