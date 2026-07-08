@@ -495,19 +495,22 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
   useEffect(() => {
     const syncApprovals = () => {
       fetch("/api/approvals")
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) return; // 서버 오류 시 기존 로컬 상태 유지
+          return r.json();
+        })
         .then((data) => {
           if (!data || typeof data !== "object") return;
           setApprovals((prev) => {
             const merged = { ...data };
-            // 아직 저장 중인 항목은 서버 값으로 덮어쓰지 않음
+            // 저장 중인 항목은 서버 값으로 덮어쓰지 않음
             pendingSaves.current.forEach((id) => {
               if (id in prev) merged[id] = prev[id];
             });
             return merged;
           });
         })
-        .catch(() => {});
+        .catch(() => {}); // 네트워크 오류 시 기존 상태 유지
     };
     syncApprovals();
     const timer = setInterval(syncApprovals, 10000);
@@ -523,12 +526,18 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, checked }),
     })
-      .then(() => { pendingSaves.current.delete(id); })
+      .then((r) => {
+        if (r.ok) {
+          // 저장 성공 → pending 해제 (이후 폴링부터 서버값 반영)
+          pendingSaves.current.delete(id);
+        } else {
+          // HTTP 오류(500 등) → pending 유지해서 폴링 덮어쓰기 계속 차단
+          r.json().then((body) => console.error("[approvals] 저장 실패:", body));
+        }
+      })
       .catch(() => {
-        // 저장 실패 시 로컬 상태 롤백
-        pendingSaves.current.delete(id);
-        setApprovals((prev) => ({ ...prev, [id]: !checked }));
-        console.error("[approvals] 저장 실패:", id, checked);
+        // 네트워크 오류 → pending 유지
+        console.error("[approvals] 네트워크 오류:", id);
       });
   }, []);
 
