@@ -165,8 +165,8 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
       if (raw) setOrders(JSON.parse(raw));
     } catch {}
 
-    // Supabase에서 최신 데이터 로드 (메인)
-    fetch("/api/work-orders")
+    // Supabase에서 최신 데이터 로드 (메인) — 브라우저 캐시 방지
+    fetch("/api/work-orders", { cache: "no-store" })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -205,7 +205,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
     // 서버 기준으로 최신 목록 재동기화 (localStorage 잔상 제거)
     try {
-      const r = await fetch("/api/work-orders");
+      const r = await fetch("/api/work-orders", { cache: "no-store" });
       if (r.ok) {
         const data = await r.json();
         if (Array.isArray(data)) {

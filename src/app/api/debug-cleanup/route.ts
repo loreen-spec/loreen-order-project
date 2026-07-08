@@ -4,38 +4,29 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-const UUID_APPROVALS = "00000000-0000-0000-0000-000000000001";
+// 중복/찌꺼기 행을 하드 삭제 + 소프트 삭제(_deleted)로 확실히 제거
+async function removeRow(id: string) {
+  // 1) 하드 삭제 시도
+  const { data: hard } = await supabase
+    .from("work_orders").delete().eq("id", id).select("id");
+  if ((hard?.length ?? 0) > 0) return { id, mode: "hard", ok: true };
 
-// 일회성 정리 + 삭제 가능 여부 검증 (.select()로 실제 삭제 건수 확인)
+  // 2) 소프트 삭제 폴백
+  const { data: existing } = await supabase
+    .from("work_orders").select("data").eq("id", id).single();
+  if (!existing) return { id, mode: "not_found", ok: true };
+
+  const marked = { ...(existing.data ?? {}), _deleted: true };
+  const { error } = await supabase
+    .from("work_orders")
+    .upsert({ id, data: marked, updated_at: new Date().toISOString() }, { onConflict: "id" });
+  return { id, mode: "soft", ok: !error, error: error?.message ?? null };
+}
+
 export async function GET() {
-  const results: Record<string, unknown> = {};
-
-  // 1. 예전 문자열 ID 찌꺼기 승인 행 삭제
-  {
-    const { data, error } = await supabase
-      .from("work_orders").delete().eq("id", "__approvals__").select("id");
-    results["delete___approvals__"] = { count: data?.length ?? 0, error: error?.message ?? null };
-  }
-
-  // 2. 로얄코코 중복 1개 삭제
-  {
-    const { data, error } = await supabase
-      .from("work_orders").delete().eq("id", "1783414894303").select("id");
-    results["delete_로얄코코중복"] = { count: data?.length ?? 0, error: error?.message ?? null };
-  }
-
-  // 3. UUID 승인 행에서 __debug_test__ 키 제거
-  {
-    const { data } = await supabase
-      .from("work_orders").select("data").eq("id", UUID_APPROVALS).single();
-    const current: Record<string, boolean> = data?.data ?? {};
-    delete current["__debug_test__"];
-    const { error } = await supabase
-      .from("work_orders")
-      .update({ data: current, updated_at: new Date().toISOString() })
-      .eq("id", UUID_APPROVALS);
-    results["clean___debug_test__"] = { error: error?.message ?? null };
-  }
+  const results = [];
+  results.push(await removeRow("__approvals__"));        // 찌꺼기 승인 행
+  results.push(await removeRow("1783414894303"));         // 로얄코코 중복
 
   return NextResponse.json({ done: true, results });
 }
