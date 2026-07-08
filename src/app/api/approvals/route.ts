@@ -5,7 +5,8 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-const APPROVALS_ID = "__approvals__";
+// work_orders.id는 UUID 타입 — 고정 UUID 사용
+const APPROVALS_ID = "00000000-0000-0000-0000-000000000001";
 
 // GET /api/approvals — work_orders 테이블의 특수 행에서 승인 상태 조회
 export async function GET() {
