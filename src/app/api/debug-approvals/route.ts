@@ -4,29 +4,37 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-export async function GET() {
-  // 1. 테이블 읽기 테스트
-  const { data: readData, error: readError } = await supabase
-    .from("order_confirmations")
-    .select("*");
+const APPROVALS_ID = "00000000-0000-0000-0000-000000000001";
 
-  // 2. 테스트 쓰기
+export async function GET() {
+  // 1. 현재 승인 행 읽기
+  const { data: readData, error: readError } = await supabase
+    .from("work_orders")
+    .select("data")
+    .eq("id", APPROVALS_ID)
+    .single();
+
+  // 2. 테스트 쓰기 (기존 데이터에 __debug_test__ 추가)
+  const current: Record<string, boolean> = readData?.data ?? {};
+  current["__debug_test__"] = true;
+
   const { error: writeError } = await supabase
-    .from("order_confirmations")
+    .from("work_orders")
     .upsert(
-      { product_id: "__debug_test__", confirmed: true, updated_at: new Date().toISOString() },
-      { onConflict: "product_id" }
+      { id: APPROVALS_ID, data: current, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
     );
 
   // 3. 쓰기 후 다시 읽기
   const { data: afterData, error: afterError } = await supabase
-    .from("order_confirmations")
-    .select("*");
+    .from("work_orders")
+    .select("data")
+    .eq("id", APPROVALS_ID)
+    .single();
 
   return NextResponse.json({
-    read:  { data: readData,  error: readError?.message  ?? null },
+    read:  { data: readData?.data ?? null,  error: readError?.message  ?? null },
     write: { error: writeError?.message ?? null },
-    after: { data: afterData, error: afterError?.message ?? null },
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "NOT SET",
+    after: { data: afterData?.data ?? null, error: afterError?.message ?? null },
   });
 }
