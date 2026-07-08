@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo, memo, useCallback } from "react";
+import { useEffect, useState, useMemo, memo, useCallback, useRef } from "react";
 import {
   ChevronDown, ChevronRight, Loader2, RefreshCw,
   Layers, Calendar, Package, Shirt, Footprints, ShoppingBag,
@@ -464,6 +464,8 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
   const [error, setError]       = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
+  // 현재 저장 중인 항목 ID 집합 — 저장 완료 전에 폴링이 덮어쓰는 것을 방지
+  const pendingSaves = useRef<Set<string>>(new Set());
 
   const fetchFromServer = useCallback(async () => {
     setFetching(true);
@@ -496,7 +498,14 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
         .then((r) => r.json())
         .then((data) => {
           if (!data || typeof data !== "object") return;
-          setApprovals(data);
+          setApprovals((prev) => {
+            const merged = { ...data };
+            // 아직 저장 중인 항목은 서버 값으로 덮어쓰지 않음
+            pendingSaves.current.forEach((id) => {
+              if (id in prev) merged[id] = prev[id];
+            });
+            return merged;
+          });
         })
         .catch(() => {});
     };
@@ -505,16 +514,22 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
     return () => clearInterval(timer);
   }, []);
 
-  // 체크 변경 → 즉시 로컬 반영 + Supabase 저장
+  // 체크 변경 → 즉시 로컬 반영 + Supabase 저장 (저장 완료 후 pending 해제)
   const handleCheckChange = useCallback((id: string, checked: boolean) => {
+    pendingSaves.current.add(id);
     setApprovals((prev) => ({ ...prev, [id]: checked }));
     fetch("/api/approvals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, checked }),
-    }).catch(() => {
-      console.error("[approvals] 저장 실패:", id, checked);
-    });
+    })
+      .then(() => { pendingSaves.current.delete(id); })
+      .catch(() => {
+        // 저장 실패 시 로컬 상태 롤백
+        pendingSaves.current.delete(id);
+        setApprovals((prev) => ({ ...prev, [id]: !checked }));
+        console.error("[approvals] 저장 실패:", id, checked);
+      });
   }, []);
 
   useEffect(() => {
