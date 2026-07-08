@@ -14,10 +14,10 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // 작업지시서 형태(styleNo 문자열 보유)인 행만 반환 — 승인 데이터 등 특수행 제외
+  // 작업지시서 형태(styleNo 보유)이면서 삭제표시(_deleted)가 없는 행만 반환
   const orders = (data ?? [])
     .map((row: any) => row.data)
-    .filter((d: any) => d && typeof d.styleNo === "string");
+    .filter((d: any) => d && typeof d.styleNo === "string" && !d._deleted);
 
   return NextResponse.json(orders);
 }
