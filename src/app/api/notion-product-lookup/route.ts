@@ -82,9 +82,10 @@ export async function GET(req: Request) {
     ).sort((a, b) => a - b);
     const targetNum = availableNums.includes(1) ? 1 : (availableNums[0] ?? 0);
 
-    // ③ 색상/사이즈 파싱: ":베이지, :140" → color="베이지", size="140" (콤마 분리)
+    // ③ 색상/사이즈 파싱: "블랙,  :140" → color="블랙", size="140"
+    //    (trim 먼저 → 앞의 콜론 제거 → 다시 trim)
     function parseColorSize(raw: string): { color: string; size: string } | null {
-      const parts = raw.split(",").map((s) => s.replace(/^:/, "").trim());
+      const parts = raw.split(",").map((s) => s.trim().replace(/^:/, "").trim());
       const color = parts[0] ?? "";
       const size  = parts[1] ?? "";
       if (!color || !size) return null;

@@ -52,8 +52,25 @@ export async function GET(req: Request) {
       cursor = res.has_more ? res.next_cursor : undefined;
     } while (cursor);
 
-    // 3. 차수별 그룹핑 (발주수량 합산, 가장 이른 발주일)
-    const map = new Map<string, { batch: string; num: number; qty: number; date: string }>();
+    // 색상/사이즈 파싱: "블랙,  :140" → color="블랙", size="140"
+    function parseColorSize(raw: string): { color: string; size: string } | null {
+      const parts = raw.split(",").map((s) => s.trim().replace(/^:/, "").trim());
+      const color = parts[0] ?? "";
+      const size = parts[1] ?? "";
+      if (!color || !size) return null;
+      return { color, size };
+    }
+    const sizeSort = (a: string, b: string) => {
+      const na = parseInt(a), nb = parseInt(b);
+      return isNaN(na) || isNaN(nb) ? a.localeCompare(b) : na - nb;
+    };
+
+    // 3. 차수별 그룹핑 (발주수량 합산 + 색상×사이즈 표 + 가장 이른 발주일)
+    type Agg = {
+      batch: string; num: number; qty: number; date: string;
+      colorMap: Map<string, Record<string, number>>; sizeSet: Set<string>;
+    };
+    const map = new Map<string, Agg>();
     for (const row of rows) {
       const p = row.properties;
       const batch =
@@ -64,16 +81,42 @@ export async function GET(req: Request) {
       const qty = p["g.발주수량"]?.number ?? 0;
       const date = p["a.발주일"]?.date?.start ?? "";
       const num = parseInt(batch.replace(/[^0-9]/g, "")) || 0;
+      const csRaw = (p["f.색상/사이즈"]?.rich_text ?? []).map((t: any) => t.plain_text).join("");
 
-      if (!map.has(batch)) map.set(batch, { batch, num, qty: 0, date: "" });
+      if (!map.has(batch)) {
+        map.set(batch, { batch, num, qty: 0, date: "", colorMap: new Map(), sizeSet: new Set() });
+      }
       const e = map.get(batch)!;
       e.qty += qty;
       if (date && (!e.date || date < e.date)) e.date = date;
+
+      const parsed = parseColorSize(csRaw);
+      if (parsed) {
+        e.sizeSet.add(parsed.size);
+        if (!e.colorMap.has(parsed.color)) e.colorMap.set(parsed.color, {});
+        e.colorMap.get(parsed.color)![parsed.size] = qty;
+      }
     }
 
     const batches = [...map.values()]
       .sort((a, b) => a.num - b.num)
-      .map((e) => ({ batch: e.batch, batchNum: e.num, totalQuantity: e.qty, orderDate: e.date }));
+      .map((e) => {
+        const sizes = Array.from(e.sizeSet).sort(sizeSort);
+        const colorSizeTable = Array.from(e.colorMap.entries()).map(([color, sizesMap]) => ({
+          color,
+          colorCode: "",
+          sizes: sizesMap,
+          total: Object.values(sizesMap).reduce((s, v) => s + v, 0),
+        }));
+        return {
+          batch: e.batch,
+          batchNum: e.num,
+          totalQuantity: e.qty,
+          orderDate: e.date,
+          sizes,
+          colorSizeTable,
+        };
+      });
 
     return NextResponse.json({ batches });
   } catch (error: any) {

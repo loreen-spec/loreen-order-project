@@ -252,7 +252,11 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   }
 
   // ── 발주 DB 차수 팝업 ─────────────────────────────────────
-  type Batch = { batch: string; batchNum: number; totalQuantity: number; orderDate: string };
+  type Batch = {
+    batch: string; batchNum: number; totalQuantity: number; orderDate: string;
+    sizes?: string[];
+    colorSizeTable?: { color: string; colorCode: string; sizes: Record<string, number>; total: number }[];
+  };
   const [batchPopup, setBatchPopup] = useState<{
     id: string; loading: boolean; batches: Batch[]; error: boolean;
   } | null>(null);
@@ -276,16 +280,21 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     }
   }
 
-  // 차수 선택 → 총 발주수량 + 발주일 + 차수 반영 후 저장
+  // 차수 선택 → 총 발주수량 + 발주일 + 차수 + 색상×사이즈 표 반영 후 저장
   async function applyBatch(id: string, b: Batch) {
     setBatchPopup(null); // 선택 즉시 모달 닫기
-    const patch = {
+    const patch: Record<string, unknown> = {
       orderCount: b.batchNum,
       totalQuantity: b.totalQuantity,
       issueDate: b.orderDate,   // 의류 PDF 날짜 필드
       orderDate: b.orderDate,   // 슈즈 날짜 필드
       updatedAt: new Date().toISOString(),
     };
+    // 색상×사이즈 표가 있으면 함께 반영
+    if (b.colorSizeTable && b.colorSizeTable.length > 0) {
+      patch.colorSizeTable = b.colorSizeTable;
+      if (b.sizes && b.sizes.length > 0) patch.sizes = b.sizes;
+    }
     const next = orders.map((o) => (o.id !== id ? o : { ...o, ...patch }));
     setOrders(next);
     syncLocal(next);
