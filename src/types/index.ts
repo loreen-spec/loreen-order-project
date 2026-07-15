@@ -121,9 +121,28 @@ export interface WorkOrder {
   // 차수별 원가 (발주 DB 차수 선택 팝업에서 입력) — 키: 차수번호 문자열
   batchCosts?: Record<string, string>;
 
+  // 작업지시서 폼 종류
+  formType?: WorkOrderFormType;
+
   createdAt: string;
   updatedAt: string;
 }
+
+// 작업지시서 폼 종류
+export type WorkOrderFormType =
+  | "완사입"   // 기본
+  | "국내의류"
+  | "오중"
+  | "영문"
+  | "중문";
+
+export const WORK_ORDER_FORM_OPTIONS: { value: WorkOrderFormType; label: string }[] = [
+  { value: "완사입",   label: "완사입 폼 (기본)" },
+  { value: "국내의류", label: "국내의류 폼" },
+  { value: "오중",     label: "오중 폼" },
+  { value: "영문",     label: "영문작지 폼" },
+  { value: "중문",     label: "중문작지 폼" },
+];
 
 // ─── Shoe Work Order Types ─────────────────────────────────
 export interface ShoeColorSizeRow {

@@ -8,6 +8,7 @@ import {
   Sparkles, Loader2, Search, Download
 } from "lucide-react";
 import type { WorkOrder, WorkOrderMaterial, WorkOrderMeasurement, WorkOrderColorSize } from "@/types";
+import { WORK_ORDER_FORM_OPTIONS } from "@/types";
 
 // ─── 기본 측정 항목 (아동복 기준) ──────────────────────────
 const DEFAULT_MEASUREMENTS: WorkOrderMeasurement[] = [
@@ -1750,6 +1751,17 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* 폼 선택 */}
+          <select
+            value={wo.formType || "완사입"}
+            onChange={(e) => set("formType", e.target.value as WorkOrder["formType"])}
+            title="작업지시서 폼 선택"
+            className="px-3 py-2 text-sm text-gray-700 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-violet-400 cursor-pointer"
+          >
+            {WORK_ORDER_FORM_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
           <button onClick={() => onPreview(wo)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
