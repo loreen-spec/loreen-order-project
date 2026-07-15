@@ -561,7 +561,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "작업처", "담당", "납품예정일", "상태"].map((h) => (
+                {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "작업처", "담당", "작업지시서 보기", "상태"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
                 ))}
                 <th className="px-4 py-3 text-center text-xs font-semibold text-violet-500 whitespace-nowrap">
@@ -663,7 +663,13 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{o.manager}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{o.deliveryDate || "—"}</td>
+                    {/* 작업지시서 보기 */}
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => onPreview(o)}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors"
+                        title="작업지시서 보기 / PDF"
+                      ><Eye size={14} /></button>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="relative group/status">
                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${meta.bg} ${meta.text} hover:opacity-80 transition-opacity`}>
@@ -715,10 +721,6 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => onPreview(o)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors"
-                          title="미리보기 / PDF"
-                        ><Eye size={14} /></button>
                         <button onClick={() => onEdit(o)}
                           className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors"
                           title="수정"
