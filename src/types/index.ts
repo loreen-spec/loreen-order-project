@@ -118,6 +118,9 @@ export interface WorkOrder {
   directorApproved?: boolean;   // 실장 승인 여부
   notionProductId?: string;
 
+  // 차수별 원가 (발주 DB 차수 선택 팝업에서 입력) — 키: 차수번호 문자열
+  batchCosts?: Record<string, string>;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -166,6 +169,9 @@ export interface ShoeWorkOrder {
   status: "draft" | "pending_confirm" | "completed" | "custom";
   customStatus?: string;
   directorApproved?: boolean;
+
+  // 차수별 원가 (발주 DB 차수 선택 팝업에서 입력) — 키: 차수번호 문자열
+  batchCosts?: Record<string, string>;
 
   createdAt: string;
   updatedAt: string;
