@@ -330,11 +330,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   lineHeight: 1.45,
                 }}>
                   {(eng ? ENG_COMPLIANCE : wo.fixedNotes).split("\n").map((line, i) => {
-                    const isBullet = line.trimStart().startsWith("*");
-                    const isEmpty  = line.trim() === "";
+                    const isStar  = line.trimStart().startsWith("*");
+                    const isEmpty = line.trim() === "";
+                    // 영문: '-' 리스트는 기본(얇게), '*' 줄만 굵게 / 한글: 기존 로직 유지
+                    const bold = eng ? isStar : (!isStar && !isEmpty);
                     return (
                       <div key={i} style={{
-                        fontWeight: (!isBullet && !isEmpty) ? 600 : 400,
+                        fontWeight: bold ? 700 : 400,
                         marginBottom: isEmpty ? "1.5px" : 0,
                       }}>
                         {isEmpty ? " " : line}
