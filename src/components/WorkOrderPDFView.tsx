@@ -251,7 +251,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   <td style={lbl()}>{t("작업처", "VENDOR")}</td>
                   <td style={lbl()}>{t("차수", "ORDER No.")}</td>
                   <td style={lbl()}>SAMPLE NO.</td>
-                  <td style={lbl()}>{t("담당", "MANAGER")}</td>
+                  <td style={lbl()}>{t("담당", "DESIGNER")}</td>
                   <td style={lbl()}>{t("실장", "DIRECTOR")}</td>
                   <td style={lbl()}>{t("작성일", "DATE")}</td>
                   <td style={lbl()}>{t("납품예정일", "DELIVERY")}</td>
