@@ -1752,16 +1752,19 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
         </div>
         <div className="flex items-center gap-2">
           {/* 폼 선택 */}
-          <select
-            value={wo.formType || "완사입"}
-            onChange={(e) => set("formType", e.target.value as WorkOrder["formType"])}
-            title="작업지시서 폼 선택"
-            className="px-3 py-2 text-sm text-gray-700 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-violet-400 cursor-pointer"
-          >
-            {WORK_ORDER_FORM_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={wo.formType || "완사입"}
+              onChange={(e) => set("formType", e.target.value as WorkOrder["formType"])}
+              title="작업지시서 폼 선택"
+              className="appearance-none pl-3.5 pr-9 py-2 text-sm font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-200 hover:bg-violet-100 transition-colors"
+            >
+              {WORK_ORDER_FORM_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value} className="text-gray-700 font-normal">{opt.label}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
+          </div>
           <button onClick={() => onPreview(wo)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
