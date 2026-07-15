@@ -283,9 +283,17 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     }
   }
 
-  // 원가 입력창 변경 (모달 로컬 상태만 업데이트)
+  // 숫자만 남겨 천단위 콤마 포맷 (24000 → "24,000")
+  function formatCost(raw: string): string {
+    const digits = raw.replace(/[^0-9]/g, "");
+    if (!digits) return "";
+    return Number(digits).toLocaleString();
+  }
+
+  // 원가 입력창 변경 (모달 로컬 상태만 업데이트, 콤마 자동 포맷)
   function setBatchCost(batchNum: number, value: string) {
-    setBatchPopup((prev) => (prev ? { ...prev, costs: { ...prev.costs, [batchNum]: value } } : prev));
+    const formatted = formatCost(value);
+    setBatchPopup((prev) => (prev ? { ...prev, costs: { ...prev.costs, [batchNum]: formatted } } : prev));
   }
 
   // 차수별 원가 저장 (작업지시서에 영구 저장)
@@ -388,7 +396,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           >
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <div className="text-sm font-bold text-gray-800">발주 DB 차수 · 원가</div>
+                <div className="text-sm font-bold text-gray-800">발주DB차수 · 원가관리</div>
                 <div className="text-xs text-gray-400 mt-0.5 truncate max-w-[280px]">
                   {batchTarget?.productName || ""}
                 </div>
@@ -400,6 +408,19 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                 ✕
               </button>
             </div>
+
+            {/* 고정 컬럼 헤더 */}
+            {!batchPopup.loading && batchPopup.batches.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400">
+                <div className="flex items-center gap-2 flex-1 min-w-0 px-1">
+                  <span className="w-4"></span>
+                  <span className="w-10">발주차수</span>
+                  <span className="w-16 text-right">수량</span>
+                  <span className="w-20 text-right">발주일</span>
+                </div>
+                <span className="w-24 text-center shrink-0 mr-3">원가</span>
+              </div>
+            )}
 
             <div className="overflow-y-auto">
               {batchPopup.loading ? (
@@ -611,7 +632,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "작업처", "담당", "작업지시서/PDF", "상태"].map((h) => (
+                {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "원가", "작업처", "담당", "작업지시서/PDF", "상태"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
                 ))}
                 <th className="px-4 py-3 text-center text-xs font-semibold text-violet-500 whitespace-nowrap">
@@ -711,6 +732,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                       </button>
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{o.totalCost ? `${o.totalCost}원` : "—"}</td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{o.manager}</td>
                     {/* 미리보기 */}
