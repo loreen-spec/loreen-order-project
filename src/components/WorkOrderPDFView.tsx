@@ -145,6 +145,21 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const matFS      = compact ? `${(8 * matRatio).toFixed(1)}pt` : "8pt";
   const matHdrFS   = compact ? `${(7 * matRatio).toFixed(1)}pt` : "7pt";
 
+  // 영문작지 폼 → 미리보기(PDF)만 영문으로 표시
+  const eng = wo.formType === "영문";
+  const t = (ko: string, en: string) => (eng ? en : ko);
+  const ENG_COMPLIANCE = `- Compliance Requirements
+- Ensure no color mismatch on the front and back of each label.
+- Follow the center line and fabric direction indicated in the pattern.
+- Check for any color variation or bleeding in printed fabrics by section.
+- Ensure compliance with the overall detail size deviation (check before proceeding with production)
+- For print placement and deviations, refer to the detail card.
+- Confirm the quality of main fabric before starting production.
+- Follow contamination precautions and pre-treatment instructions.
+- Ensure stitching adheres to 1" = 11 stitches.
+
+* Before starting production, ensure that 1 sample of each size is made and approved along with the color.`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto py-6 px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full" style={{ maxWidth: "1180px" }}>
@@ -198,7 +213,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               padding: "4px",
               flexShrink: 0,
             }}>
-              <span style={{ fontSize: "18pt", fontWeight: 900, letterSpacing: "6pt" }}>작 업 지 시 서</span>
+              <span style={{ fontSize: "18pt", fontWeight: 900, letterSpacing: eng ? "3pt" : "6pt" }}>{t("작 업 지 시 서", "WORK ORDER")}</span>
               <div style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)" }}>
                 <img
                   src="/ozkiz-logo.png"
@@ -232,20 +247,20 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               <tbody>
                 <tr>
                   <td style={lbl()}>STYLE NO</td>
-                  <td style={lbl()}>상품명</td>
-                  <td style={lbl()}>작업처</td>
-                  <td style={lbl()}>차수</td>
+                  <td style={lbl()}>{t("상품명", "PRODUCT NAME")}</td>
+                  <td style={lbl()}>{t("작업처", "VENDOR")}</td>
+                  <td style={lbl()}>{t("차수", "ORDER No.")}</td>
                   <td style={lbl()}>SAMPLE NO.</td>
-                  <td style={lbl()}>담당</td>
-                  <td style={lbl()}>실장</td>
-                  <td style={lbl()}>작성일</td>
-                  <td style={lbl()}>납품예정일</td>
+                  <td style={lbl()}>{t("담당", "MANAGER")}</td>
+                  <td style={lbl()}>{t("실장", "DIRECTOR")}</td>
+                  <td style={lbl()}>{t("작성일", "DATE")}</td>
+                  <td style={lbl()}>{t("납품예정일", "DELIVERY")}</td>
                 </tr>
                 <tr>
                   <td style={td({ fontSize: FL })}>{wo.styleNo}</td>
                   <td style={td({ fontWeight: 700, fontSize: FX })}>{wo.productName}</td>
                   <td style={td({ fontSize: FX })}>{wo.vendor}</td>
-                  <td style={td({ fontWeight: 900, fontSize: "10pt", color: "#1a56db" })}>{wo.orderCount}차</td>
+                  <td style={td({ fontWeight: 900, fontSize: "10pt", color: "#1a56db" })}>{eng ? `No.${wo.orderCount}` : `${wo.orderCount}차`}</td>
                   <td style={td({ fontSize: FL })}>{wo.sampleNo}</td>
                   <td style={td({ verticalAlign: "middle" })}>
                     {(() => {
@@ -289,16 +304,16 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
                 <div style={{ display: "grid", gridTemplateColumns: "38% 1fr", gap: "2px", flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
                   <div style={{ ...S.cell, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
-                    <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>제품사진</div>
+                    <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>{t("제품사진", "PRODUCT PHOTO")}</div>
                     <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa" }}>
                       {wo.productImage
                         ? <img src={wo.productImage} alt="제품사진" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                        : <span style={{ fontSize: "7pt", color: "#ccc" }}>제품사진</span>
+                        : <span style={{ fontSize: "7pt", color: "#ccc" }}>{t("제품사진", "PRODUCT PHOTO")}</span>
                       }
                     </div>
                   </div>
                   <div style={{ ...S.cell, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-                    <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>주의사항</div>
+                    <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>{t("주의사항", "PRECAUTIONS")}</div>
                     <div style={{
                       flex: 1, padding: "3px 4px", textAlign: "left",
                       fontSize: FL, lineHeight: 1.5,
@@ -314,7 +329,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   padding: "2px 4px", fontSize: FS, textAlign: "left",
                   lineHeight: 1.45,
                 }}>
-                  {wo.fixedNotes.split("\n").map((line, i) => {
+                  {(eng ? ENG_COMPLIANCE : wo.fixedNotes).split("\n").map((line, i) => {
                     const isBullet = line.trimStart().startsWith("*");
                     const isEmpty  = line.trim() === "";
                     return (
@@ -348,7 +363,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             {sizes.map(s => (
                               <th key={s} style={lbl({ padding: "1px" })}>{s}</th>
                             ))}
-                            <th style={lbl({ padding: "1px", width: "12%" })}>편차</th>
+                            <th style={lbl({ padding: "1px", width: "12%" })}>{t("편차", "DEV.")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -397,7 +412,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         {sizes.map(s => (
                           <th key={s} style={lbl({ padding: "1px" })}>{s}</th>
                         ))}
-                        <th style={{ ...S.lbl, background: "#dde8ff", color: "#1a56db", padding: "1px", width: "12%" }}>계</th>
+                        <th style={{ ...S.lbl, background: "#dde8ff", color: "#1a56db", padding: "1px", width: "12%" }}>{t("계", "TOTAL")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -420,7 +435,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px 2px" }}>계</td>
+                        <td style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px 2px" }}>{t("계", "TOTAL")}</td>
                         {sizes.map(s => (
                           <td key={s} style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px" }}>{colTotal(s)}</td>
                         ))}
@@ -447,7 +462,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       overflow: "hidden",
                     }}>
                       {count === 0 ? (
-                        <span style={{ fontSize: FL, color: "#ccc", margin: "auto" }}>라벨 위치 다이어그램</span>
+                        <span style={{ fontSize: FL, color: "#ccc", margin: "auto" }}>{t("라벨 위치 다이어그램", "LABEL PLACEMENT")}</span>
                       ) : selectedLabelImages.map((item, i) => (
                         <div key={i} style={{
                           width: colPct, flexShrink: 0,
@@ -493,7 +508,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       </colgroup>
                       <thead>
                         <tr>
-                          {["품목","자재명","색상","규격","요척","단가","원단발주","비고"].map((name) => (
+                          {(eng
+                            ? ["ITEM","MATERIAL","COLOR","SPEC","YIELD","PRICE","FABRIC ORDER","NOTE"]
+                            : ["품목","자재명","색상","규격","요척","단가","원단발주","비고"]
+                          ).map((name) => (
                             <th key={name} style={lbl({ fontSize: matHdrFS })}>{name}</th>
                           ))}
                         </tr>
@@ -566,7 +584,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                     <tbody>
                       <tr>
                         <td colSpan={5} style={{ ...S.cell, background: "#f0f4ff", fontWeight: 800, fontSize: FL, letterSpacing: "0.5pt", padding: "2.5px 2px" }}>
-                          최종원가
+                          {t("최종원가", "TOTAL COST")}
                         </td>
                         <td colSpan={3} style={{ ...S.cell, background: "#f0f4ff", fontWeight: 900, color: "#1a56db", fontSize: FX, padding: "2.5px 2px" }}>
                           {wo.totalCost}
@@ -601,7 +619,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         </colgroup>
                         <thead>
                           <tr>
-                            {["종류", "업체명", "담당자", "연락처", "비고"].map((h) => (
+                            {(eng
+                              ? ["TYPE", "VENDOR", "CONTACT PERSON", "CONTACT", "NOTE"]
+                              : ["종류", "업체명", "담당자", "연락처", "비고"]
+                            ).map((h) => (
                               <th key={h} style={lbl({ padding: vPad, fontSize: FM })}>{h}</th>
                             ))}
                           </tr>
