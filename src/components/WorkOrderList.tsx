@@ -176,6 +176,8 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           setOrders(data);
           // localStorage 캐시 갱신
           try { localStorage.setItem("workOrders", JSON.stringify(data)); } catch {}
+          // 백그라운드로 각 작업지시서를 최신 발주차수 기준으로 갱신
+          enrichLatestBatches(data);
         }
         setLoadError(false);
       })
@@ -185,6 +187,40 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   function syncLocal(list: WorkOrder[]) {
     localStorage.setItem("workOrders", JSON.stringify(list));
+  }
+
+  // 목록을 각 제품의 최신(가장 높은) 발주차수 기준으로 표시 갱신
+  async function enrichLatestBatches(list: WorkOrder[]) {
+    const enriched = await Promise.all(
+      list.map(async (o) => {
+        try {
+          const qs = o.notionProductId
+            ? `pageId=${encodeURIComponent(o.notionProductId)}`
+            : `name=${encodeURIComponent(o.productName || "")}`;
+          const res = await fetch(`/api/order-batches?${qs}`, { cache: "no-store" });
+          const data = await res.json();
+          const batches: Batch[] = Array.isArray(data.batches) ? data.batches : [];
+          if (!batches.length) return o;
+          // 가장 최근 = 차수번호 최대
+          const latest = batches.reduce((a, b) => (b.batchNum > a.batchNum ? b : a));
+          const cost = o.batchCosts?.[latest.batchNum];
+          return {
+            ...o,
+            orderCount: latest.batchNum,
+            totalQuantity: latest.totalQuantity,
+            issueDate: latest.orderDate || o.issueDate,
+            ...(latest.colorSizeTable && latest.colorSizeTable.length > 0
+              ? { colorSizeTable: latest.colorSizeTable, sizes: latest.sizes ?? o.sizes }
+              : {}),
+            ...(cost ? { totalCost: cost } : {}),
+          } as WorkOrder;
+        } catch {
+          return o;
+        }
+      }),
+    );
+    setOrders(enriched);
+    try { localStorage.setItem("workOrders", JSON.stringify(enriched)); } catch {}
   }
 
   async function deleteOrder(id: string) {
