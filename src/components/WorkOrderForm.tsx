@@ -7,7 +7,7 @@ import {
   Image as ImageIcon, Link as LinkIcon, Paperclip, ExternalLink,
   Sparkles, Loader2, Search, Download
 } from "lucide-react";
-import type { WorkOrder, WorkOrderMaterial, WorkOrderMeasurement, WorkOrderColorSize } from "@/types";
+import type { WorkOrder, WorkOrderMaterial, WorkOrderMeasurement, WorkOrderColorSize, WorkOrderFormType } from "@/types";
 import { WORK_ORDER_FORM_OPTIONS } from "@/types";
 
 // ─── 기본 측정 항목 (아동복 기준) ──────────────────────────
@@ -1193,6 +1193,17 @@ function getVendorType(vendor: string): VendorType {
   return "other";
 }
 
+// 작업처 → 작업지시서 폼 자동 매핑 (없으면 null = 자동 지정 안 함)
+function formTypeFromVendor(vendor: string): WorkOrderFormType | null {
+  switch (getVendorType(vendor)) {
+    case "outsourcing": return "완사입";   // 코니키즈·성은교역·와이티트레이딩
+    case "domestic":    return "국내의류"; // 민주·내주(실업)
+    case "china":       return "오중";     // 오중생산
+    case "india":       return "영문";     // 인도·CEEDEE
+    default:            return null;       // 기타 → 유지
+  }
+}
+
 function calcMaterialsSum(materials: WorkOrderMaterial[]): number {
   return materials.reduce((sum, m) => {
     const price = parseFloat(m.unitPrice?.replace(/,/g, "") || "0");
@@ -1408,10 +1419,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       setWo(prev => {
         const hasSizes  = prev.sizes && prev.sizes.length > 0;
         const hasColors = prev.colorSizeTable && prev.colorSizeTable.length > 0;
+        const mergedVendor = data.vendor || prev.vendor || "";
+        const ft = formTypeFromVendor(mergedVendor); // 작업처 기반 폼 자동 인식
         return {
           ...prev,
           notionProductId:  prev.notionProductId  || data.notionProductId || "",
-          vendor:           data.vendor           || prev.vendor          || "",
+          vendor:           mergedVendor,
+          ...(ft ? { formType: ft } : {}),
           year:             data.year             || prev.year,
           season:           data.season           || prev.season,
           category:         prev.category         || data.category        || "",
@@ -1831,7 +1845,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     <SelectDropdown presets={CATEGORIES} value={wo.category} onChange={(v) => set("category", v)} placeholder="직접 입력 (예: 니트, 팬츠…)" />
                   </Field>
                   <Field label="작업처(업체명)">
-                    <SelectDropdown presets={VENDORS} value={wo.vendor} onChange={(v) => set("vendor", v)} placeholder="직접 입력" />
+                    <SelectDropdown presets={VENDORS} value={wo.vendor} onChange={(v) => {
+                      const ft = formTypeFromVendor(v);
+                      setWo((w) => ({ ...w, vendor: v, ...(ft ? { formType: ft } : {}) }));
+                    }} placeholder="직접 입력" />
                   </Field>
                   <Field label="연도">
                     <select value={wo.year} onChange={(e) => set("year", e.target.value)} className={selectCls}>
