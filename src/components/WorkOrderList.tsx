@@ -402,6 +402,47 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     await patchOrder(o.id, patch);
   }
 
+  // ── 차수별 원가 입력 팝업 ─────────────────────────────────
+  const [costPopup, setCostPopup] = useState<{
+    id: string; productName: string; currentBatch: number; loading: boolean;
+    batches: { batchNum: number; batch: string }[];
+    costs: Record<string, string>;
+  } | null>(null);
+
+  async function openCostPopup(o: WorkOrder) {
+    const initCosts = { ...(o.batchCosts || {}) };
+    setCostPopup({ id: o.id, productName: o.productName, currentBatch: o.orderCount, loading: true, batches: [], costs: initCosts });
+    try {
+      const qs = o.notionProductId
+        ? `pageId=${encodeURIComponent(o.notionProductId)}`
+        : `name=${encodeURIComponent(o.productName || "")}`;
+      const res = await fetch(`/api/order-batches?${qs}`, { cache: "no-store" });
+      const data = await res.json();
+      const batches = (Array.isArray(data.batches) ? data.batches : [])
+        .map((b: any) => ({ batchNum: b.batchNum, batch: b.batch }))
+        .sort((a: any, b: any) => a.batchNum - b.batchNum);
+      setCostPopup((prev) => prev && prev.id === o.id ? { ...prev, loading: false, batches } : prev);
+    } catch {
+      setCostPopup((prev) => prev && prev.id === o.id ? { ...prev, loading: false } : prev);
+    }
+  }
+
+  function setCostFor(batchNum: number, value: string) {
+    setCostPopup((prev) => prev ? { ...prev, costs: { ...prev.costs, [batchNum]: formatCost(value) } } : prev);
+  }
+
+  async function saveCostPopup() {
+    if (!costPopup) return;
+    const { id, costs, currentBatch } = costPopup;
+    setCostPopup(null);
+    const cur = costs[currentBatch] ?? "";
+    const patch = { batchCosts: costs, totalCost: cur, vendorUnitPrice: cur, updatedAt: new Date().toISOString() };
+    const next = orders.map((o) => (o.id !== id ? o : { ...o, ...patch }));
+    setOrders(next);
+    syncLocal(next);
+    await patchOrder(id, patch);
+  }
+
   function saveDirectorName() {
     const name = directorInput.trim();
     if (!name) return;
@@ -443,7 +484,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     <div className="space-y-5">
       {/* 배포 확인용 버전 배지 (임시) */}
       <div className="text-[11px] font-bold text-white bg-emerald-500 inline-block px-2 py-0.5 rounded-full">
-        BUILD v10 · 원가 목록입력
+        BUILD v11 · 차수별 원가+그래프
       </div>
       {/* ── 발주 DB 차수 선택 모달 ─────────────────────────── */}
       {batchPopup && (
@@ -517,6 +558,92 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
               <div className="px-5 py-2.5 border-t border-gray-100 text-[11px] text-gray-400">
                 차수를 클릭하면 총수량·발주일·색상표가 작업지시서에 반영됩니다. 원가는 목록의 원가 칸에서 입력하세요.
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 차수별 원가 입력 모달 ─────────────────────────── */}
+      {costPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setCostPopup(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-800">차수별 원가</div>
+                <div className="text-xs text-gray-400 mt-0.5 truncate max-w-[240px]">{costPopup.productName}</div>
+              </div>
+              <button onClick={() => setCostPopup(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none px-2">✕</button>
+            </div>
+
+            {costPopup.loading ? (
+              <div className="px-5 py-8 text-sm text-gray-400 flex items-center justify-center gap-2">
+                <Loader2 size={16} className="animate-spin" /> 발주 차수 조회 중...
+              </div>
+            ) : (
+              <>
+                {/* 원가 추이 미니 그래프 */}
+                {(() => {
+                  const pts = costPopup.batches.map((b) => ({
+                    label: b.batch,
+                    val: Number((costPopup.costs[b.batchNum] || "").replace(/[^0-9]/g, "")) || 0,
+                  }));
+                  const vals = pts.map((p) => p.val);
+                  const hasData = vals.some((v) => v > 0);
+                  const max = Math.max(1, ...vals);
+                  const W = 300, H = 70, PAD = 8;
+                  const n = pts.length;
+                  const x = (i: number) => n <= 1 ? W / 2 : PAD + (i * (W - PAD * 2)) / (n - 1);
+                  const y = (v: number) => H - PAD - (v / max) * (H - PAD * 2);
+                  const line = pts.map((p, i) => `${x(i)},${y(p.val)}`).join(" ");
+                  return (
+                    <div className="px-5 pt-3">
+                      <div className="text-[10px] font-bold text-gray-400 mb-1">원가 추이</div>
+                      {hasData ? (
+                        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 70 }}>
+                          <polyline points={line} fill="none" stroke="#836CE0" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                          {pts.map((p, i) => (
+                            <g key={i}>
+                              <circle cx={x(i)} cy={y(p.val)} r="2.5" fill="#836CE0" />
+                              <text x={x(i)} y={H - 1} textAnchor="middle" fontSize="7" fill="#9ca3af">{p.label}</text>
+                            </g>
+                          ))}
+                        </svg>
+                      ) : (
+                        <div className="text-[11px] text-gray-300 py-4 text-center">원가를 입력하면 추이가 표시됩니다</div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 차수별 원가 입력 */}
+                <div className="overflow-y-auto px-5 py-2">
+                  {costPopup.batches.length === 0 ? (
+                    <div className="py-6 text-sm text-gray-400 text-center">발주 차수 내역이 없습니다</div>
+                  ) : costPopup.batches.map((b) => (
+                    <div key={b.batchNum} className={`flex items-center gap-3 py-2 border-b border-gray-50 ${b.batchNum === costPopup.currentBatch ? "" : ""}`}>
+                      <span className="w-14 font-bold text-violet-700 text-sm">
+                        {b.batch}
+                        {b.batchNum === costPopup.currentBatch && <span className="ml-1 text-[9px] text-emerald-600">현재</span>}
+                      </span>
+                      <div className="flex-1 flex items-center gap-1 justify-end">
+                        <input
+                          value={costPopup.costs[b.batchNum] ?? ""}
+                          onChange={(e) => setCostFor(b.batchNum, e.target.value)}
+                          placeholder="원가"
+                          inputMode="numeric"
+                          className="w-28 px-2 py-1.5 text-sm text-right border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400"
+                        />
+                        <span className="text-xs text-gray-400">원</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+                  <button onClick={() => setCostPopup(null)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">취소</button>
+                  <button onClick={saveCostPopup} className="px-5 py-2 text-sm text-white rounded-xl" style={{ background: "#836CE0" }}>저장</button>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -775,23 +902,16 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-0.5">
-                        <input
-                          defaultValue={o.totalCost || ""}
-                          key={`${o.id}-${o.orderCount}-${o.totalCost || ""}`}
-                          onBlur={(e) => {
-                            const v = e.target.value.replace(/[^0-9]/g, "");
-                            const cur = (o.totalCost || "").replace(/[^0-9]/g, "");
-                            if (v !== cur) updateCost(o, e.target.value);
-                          }}
-                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                          placeholder="원가"
-                          inputMode="numeric"
-                          title={`${o.orderCount}차 원가`}
-                          className="w-20 px-1.5 py-1 text-xs text-right border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400"
-                        />
-                        <span className="text-[10px] text-gray-400">원</span>
-                      </div>
+                      <button
+                        onClick={() => openCostPopup(o)}
+                        title="차수별 원가 입력"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-colors"
+                      >
+                        {o.totalCost
+                          ? <span className="font-semibold text-gray-700">{o.totalCost}원</span>
+                          : <span className="text-gray-400">원가 입력</span>}
+                        <ChevronDown size={10} className="text-gray-400" />
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{o.manager}</td>
