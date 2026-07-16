@@ -28,7 +28,9 @@ export async function GET() {
     if (typeof d.styleNo === "string" && !d._deleted) orders.push(d);
   }
 
-  return NextResponse.json(orders);
+  return NextResponse.json(orders, {
+    headers: { "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0" },
+  });
 }
 
 // POST /api/work-orders — 저장 (새 행 append)
