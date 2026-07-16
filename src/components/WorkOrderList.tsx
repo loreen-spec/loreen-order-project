@@ -329,12 +329,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   };
   const [batchPopup, setBatchPopup] = useState<{
     id: string; loading: boolean; batches: Batch[]; error: boolean;
-    costs: Record<string, string>; // 차수번호 → 원가
   } | null>(null);
 
   async function openBatchPopup(o: WorkOrder) {
-    const initialCosts = { ...(o.batchCosts || {}) };
-    setBatchPopup({ id: o.id, loading: true, batches: [], error: false, costs: initialCosts });
+    setBatchPopup({ id: o.id, loading: true, batches: [], error: false });
     try {
       const qs = o.notionProductId
         ? `pageId=${encodeURIComponent(o.notionProductId)}`
@@ -346,10 +344,9 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
         loading: false,
         batches: Array.isArray(data.batches) ? data.batches : [],
         error: false,
-        costs: initialCosts,
       });
     } catch {
-      setBatchPopup({ id: o.id, loading: false, batches: [], error: true, costs: initialCosts });
+      setBatchPopup({ id: o.id, loading: false, batches: [], error: true });
     }
   }
 
@@ -360,46 +357,24 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     return Number(digits).toLocaleString();
   }
 
-  // 원가 입력창 변경 (모달 로컬 상태만 업데이트, 콤마 자동 포맷)
-  function setBatchCost(batchNum: number, value: string) {
-    const formatted = formatCost(value);
-    setBatchPopup((prev) => (prev ? { ...prev, costs: { ...prev.costs, [batchNum]: formatted } } : prev));
-  }
-
-  // 차수별 원가 저장 (작업지시서에 영구 저장)
-  async function persistBatchCosts(id: string, costs: Record<string, string>) {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, batchCosts: costs } : o)));
-    await fetch(`/api/work-orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ batchCosts: costs, updatedAt: new Date().toISOString() }),
-    }).catch(() => null);
-  }
-
-  // 모달 닫기 (닫을 때 입력한 원가 저장)
   function closeBatchPopup() {
-    if (batchPopup) persistBatchCosts(batchPopup.id, batchPopup.costs);
     setBatchPopup(null);
   }
 
-  // 차수 선택 → 총 발주수량 + 발주일 + 차수 + 색상×사이즈 표 + 원가 반영 후 저장
+  // 차수 선택 → 총 발주수량 + 발주일 + 차수 + 색상×사이즈 표 반영, 원가는 해당 차수에 저장된 값으로
   async function applyBatch(id: string, b: Batch) {
-    const costs = batchPopup?.costs ?? {};
-    const cost = costs[b.batchNum];
     setBatchPopup(null); // 선택 즉시 모달 닫기
+    const target = orders.find((o) => o.id === id);
+    const savedCost = target?.batchCosts?.[b.batchNum] ?? "";
     const patch: Record<string, unknown> = {
       orderCount: b.batchNum,
       totalQuantity: b.totalQuantity,
       issueDate: b.orderDate,   // 의류 PDF 날짜 필드
       orderDate: b.orderDate,   // 슈즈 날짜 필드
-      batchCosts: costs,        // 입력한 차수별 원가 함께 저장
+      totalCost: savedCost,        // 해당 차수에 저장된 원가 (없으면 빈값)
+      vendorUnitPrice: savedCost,  // 슈즈 업체단가
       updatedAt: new Date().toISOString(),
     };
-    // 선택 차수의 원가 → 최종원가(totalCost) 자동 반영
-    if (cost !== undefined && cost !== "") {
-      patch.totalCost = cost;          // 의류 최종원가
-      patch.vendorUnitPrice = cost;    // 슈즈 업체단가
-    }
     // 색상×사이즈 표가 있으면 함께 반영
     if (b.colorSizeTable && b.colorSizeTable.length > 0) {
       patch.colorSizeTable = b.colorSizeTable;
@@ -408,11 +383,23 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     const next = orders.map((o) => (o.id !== id ? o : { ...o, ...patch }));
     setOrders(next);
     syncLocal(next);
-    await fetch(`/api/work-orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    }).catch(() => null);
+    await patchOrder(id, patch);
+  }
+
+  // 목록 원가 칸 직접 입력 → 현재 차수(orderCount)의 원가로 저장 + 최종원가 반영
+  async function updateCost(o: WorkOrder, raw: string) {
+    const formatted = formatCost(raw);
+    const batchCosts = { ...(o.batchCosts || {}), [o.orderCount]: formatted };
+    const patch = {
+      batchCosts,
+      totalCost: formatted,
+      vendorUnitPrice: formatted,
+      updatedAt: new Date().toISOString(),
+    };
+    const next = orders.map((x) => (x.id !== o.id ? x : { ...x, ...patch }));
+    setOrders(next);
+    syncLocal(next);
+    await patchOrder(o.id, patch);
   }
 
   function saveDirectorName() {
@@ -456,7 +443,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     <div className="space-y-5">
       {/* 배포 확인용 버전 배지 (임시) */}
       <div className="text-[11px] font-bold text-white bg-emerald-500 inline-block px-2 py-0.5 rounded-full">
-        BUILD v9 · 저장검증
+        BUILD v10 · 원가 목록입력
       </div>
       {/* ── 발주 DB 차수 선택 모달 ─────────────────────────── */}
       {batchPopup && (
@@ -470,7 +457,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           >
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <div className="text-sm font-bold text-gray-800">발주DB차수 · 원가관리</div>
+                <div className="text-sm font-bold text-gray-800">발주 DB 차수</div>
                 <div className="text-xs text-gray-400 mt-0.5 truncate max-w-[280px]">
                   {batchTarget?.productName || ""}
                 </div>
@@ -485,14 +472,11 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
             {/* 고정 컬럼 헤더 */}
             {!batchPopup.loading && batchPopup.batches.length > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400">
-                <div className="flex items-center gap-2 flex-1 min-w-0 px-1">
-                  <span className="w-4"></span>
-                  <span className="w-10">발주차수</span>
-                  <span className="w-16 text-right">수량</span>
-                  <span className="w-20 text-right">발주일</span>
-                </div>
-                <span className="w-24 text-center shrink-0 mr-3">원가</span>
+              <div className="flex items-center gap-2 px-5 py-2 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400">
+                <span className="w-4"></span>
+                <span className="w-12">발주차수</span>
+                <span className="flex-1 text-right">수량</span>
+                <span className="w-24 text-right">발주일</span>
               </div>
             )}
 
@@ -510,35 +494,19 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                   {batchPopup.batches.map((b) => {
                     const selected = batchTarget?.orderCount === b.batchNum;
                     return (
-                      <div
+                      <button
                         key={b.batch}
-                        className={`flex items-center gap-2 px-4 py-2.5 border-b border-gray-50 ${
-                          selected ? "bg-violet-100" : ""
+                        onClick={() => applyBatch(batchPopup.id, b)}
+                        title="이 차수를 작업지시서에 반영"
+                        className={`w-full flex items-center gap-2 px-5 py-2.5 border-b border-gray-50 text-left transition-colors ${
+                          selected ? "bg-violet-100" : "hover:bg-violet-50"
                         }`}
                       >
-                        {/* 선택 영역 (클릭 시 반영) */}
-                        <button
-                          onClick={() => applyBatch(batchPopup.id, b)}
-                          title="이 차수를 작업지시서에 반영"
-                          className="flex items-center gap-2 flex-1 min-w-0 text-left rounded-lg hover:bg-violet-50 px-1 py-1 transition-colors"
-                        >
-                          <span className="w-4 text-violet-600 font-bold">{selected ? "✓" : ""}</span>
-                          <span className={`font-bold w-10 ${selected ? "text-violet-800" : "text-violet-700"}`}>{b.batch}</span>
-                          <span className="text-gray-800 font-semibold w-16 text-right">{b.totalQuantity.toLocaleString()}장</span>
-                          <span className="text-gray-400 text-[11px] w-20 text-right">{b.orderDate || "—"}</span>
-                        </button>
-                        {/* 원가 입력 */}
-                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            value={batchPopup.costs[b.batchNum] ?? ""}
-                            onChange={(e) => setBatchCost(b.batchNum, e.target.value)}
-                            placeholder="원가"
-                            inputMode="numeric"
-                            className="w-24 px-2 py-1 text-xs border border-gray-200 rounded-lg text-right focus:outline-none focus:border-violet-400"
-                          />
-                          <span className="text-[10px] text-gray-400">원</span>
-                        </div>
-                      </div>
+                        <span className="w-4 text-violet-600 font-bold">{selected ? "✓" : ""}</span>
+                        <span className={`font-bold w-12 ${selected ? "text-violet-800" : "text-violet-700"}`}>{b.batch}</span>
+                        <span className="text-gray-800 font-semibold flex-1 text-right">{b.totalQuantity.toLocaleString()}장</span>
+                        <span className="text-gray-400 text-[11px] w-24 text-right">{b.orderDate || "—"}</span>
+                      </button>
                     );
                   })}
                 </div>
@@ -547,7 +515,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
             {!batchPopup.loading && batchPopup.batches.length > 0 && (
               <div className="px-5 py-2.5 border-t border-gray-100 text-[11px] text-gray-400">
-                차수를 클릭하면 총수량·발주일·색상표·원가가 작업지시서에 반영됩니다.
+                차수를 클릭하면 총수량·발주일·색상표가 작업지시서에 반영됩니다. 원가는 목록의 원가 칸에서 입력하세요.
               </div>
             )}
           </div>
@@ -806,7 +774,25 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                       </button>
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-700">{(o.totalQuantity||0).toLocaleString()}장</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{o.totalCost ? `${o.totalCost}원` : "—"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-0.5">
+                        <input
+                          defaultValue={o.totalCost || ""}
+                          key={`${o.id}-${o.orderCount}-${o.totalCost || ""}`}
+                          onBlur={(e) => {
+                            const v = e.target.value.replace(/[^0-9]/g, "");
+                            const cur = (o.totalCost || "").replace(/[^0-9]/g, "");
+                            if (v !== cur) updateCost(o, e.target.value);
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                          placeholder="원가"
+                          inputMode="numeric"
+                          title={`${o.orderCount}차 원가`}
+                          className="w-20 px-1.5 py-1 text-xs text-right border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400"
+                        />
+                        <span className="text-[10px] text-gray-400">원</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{o.manager}</td>
                     {/* 미리보기 */}
