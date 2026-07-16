@@ -3,53 +3,63 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
 
-// work_orders.id는 UUID 타입 — 고정 UUID 사용
-const APPROVALS_ID = "00000000-0000-0000-0000-000000000001";
+const LEGACY_APPROVALS_ID = "00000000-0000-0000-0000-000000000001";
 
-// GET /api/approvals — work_orders 테이블의 특수 행에서 승인 상태 조회
-export async function GET() {
-  const { data, error } = await supabase
+// 최신 승인 맵 조회 (append-only)
+async function latestApprovals(): Promise<Record<string, boolean>> {
+  const { data } = await supabase
+    .from("work_orders")
+    .select("data, updated_at")
+    .eq("data->>_kind", "approvals")
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  if (data && data.length > 0) return data[0].data?.map ?? {};
+
+  // 폴백: 예전 고정 행
+  const { data: legacy } = await supabase
     .from("work_orders")
     .select("data")
-    .eq("id", APPROVALS_ID)
-    .single();
-
-  if (error || !data) {
-    return NextResponse.json({});
+    .eq("id", LEGACY_APPROVALS_ID)
+    .limit(1);
+  if (legacy && legacy.length > 0) {
+    const d = legacy[0].data ?? {};
+    // 예전 형식은 { productId: bool } 자체가 맵
+    const { _kind, map, ...rest } = d as any;
+    return map ?? rest;
   }
-
-  return NextResponse.json(data.data ?? {});
+  return {};
 }
 
-// POST /api/approvals — { id, checked } 저장
+// GET /api/approvals — 최신 승인 맵
+export async function GET() {
+  const map = await latestApprovals();
+  return NextResponse.json(map);
+}
+
+// POST /api/approvals — { id, checked } → 새 행 append
 export async function POST(req: Request) {
   const { id, checked } = await req.json();
   if (!id || typeof checked !== "boolean") {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  // 현재 상태 읽기
-  const { data: existing } = await supabase
-    .from("work_orders")
-    .select("data")
-    .eq("id", APPROVALS_ID)
-    .single();
-
-  const current: Record<string, boolean> = existing?.data ?? {};
+  const current = await latestApprovals();
   current[id] = checked;
 
-  // 삭제 후 삽입 (upsert의 UPDATE가 RLS로 막히는 문제 우회)
-  await supabase.from("work_orders").delete().eq("id", APPROVALS_ID);
   const { error } = await supabase
     .from("work_orders")
-    .insert({ id: APPROVALS_ID, data: current, updated_at: new Date().toISOString() });
+    .insert({
+      id: randomUUID(),
+      data: { _kind: "approvals", map: current },
+      updated_at: new Date().toISOString(),
+    });
 
   if (error) {
     console.error("[approvals] POST error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
   return NextResponse.json({ ok: true });
 }
