@@ -219,8 +219,13 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
         }
       }),
     );
-    setOrders(enriched);
-    try { localStorage.setItem("workOrders", JSON.stringify(enriched)); } catch {}
+    // 현재 목록에 남아있는 항목만 갱신 (그 사이 삭제된 항목은 되살리지 않음)
+    setOrders((prev) => {
+      const map = new Map(enriched.map((o) => [o.id, o]));
+      const merged = prev.map((o) => map.get(o.id) ?? o);
+      try { localStorage.setItem("workOrders", JSON.stringify(merged)); } catch {}
+      return merged;
+    });
   }
 
   async function deleteOrder(id: string) {
