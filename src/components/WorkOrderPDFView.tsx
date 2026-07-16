@@ -153,7 +153,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   // 원단발주 칸: 국내의류 폼에서만 표시 (그 외 폼은 비고에 합침)
   const showFabricOrder = wo.formType === "국내의류";
 
-  // 고정 부자재 이름 영문 번역 (영문작지 폼 미리보기)
+  // 고정 부자재 이름 번역 (영문/중문작지 폼 미리보기)
   const MAT_NAME_EN: Record<string, string> = {
     "메인라벨": "Main Label",
     "케어라벨": "Care Label",
@@ -163,7 +163,17 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     "폴리백": "Poly Bag",
     "택끈": "Tag String",
   };
-  const matName = (name: string) => (eng ? (MAT_NAME_EN[name] ?? name) : name);
+  const MAT_NAME_ZH: Record<string, string> = {
+    "메인라벨": "主唛",
+    "케어라벨": "洗唛",
+    "품질보증택": "合格证",
+    "가격택": "价格吊牌",
+    "바코드택": "条形码吊牌",
+    "폴리백": "胶袋",
+    "택끈": "吊牌绳",
+  };
+  const matName = (name: string) =>
+    eng ? (MAT_NAME_EN[name] ?? name) : chi ? (MAT_NAME_ZH[name] ?? name) : name;
   const t = (ko: string, en: string, zh?: string) =>
     lang === "en" ? en : lang === "zh" ? (zh ?? en) : ko;
 
