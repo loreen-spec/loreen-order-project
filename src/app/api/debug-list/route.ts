@@ -14,11 +14,11 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const rows = (data ?? []).map((row: any) => ({
-    id: row.id,
+    rowId: row.id,
+    dataId: row.data?.id ?? "(none)",
+    idMatch: row.id === (row.data?.id ?? null),
     productName: row.data?.productName ?? "(없음)",
-    board: row.data?.board ?? row.data?.category ?? "",
     _deleted: row.data?._deleted ?? false,
-    updated_at: row.updated_at,
   }));
 
   return NextResponse.json({ count: rows.length, rows });
