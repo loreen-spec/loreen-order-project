@@ -166,6 +166,7 @@ export interface ShoeWorkOrder {
   styleNo: string;
   productName: string;
   vendor: string;
+  season: string;      // 시즌 (여름·겨울·사계절 등)
   orderCount: number;
   manager: string;
   director: string;
