@@ -547,7 +547,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       <tbody>
                         {(() => {
                           // fixed 플래그가 없는 구버전 데이터 호환 — 이름으로 고정 행 판별
-                          const FIXED_NAMES = ["메인라벨","케어라벨","취급주의라벨","가격택","품질보증택","폴리백"];
+                          const FIXED_NAMES = ["메인라벨","케어라벨","품질보증택","가격택","바코드택","폴리백","택끈"];
                           const hasFixedFlag = wo.materials.some(m => m.fixed);
                           const isFixed = (m: typeof wo.materials[0]) =>
                             hasFixedFlag ? !!m.fixed : FIXED_NAMES.includes(m.name);

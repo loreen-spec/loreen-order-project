@@ -141,7 +141,7 @@ function emptyOrder(): WorkOrder {
     orderCount: 1, totalQuantity: 0,
     sizes: ["100", "110", "120", "130", "140"],
     measurements: DEFAULT_MEASUREMENTS.map(m => ({ ...m, values: {} })),
-    materials: ["메인라벨","케어라벨","취급주의라벨","가격택","품질보증택","폴리백"].map((name) => ({
+    materials: ["메인라벨","케어라벨","품질보증택","가격택","바코드택","폴리백","택끈"].map((name) => ({
       id: `fixed_${name}`, category: "", name, color: "", spec: "",
       yield: "", yieldUnit: "EA", unitPrice: "", orderUnit: "", notes: "", fixed: true,
     })),
