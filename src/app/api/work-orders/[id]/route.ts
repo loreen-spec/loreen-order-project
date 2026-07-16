@@ -6,24 +6,19 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
 
-// 논리 id로 최신 버전 데이터 조회
+// 논리 id로 최신 버전 데이터 조회 (JS 필터 — JSON 연산자 쿼리 회피)
 async function latestByLogicalId(id: string): Promise<any | null> {
-  // 데이터 내부 id 기준
-  const { data: byData } = await supabase
+  const { data } = await supabase
     .from("work_orders")
-    .select("data, updated_at")
-    .eq("data->>id", id)
-    .order("updated_at", { ascending: false })
-    .limit(1);
-  if (byData && byData.length > 0) return byData[0].data;
-
-  // 폴백: 행 id 기준
-  const { data: byRow } = await supabase
-    .from("work_orders")
-    .select("data")
-    .eq("id", id)
-    .limit(1);
-  return byRow && byRow.length > 0 ? byRow[0].data : null;
+    .select("id, data, updated_at")
+    .order("updated_at", { ascending: false });
+  for (const row of (data ?? []) as any[]) {
+    const d = row.data;
+    if (!d) continue;
+    const logicalId = d.id ?? row.id;
+    if (logicalId === id) return d; // 최신(첫) 매치
+  }
+  return null;
 }
 
 // DELETE /api/work-orders/[id] — 삭제표시(_deleted) 새 행 append
