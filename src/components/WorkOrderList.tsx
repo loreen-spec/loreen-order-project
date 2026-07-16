@@ -257,39 +257,53 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     } catch {}
   }
 
+  // 서버 재동기화 (localStorage/화면을 서버 최신으로 맞춤)
+  async function resyncFromServer() {
+    try {
+      const r = await fetch("/api/work-orders", { cache: "no-store" });
+      if (!r.ok) return;
+      const data = await r.json();
+      if (Array.isArray(data)) { setOrders(data); syncLocal(data); }
+    } catch {}
+  }
+
+  // PATCH 공통 — 실패 시 경고, 성공 시 서버 재동기화
+  async function patchOrder(id: string, patch: Record<string, unknown>) {
+    try {
+      const res = await fetch(`/api/work-orders/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(`저장 실패 (서버 미반영)\nid: ${id}\n${JSON.stringify(body)}`);
+      }
+    } catch (e) {
+      alert(`저장 요청 실패 (네트워크)\nid: ${id}`);
+    }
+    await resyncFromServer();
+  }
+
   async function toggleApproval(id: string, approved: boolean) {
     const patch = {
       directorApproved: approved,
-      status: approved ? "completed" : "pending_confirm" as WorkOrder["status"],
+      director: approved ? directorName : "",
+      status: (approved ? "completed" : "pending_confirm") as WorkOrder["status"],
       updatedAt: new Date().toISOString(),
     };
-    const next = orders.map((o) =>
-      o.id !== id ? o : {
-        ...o, ...patch,
-        director: approved ? directorName : (o.director === directorName ? "" : o.director),
-      }
-    );
+    const next = orders.map((o) => (o.id !== id ? o : { ...o, ...patch }));
     setOrders(next);
     syncLocal(next);
-    await fetch(`/api/work-orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    }).catch(() => null);
+    await patchOrder(id, patch);
   }
 
   async function updateStatus(id: string, status: WorkOrder["status"], customStatus?: string) {
     const patch = { status, customStatus: customStatus, updatedAt: new Date().toISOString() };
-    const next = orders.map((o) =>
-      o.id !== id ? o : { ...o, ...patch }
-    );
+    const next = orders.map((o) => (o.id !== id ? o : { ...o, ...patch }));
     setOrders(next);
     syncLocal(next);
-    await fetch(`/api/work-orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    }).catch(() => null);
+    await patchOrder(id, patch);
   }
 
   // ── 발주 DB 차수 팝업 ─────────────────────────────────────
