@@ -20,19 +20,10 @@ export async function GET(req: Request) {
     const res: any = await notion.databases.query({
       database_id: DB,
       filter: { property: "제품명", title: { contains: query } },
-      page_size: 10,
+      page_size: 25,
     });
 
     if (!res.results.length) return NextResponse.json(null);
-
-    // 정확히 일치하는 것 우선
-    const exact = res.results.find((p: any) => {
-      const title = p.properties["제품명"]?.title?.map((t: any) => t.plain_text).join("") ?? "";
-      return title.trim() === query;
-    }) ?? res.results[0];
-
-    const p = exact.properties;
-    const productPageId = exact.id;
 
     const getText = (prop: any): string => {
       if (!prop) return "";
@@ -42,6 +33,20 @@ export async function GET(req: Request) {
       if (prop.type === "status")     return prop.status?.name ?? "";
       return "";
     };
+
+    // 같은 이름의 중복 페이지 중 실제 데이터가 있는 페이지 우선 선택
+    // 점수: 제목 정확일치(1000) + 발주 relation 수(×10) + 생산공장 유무(1)
+    const scoreOf = (pg: any) => {
+      const pr = pg.properties;
+      const title = getText(pr["제품명"]).trim();
+      const relCount = pr["발주DB 롤업용"]?.relation?.length ?? 0;
+      const hasVendor = getText(pr["생산공장"]) ? 1 : 0;
+      return (title === query ? 1000 : 0) + relCount * 10 + hasVendor;
+    };
+    const exact = [...res.results].sort((a: any, b: any) => scoreOf(b) - scoreOf(a))[0];
+
+    const p = exact.properties;
+    const productPageId = exact.id;
 
     const season  = p["시즌"]?.multi_select?.[0]?.name ?? "";
     const year    = getText(p["개발년도"]);
