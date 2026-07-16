@@ -12,13 +12,17 @@ async function latestByLogicalId(id: string): Promise<any | null> {
     .from("work_orders")
     .select("id, data, updated_at")
     .order("updated_at", { ascending: false });
+  let best: any = null;
+  let bestVer = -1;
   for (const row of (data ?? []) as any[]) {
     const d = row.data;
     if (!d) continue;
     const logicalId = d.id ?? row.id;
-    if (logicalId === id) return d; // 최신(첫) 매치
+    if (logicalId !== id) continue;
+    const ver = typeof d._ver === "number" ? d._ver : 0;
+    if (ver > bestVer) { bestVer = ver; best = d; }
   }
-  return null;
+  return best;
 }
 
 // DELETE /api/work-orders/[id] — 삭제표시(_deleted) 새 행 append
@@ -28,7 +32,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
 
   // 이미 없으면 성공 처리
   const base = existing ?? { id };
-  const marked = { ...base, id: base.id ?? id, _deleted: true };
+  const marked = { ...base, id: base.id ?? id, _deleted: true, _ver: Date.now() };
 
   const { error } = await supabase
     .from("work_orders")
@@ -46,7 +50,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const existing = await latestByLogicalId(id);
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const merged = { ...existing, ...patch, id: existing.id ?? id };
+  const merged = { ...existing, ...patch, id: existing.id ?? id, _ver: Date.now() };
   const { error } = await supabase
     .from("work_orders")
     .insert({ id: randomUUID(), data: merged, updated_at: new Date().toISOString() });

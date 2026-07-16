@@ -15,15 +15,19 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const seen = new Set<string>();
-  const orders: any[] = [];
+  // 논리 id별로 버전(_ver)이 가장 큰 행을 최신으로 선택 (updated_at 정렬 흔들림 방지)
+  const latest = new Map<string, { data: any; ver: number }>();
   for (const row of (data ?? []) as any[]) {
     const d = row.data;
     if (!d) continue;
-    // 논리 id: 데이터 내부 id 우선, 없으면 행 id
     const logicalId = d.id ?? row.id;
-    if (seen.has(logicalId)) continue; // 이미 최신 버전을 봤으면 스킵
-    seen.add(logicalId);
+    const ver = typeof d._ver === "number" ? d._ver : 0;
+    const cur = latest.get(logicalId);
+    if (!cur || ver > cur.ver) latest.set(logicalId, { data: d, ver });
+  }
+
+  const orders: any[] = [];
+  for (const [logicalId, { data: d }] of latest) {
     // 진단용 찌꺼기 제외
     if (logicalId === "__write_test__" || logicalId === "__append_test__") continue;
     if (d.styleNo === "TEST" || d.styleNo === "AT") continue;
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
   const wo = await req.json();
   const { error } = await supabase
     .from("work_orders")
-    .insert({ id: randomUUID(), data: wo, updated_at: new Date().toISOString() });
+    .insert({ id: randomUUID(), data: { ...wo, _ver: Date.now() }, updated_at: new Date().toISOString() });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
