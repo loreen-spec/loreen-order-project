@@ -732,7 +732,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                           </div>
                         );
                       })()}
-                      <div className="text-xs text-gray-400">{o.year}년 {o.season}</div>
+                      <div className="text-xs text-gray-400">{[o.year ? `${o.year}년` : "", o.season].filter(Boolean).join(" ")}</div>
                     </td>
                     <td className="px-4 py-3">
                       {o.productImage ? (
@@ -756,7 +756,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{o.year}/{o.season}</td>
+                    <td className="px-4 py-3 text-xs text-gray-500">{[o.year, o.season].filter(Boolean).join("/") || "—"}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => openBatchPopup(o)}
