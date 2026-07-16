@@ -56,10 +56,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const merged = { ...existing.data, ...patch };
+  // 삭제 후 삽입 (upsert/update가 RLS로 막히는 문제 우회)
+  await supabase.from("work_orders").delete().eq("id", params.id);
   const { error } = await supabase
     .from("work_orders")
-    .update({ data: merged, updated_at: new Date().toISOString() })
-    .eq("id", params.id);
+    .insert({ id: params.id, data: merged, updated_at: new Date().toISOString() });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

@@ -22,12 +22,14 @@ export async function GET() {
   return NextResponse.json(orders);
 }
 
-// POST /api/work-orders — 저장 (insert or upsert)
+// POST /api/work-orders — 저장 (삭제 후 삽입: RLS UPDATE 차단 우회)
 export async function POST(req: Request) {
   const wo = await req.json();
+  // 기존 행 제거 후 삽입 (upsert의 UPDATE가 RLS로 막히는 문제 우회)
+  await supabase.from("work_orders").delete().eq("id", wo.id);
   const { error } = await supabase
     .from("work_orders")
-    .upsert({ id: wo.id, data: wo, updated_at: new Date().toISOString() });
+    .insert({ id: wo.id, data: wo, updated_at: new Date().toISOString() });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

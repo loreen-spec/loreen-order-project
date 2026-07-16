@@ -40,13 +40,11 @@ export async function POST(req: Request) {
   const current: Record<string, boolean> = existing?.data ?? {};
   current[id] = checked;
 
-  // upsert
+  // 삭제 후 삽입 (upsert의 UPDATE가 RLS로 막히는 문제 우회)
+  await supabase.from("work_orders").delete().eq("id", APPROVALS_ID);
   const { error } = await supabase
     .from("work_orders")
-    .upsert(
-      { id: APPROVALS_ID, data: current, updated_at: new Date().toISOString() },
-      { onConflict: "id" }
-    );
+    .insert({ id: APPROVALS_ID, data: current, updated_at: new Date().toISOString() });
 
   if (error) {
     console.error("[approvals] POST error:", error.message);
