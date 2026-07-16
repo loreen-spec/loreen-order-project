@@ -36,6 +36,7 @@ function emptyShoeOrder(): ShoeWorkOrder {
     productName: "",
     vendor: "",
     season: "",
+    year: "",
     orderCount: 1,
     manager: "",
     director: "",
@@ -186,6 +187,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
         notionProductId: prev.notionProductId || data.notionProductId || "",
         vendor:         prev.vendor || data.vendor || "",
         season:         prev.season || data.season || "",
+        year:           prev.year || data.year || "",
         productImage:   prev.productImage || imageUrl,
         sizes:          prev.colorSizeTable.length > 0
           ? prev.sizes
@@ -362,6 +364,9 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
             </Field>
             <Field label="실장">
               <Inp value={wo.director} onChange={(v) => set("director", v)} placeholder="실장명" />
+            </Field>
+            <Field label="년도">
+              <Inp value={wo.year} onChange={(v) => set("year", v)} placeholder="예) 2026" />
             </Field>
             <Field label="시즌">
               <Inp value={wo.season} onChange={(v) => set("season", v)} placeholder="예) 여름·겨울·사계절" />
