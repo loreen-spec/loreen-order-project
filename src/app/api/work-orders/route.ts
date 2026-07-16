@@ -24,6 +24,9 @@ export async function GET() {
     const logicalId = d.id ?? row.id;
     if (seen.has(logicalId)) continue; // 이미 최신 버전을 봤으면 스킵
     seen.add(logicalId);
+    // 진단용 찌꺼기 제외
+    if (logicalId === "__write_test__" || logicalId === "__append_test__") continue;
+    if (d.styleNo === "TEST" || d.styleNo === "AT") continue;
     // 작업지시서 형태 + 삭제표시 없는 것만
     if (typeof d.styleNo === "string" && !d._deleted) orders.push(d);
   }

@@ -166,7 +166,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     } catch {}
 
     // Supabase에서 최신 데이터 로드 (메인) — 브라우저 캐시 방지
-    fetch("/api/work-orders", { cache: "no-store" })
+    fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -247,7 +247,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
     // 서버 기준으로 최신 목록 재동기화 (localStorage 잔상 제거)
     try {
-      const r = await fetch("/api/work-orders", { cache: "no-store" });
+      const r = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
       if (r.ok) {
         const data = await r.json();
         if (Array.isArray(data)) {
@@ -261,7 +261,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   // 서버 재동기화 (localStorage/화면을 서버 최신으로 맞춤)
   async function resyncFromServer() {
     try {
-      const r = await fetch("/api/work-orders", { cache: "no-store" });
+      const r = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
       if (!r.ok) return;
       const data = await r.json();
       if (Array.isArray(data)) { setOrders(data); syncLocal(data); }
