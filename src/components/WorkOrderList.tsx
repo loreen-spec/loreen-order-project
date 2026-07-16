@@ -277,6 +277,15 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
         body: JSON.stringify(patch),
       });
       const body = await res.json().catch(() => ({}));
+      // 임시 진단: 저장 후 서버에서 이 id의 값을 다시 읽어 확인
+      const vr = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
+      const vdata = vr.ok ? await vr.json() : [];
+      const saved = Array.isArray(vdata) ? vdata.find((o: WorkOrder) => o.id === id) : null;
+      alert(
+        `[진단] PATCH ok=${res.ok}\nbody=${JSON.stringify(body)}\n` +
+        `보낸값=${JSON.stringify(patch)}\n` +
+        `서버재조회: ${saved ? `directorApproved=${saved.directorApproved}, status=${saved.status}` : "해당 id 못 찾음"}`
+      );
       if (!res.ok) {
         alert(`저장 실패 (서버 미반영)\nid: ${id}\n${JSON.stringify(body)}`);
       }
