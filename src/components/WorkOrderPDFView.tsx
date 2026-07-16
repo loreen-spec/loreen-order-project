@@ -150,6 +150,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     wo.formType === "영문" ? "en" : wo.formType === "중문" ? "zh" : "ko";
   const eng = lang === "en";
   const chi = lang === "zh";
+  // 원단발주 칸: 국내의류 폼에서만 표시 (그 외 폼은 비고에 합침)
+  const showFabricOrder = wo.formType === "국내의류";
   const t = (ko: string, en: string, zh?: string) =>
     lang === "en" ? en : lang === "zh" ? (zh ?? en) : ko;
 
@@ -525,7 +527,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <col style={{ width: "8%" }} />
                         <col style={{ width: "9%" }} />
                         <col style={{ width: "8%" }} />
-                        <col style={{ width: "29%" }} />
+                        {showFabricOrder && <col style={{ width: "9%" }} />}
+                        <col style={{ width: showFabricOrder ? "20%" : "29%" }} />
                       </colgroup>
                       <thead>
                         <tr>
@@ -533,6 +536,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             ? ["ITEM","MATERIAL","COLOR","SPEC","YIELD","PRICE","NOTE"]
                             : chi
                             ? ["品名","辅料名称","颜色","规格","预算用料","单价","色号"]
+                            : showFabricOrder
+                            ? ["품목","자재명","색상","규격","요척","단가","원단발주","비고"]
                             : ["품목","자재명","색상","규격","요척","단가","비고"]
                           ).map((name) => (
                             <th key={name} style={lbl({ fontSize: matHdrFS })}>{name}</th>
@@ -573,6 +578,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.spec}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.unitPrice}</td>
+                                {showFabricOrder && (
+                                  <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.orderUnit}</td>
+                                )}
                                 <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left" })}>{m.notes}</td>
                               </tr>
                             );
@@ -583,7 +591,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             // 2) 빈 행 (고정 행들 아래로 밀어내는 여백)
                             ...Array.from({ length: userEmptyCount }, (_, i) => (
                               <tr key={`em${i}`}>
-                                {Array.from({ length: 7 }).map((__, j) => (
+                                {Array.from({ length: showFabricOrder ? 8 : 7 }).map((__, j) => (
                                   <td key={j} style={matTd({ padding: rowPad })}>&nbsp;</td>
                                 ))}
                               </tr>
