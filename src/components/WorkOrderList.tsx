@@ -449,6 +449,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   return (
     <div className="space-y-5">
+      {/* 배포 확인용 버전 배지 (임시) */}
+      <div className="text-[11px] font-bold text-white bg-emerald-500 inline-block px-2 py-0.5 rounded-full">
+        BUILD v8 · 저장검증
+      </div>
       {/* ── 발주 DB 차수 선택 모달 ─────────────────────────── */}
       {batchPopup && (
         <div
