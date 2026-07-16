@@ -152,6 +152,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const chi = lang === "zh";
   // 원단발주 칸: 국내의류 폼에서만 표시 (그 외 폼은 비고에 합침)
   const showFabricOrder = wo.formType === "국내의류";
+
+  // 고정 부자재 이름 영문 번역 (영문작지 폼 미리보기)
+  const MAT_NAME_EN: Record<string, string> = {
+    "메인라벨": "Main Label",
+    "케어라벨": "Care Label",
+    "품질보증택": "Quality Guarantee Tag",
+    "가격택": "Price Tag",
+    "바코드택": "Barcode Tag",
+    "폴리백": "Poly Bag",
+    "택끈": "Tag String",
+  };
+  const matName = (name: string) => (eng ? (MAT_NAME_EN[name] ?? name) : name);
   const t = (ko: string, en: string, zh?: string) =>
     lang === "en" ? en : lang === "zh" ? (zh ?? en) : ko;
 
@@ -573,7 +585,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                     {m.category}
                                   </td>
                                 )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "pre-line", lineHeight: 1.25 })}>{m.name}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "pre-line", lineHeight: 1.25 })}>{matName(m.name)}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.color}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.spec}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
