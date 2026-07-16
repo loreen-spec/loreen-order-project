@@ -525,16 +525,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <col style={{ width: "8%" }} />
                         <col style={{ width: "9%" }} />
                         <col style={{ width: "8%" }} />
-                        <col style={{ width: "9%" }} />
-                        <col style={{ width: "20%" }} />
+                        <col style={{ width: "29%" }} />
                       </colgroup>
                       <thead>
                         <tr>
                           {(eng
-                            ? ["ITEM","MATERIAL","COLOR","SPEC","YIELD","PRICE","FABRIC ORDER","NOTE"]
+                            ? ["ITEM","MATERIAL","COLOR","SPEC","YIELD","PRICE","NOTE"]
                             : chi
-                            ? ["品名","辅料名称","颜色","规格","预算用料","单价","面料订购","色号"]
-                            : ["품목","자재명","색상","규격","요척","단가","원단발주","비고"]
+                            ? ["品名","辅料名称","颜色","规格","预算用料","单价","色号"]
+                            : ["품목","자재명","색상","규격","요척","단가","비고"]
                           ).map((name) => (
                             <th key={name} style={lbl({ fontSize: matHdrFS })}>{name}</th>
                           ))}
@@ -574,7 +573,6 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.spec}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.unitPrice}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.orderUnit}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left" })}>{m.notes}</td>
                               </tr>
                             );
@@ -585,7 +583,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             // 2) 빈 행 (고정 행들 아래로 밀어내는 여백)
                             ...Array.from({ length: userEmptyCount }, (_, i) => (
                               <tr key={`em${i}`}>
-                                {Array.from({ length: 8 }).map((__, j) => (
+                                {Array.from({ length: 7 }).map((__, j) => (
                                   <td key={j} style={matTd({ padding: rowPad })}>&nbsp;</td>
                                 ))}
                               </tr>
