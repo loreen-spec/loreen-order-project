@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   const id = decodeURIComponent(params.id);
 
-  // 1. 하드 삭제 시도
+  // 1. 하드 삭제 시도 (행 id로)
   const { data: hardDeleted } = await supabase
     .from("work_orders")
     .delete()
@@ -18,7 +18,18 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     .select("id");
 
   if ((hardDeleted?.length ?? 0) > 0) {
-    return NextResponse.json({ ok: true, mode: "hard", deletedCount: hardDeleted!.length });
+    return NextResponse.json({ ok: true, mode: "hard-rowid", deletedCount: hardDeleted!.length });
+  }
+
+  // 1-2. 행 id로 못 찾으면 데이터 내부 id(data->>id)로 삭제 시도 (id 불일치 대비)
+  const { data: byDataId } = await supabase
+    .from("work_orders")
+    .delete()
+    .eq("data->>id", id)
+    .select("id");
+
+  if ((byDataId?.length ?? 0) > 0) {
+    return NextResponse.json({ ok: true, mode: "hard-dataid", deletedCount: byDataId!.length });
   }
 
   // 2. 하드 삭제가 0건이면(RLS 차단 등) 소프트 삭제: _deleted 마킹
