@@ -3,19 +3,18 @@ export const revalidate = 0;
 export const runtime = 'nodejs';
 
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
-// GET /api/work-orders — 논리 id별 최신 버전만 반환 (append-only 모델)
+// GET /api/work-orders — 논리 id별 최신 버전만 반환
 export async function GET() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("work_orders")
     .select("id, data, updated_at")
     .order("updated_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // 논리 id별로 버전(_ver)이 가장 큰 행을 최신으로 선택 (updated_at 정렬 흔들림 방지)
+  // 논리 id별로 _ver(없으면 0)이 가장 큰 행을 최신으로 선택 — 과거 append 잔여행 안전 처리
   const latest = new Map<string, { data: any; ver: number }>();
   for (const row of (data ?? []) as any[]) {
     const d = row.data;
@@ -28,10 +27,8 @@ export async function GET() {
 
   const orders: any[] = [];
   for (const [logicalId, { data: d }] of latest) {
-    // 진단용 찌꺼기 제외
     if (logicalId === "__write_test__" || logicalId === "__append_test__") continue;
     if (d.styleNo === "TEST" || d.styleNo === "AT") continue;
-    // 작업지시서 형태 + 삭제표시 없는 것만
     if (typeof d.styleNo === "string" && !d._deleted) orders.push(d);
   }
 
@@ -40,12 +37,15 @@ export async function GET() {
   });
 }
 
-// POST /api/work-orders — 저장 (새 행 append)
+// POST /api/work-orders — 저장 (단일 행 upsert, id = 작업지시서 id)
 export async function POST(req: Request) {
   const wo = await req.json();
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("work_orders")
-    .insert({ id: randomUUID(), data: { ...wo, _ver: Date.now() }, updated_at: new Date().toISOString() });
+    .upsert(
+      { id: wo.id, data: { ...wo, _ver: Date.now() }, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    );
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

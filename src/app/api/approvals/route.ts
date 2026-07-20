@@ -3,63 +3,43 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
-const LEGACY_APPROVALS_ID = "00000000-0000-0000-0000-000000000001";
+const APPROVALS_ID = "00000000-0000-0000-0000-000000000001";
 
-// 최신 승인 맵 조회 (append-only)
-async function latestApprovals(): Promise<Record<string, boolean>> {
-  const { data } = await supabase
-    .from("work_orders")
-    .select("data, updated_at")
-    .eq("data->>_kind", "approvals")
-    .order("updated_at", { ascending: false })
-    .limit(1);
-  if (data && data.length > 0) return data[0].data?.map ?? {};
-
-  // 폴백: 예전 고정 행
-  const { data: legacy } = await supabase
+async function readMap(): Promise<Record<string, boolean>> {
+  const { data } = await supabaseAdmin
     .from("work_orders")
     .select("data")
-    .eq("id", LEGACY_APPROVALS_ID)
-    .limit(1);
-  if (legacy && legacy.length > 0) {
-    const d = legacy[0].data ?? {};
-    // 예전 형식은 { productId: bool } 자체가 맵
-    const { _kind, map, ...rest } = d as any;
-    return map ?? rest;
-  }
-  return {};
+    .eq("id", APPROVALS_ID)
+    .maybeSingle();
+  const d: any = data?.data;
+  if (!d) return {};
+  return d.map ?? (d._kind ? {} : d); // 신규: {map}, 구버전: 맵 자체
 }
 
-// GET /api/approvals — 최신 승인 맵
+// GET /api/approvals — 발주확인 체크 맵
 export async function GET() {
-  const map = await latestApprovals();
-  return NextResponse.json(map);
+  const map = await readMap();
+  return NextResponse.json(map, { headers: { "Cache-Control": "no-store" } });
 }
 
-// POST /api/approvals — { id, checked } → 새 행 append
+// POST /api/approvals — { id, checked }
 export async function POST(req: Request) {
   const { id, checked } = await req.json();
   if (!id || typeof checked !== "boolean") {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
+  const map = await readMap();
+  map[id] = checked;
 
-  const current = await latestApprovals();
-  current[id] = checked;
-
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("work_orders")
-    .insert({
-      id: randomUUID(),
-      data: { _kind: "approvals", map: current },
-      updated_at: new Date().toISOString(),
-    });
+    .upsert(
+      { id: APPROVALS_ID, data: { _kind: "approvals", map }, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    );
 
-  if (error) {
-    console.error("[approvals] POST error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
