@@ -1819,7 +1819,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   <Field label="품명" required>
                     <div className="relative">
                       <input value={wo.productName} onChange={(e) => handleProductNameChange(e.target.value)}
-                        placeholder="아우터-뉴플래시" className={inputCls} />
+                        placeholder="하의-무디무브" className={inputCls} />
                       <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                         {notionFillStatus === "loading" && (
                           <Loader2 size={13} className="text-violet-400 animate-spin" />
