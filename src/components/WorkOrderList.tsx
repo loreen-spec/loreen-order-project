@@ -183,20 +183,6 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
       })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
-
-    // 10초마다 서버 최신 목록으로 갱신 (발주관리와 동일 방식 — 다른 PC 변경도 반영)
-    const timer = setInterval(() => {
-      fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setOrders(data);
-            try { localStorage.setItem("workOrders", JSON.stringify(data)); } catch {}
-          }
-        })
-        .catch(() => {});
-    }, 10000);
-    return () => clearInterval(timer);
   }, []);
 
   function syncLocal(list: WorkOrder[]) {
