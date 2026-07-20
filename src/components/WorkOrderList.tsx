@@ -157,6 +157,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [dbg, setDbg] = useState("");
 
   useEffect(() => {
     // localStorage 캐시로 즉시 표시 (로딩 중 빈 화면 방지)
@@ -270,20 +271,27 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   // PATCH 공통 — 실패 시 경고, 성공 시 서버 재동기화
   async function patchOrder(id: string, patch: Record<string, unknown>) {
+    let okStatus = "?";
     try {
       const res = await fetch(`/api/work-orders/${encodeURIComponent(id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(`저장 실패 (서버 미반영)\nid: ${id}\n${JSON.stringify(body)}`);
-      }
+      okStatus = String(res.status);
     } catch (e) {
-      alert(`저장 요청 실패 (네트워크)\nid: ${id}`);
+      okStatus = "ERR";
     }
-    await resyncFromServer();
+    // 서버 재조회해서 실제 반영값 확인 (화면 표시)
+    try {
+      const r = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
+      const data = r.ok ? await r.json() : [];
+      const saved = Array.isArray(data) ? data.find((o: WorkOrder) => o.id === id) : null;
+      setDbg(`PATCH ${okStatus} · 서버값 approved=${saved?.directorApproved} status=${saved?.status} (${new Date().toLocaleTimeString()})`);
+      if (Array.isArray(data)) { setOrders(data); syncLocal(data); }
+    } catch {
+      setDbg(`PATCH ${okStatus} · 재조회 실패`);
+    }
   }
 
   async function toggleApproval(id: string, approved: boolean) {
@@ -470,8 +478,13 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     <div className="space-y-5">
       {/* 배포 확인용 버전 배지 (임시) */}
       <div className="text-[11px] font-bold text-white bg-emerald-500 inline-block px-2 py-0.5 rounded-full">
-        BUILD v12 · 서비스롤 저장
+        BUILD v13 · 저장진단
       </div>
+      {dbg && (
+        <div className="text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
+          {dbg}
+        </div>
+      )}
       {/* ── 발주 DB 차수 선택 모달 ─────────────────────────── */}
       {batchPopup && (
         <div
