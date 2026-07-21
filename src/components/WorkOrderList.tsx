@@ -187,7 +187,18 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   }, []);
 
   function syncLocal(list: WorkOrder[]) {
-    localStorage.setItem("workOrders", JSON.stringify(list));
+    // localStorage 용량 초과(대용량 base64 이미지) 시에도 저장 로직이 막히지 않도록
+    try {
+      localStorage.setItem("workOrders", JSON.stringify(list));
+    } catch {
+      // 이미지 제외한 경량 버전으로 재시도
+      try {
+        const light = list.map((o) => ({
+          ...o, productImage: "", sketchImage: "", labelImage: "", detailImage: "", attachments: [],
+        }));
+        localStorage.setItem("workOrders", JSON.stringify(light));
+      } catch {}
+    }
   }
 
   // 각 제품의 최신 발주차수 정보만 조회 (차수/수량/발주일/색상표/원가) — 승인·상태 등은 건드리지 않음
@@ -480,7 +491,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     <div className="space-y-5">
       {/* 배포 확인용 버전 배지 (임시) */}
       <div className="text-[11px] font-bold text-white bg-emerald-500 inline-block px-2 py-0.5 rounded-full">
-        BUILD v16 · 저장진단2
+        BUILD v17 · 저장수정
       </div>
       {dbg && (
         <div className="text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
