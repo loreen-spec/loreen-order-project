@@ -287,7 +287,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
       const r = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
       const data = r.ok ? await r.json() : [];
       const saved = Array.isArray(data) ? data.find((o: WorkOrder) => o.id === id) : null;
-      setDbg(`PATCH ${okStatus} · 서버값 approved=${saved?.directorApproved} status=${saved?.status} (${new Date().toLocaleTimeString()})`);
+      setDbg(`② PATCH ${okStatus} · 서버값 approved=${saved?.directorApproved} status=${saved?.status} (${new Date().toLocaleTimeString()})`);
       if (Array.isArray(data)) { setOrders(data); syncLocal(data); }
     } catch {
       setDbg(`PATCH ${okStatus} · 재조회 실패`);
@@ -295,6 +295,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   }
 
   async function toggleApproval(id: string, approved: boolean) {
+    setDbg(`① 클릭됨 id=${id} approved=${approved} (${new Date().toLocaleTimeString()})`);
     const patch = {
       directorApproved: approved,
       director: approved ? directorName : "",
@@ -478,7 +479,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     <div className="space-y-5">
       {/* 배포 확인용 버전 배지 (임시) */}
       <div className="text-[11px] font-bold text-white bg-emerald-500 inline-block px-2 py-0.5 rounded-full">
-        BUILD v13 · 저장진단
+        BUILD v14 · 클릭진단
       </div>
       {dbg && (
         <div className="text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
