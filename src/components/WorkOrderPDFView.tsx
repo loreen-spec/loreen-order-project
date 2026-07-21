@@ -208,6 +208,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     "AH직선": "Armhole (straight)", "AH곡선": "Armhole (curve)", "진동": "Armhole", "암홀": "Armhole",
     "소매장": "Sleeve Length", "소매통": "Sleeve Width", "소매부리": "Sleeve Opening", "소매단": "Cuff",
     "목너비": "Neck Width", "목깊이": "Neck Depth", "목둘레": "Neck", "칼라": "Collar", "카라": "Collar",
+    "옆목너비": "Neck Width", "옆목깊이": "Neck Depth", "앞목너비": "Front Neck Width", "뒷목너비": "Back Neck Width",
+    "암홀직선": "Armhole (straight)", "암홀": "Armhole", "화장": "Sleeve Length", "바지부리": "Leg Opening",
+    "앞밑위": "Front Rise", "뒤밑위": "Back Rise", "인심길이": "Inseam", "힙둘레": "Hip",
     "허리둘레": "Waist", "허리단면": "Waist (½)", "엉덩이둘레": "Hip", "엉덩이단면": "Hip (½)",
     "밑위": "Rise", "밑단너비": "Leg Opening", "인심": "Inseam", "아웃심": "Outseam",
     "앞품": "Front Width", "뒤품": "Back Width", "앞길이": "Front Length", "뒷길이": "Back Length",
@@ -227,7 +230,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   };
   // 부위(prefix) 사전 — 조합 번역용
   const PART_EN: Record<string, string> = {
-    "목": "Neck", "뒷목": "Back Neck", "앞목": "Front Neck", "가슴": "Chest", "밑단": "Hem",
+    "목": "Neck", "뒷목": "Back Neck", "앞목": "Front Neck", "옆목": "Neck", "가슴": "Chest", "밑단": "Hem",
     "어깨": "Shoulder", "소매": "Sleeve", "허리": "Waist", "엉덩이": "Hip", "힙": "Hip",
     "무릎": "Knee", "발목": "Ankle", "허벅지": "Thigh", "팔": "Arm", "손목": "Wrist",
     "앞": "Front", "뒤": "Back", "옆": "Side", "밑위": "Rise", "인심": "Inseam", "아웃심": "Outseam",
@@ -235,7 +238,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     "벨트": "Belt", "커프스": "Cuff", "요크": "Yoke", "다트": "Dart", "품": "Width",
   };
   const PART_ZH: Record<string, string> = {
-    "목": "领", "뒷목": "后领", "앞목": "前领", "가슴": "胸", "밑단": "下摆",
+    "목": "领", "뒷목": "后领", "앞목": "前领", "옆목": "领", "가슴": "胸", "밑단": "下摆",
     "어깨": "肩", "소매": "袖", "허리": "腰", "엉덩이": "臀", "힙": "臀",
     "무릎": "膝", "발목": "脚踝", "허벅지": "大腿", "팔": "臂", "손목": "手腕",
     "앞": "前", "뒤": "后", "옆": "侧", "밑위": "立裆", "인심": "内长", "아웃심": "外长",
