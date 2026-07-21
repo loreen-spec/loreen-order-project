@@ -145,9 +145,11 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const matFS      = compact ? `${(8 * matRatio).toFixed(1)}pt` : "8pt";
   const matHdrFS   = compact ? `${(7 * matRatio).toFixed(1)}pt` : "7pt";
 
-  // 영문/중문작지 폼 → 미리보기(PDF)만 해당 언어로 표시 (입력 UI는 한국어 유지)
-  const lang: "ko" | "en" | "zh" =
+  // 폼 종류로 기본 언어 결정, 미리보기에서 토글로 변경 가능 (한 작업지시서로 한/영/중 모두 출력)
+  const defaultLang: "ko" | "en" | "zh" =
     wo.formType === "영문" ? "en" : wo.formType === "중문" ? "zh" : "ko";
+  const [langOverride, setLangOverride] = useState<"ko" | "en" | "zh" | null>(null);
+  const lang: "ko" | "en" | "zh" = langOverride ?? defaultLang;
   const eng = lang === "en";
   const chi = lang === "zh";
   // 원단발주 칸: 국내의류 폼에서만 표시 (그 외 폼은 비고에 합침)
@@ -216,6 +218,21 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* 언어 토글 — 한 작업지시서로 한/영/중 출력 */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+              {([["ko", "한국어"], ["en", "영문"], ["zh", "중문"]] as ["ko" | "en" | "zh", string][]).map(([code, label]) => (
+                <button
+                  key={code}
+                  onClick={() => setLangOverride(code)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                    lang === code ? "text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  style={lang === code ? { background: "#836CE0" } : {}}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors"
               style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}>
