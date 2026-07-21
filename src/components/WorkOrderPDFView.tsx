@@ -202,11 +202,56 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     "앞품": "前胸宽", "뒤품": "后背宽", "앞길이": "前长", "뒷길이": "后长",
     "허벅지둘레": "大腿围", "무릎둘레": "膝围", "발목둘레": "脚踝围",
   };
+  // 부위(prefix) 사전 — 조합 번역용
+  const PART_EN: Record<string, string> = {
+    "목": "Neck", "뒷목": "Back Neck", "앞목": "Front Neck", "가슴": "Chest", "밑단": "Hem",
+    "어깨": "Shoulder", "소매": "Sleeve", "허리": "Waist", "엉덩이": "Hip", "힙": "Hip",
+    "무릎": "Knee", "발목": "Ankle", "허벅지": "Thigh", "팔": "Arm", "손목": "Wrist",
+    "앞": "Front", "뒤": "Back", "옆": "Side", "밑위": "Rise", "인심": "Inseam", "아웃심": "Outseam",
+    "칼라": "Collar", "카라": "Collar", "후드": "Hood", "포켓": "Pocket", "주머니": "Pocket",
+    "벨트": "Belt", "커프스": "Cuff", "요크": "Yoke", "다트": "Dart", "품": "Width",
+  };
+  const PART_ZH: Record<string, string> = {
+    "목": "领", "뒷목": "后领", "앞목": "前领", "가슴": "胸", "밑단": "下摆",
+    "어깨": "肩", "소매": "袖", "허리": "腰", "엉덩이": "臀", "힙": "臀",
+    "무릎": "膝", "발목": "脚踝", "허벅지": "大腿", "팔": "臂", "손목": "手腕",
+    "앞": "前", "뒤": "后", "옆": "侧", "밑위": "立裆", "인심": "内长", "아웃심": "外长",
+    "칼라": "领子", "카라": "领子", "후드": "帽", "포켓": "口袋", "주머니": "口袋",
+    "벨트": "腰带", "커프스": "袖口", "요크": "育克", "다트": "省", "품": "宽",
+  };
+  // 측정타입(suffix) 사전
+  const SUFFIX_EN: [string, string][] = [
+    ["둘레", "Circ."], ["단면", "(½)"], ["너비", "Width"], ["폭", "Width"], ["통", "Width"],
+    ["길이", "Length"], ["장", "Length"], ["깊이", "Depth"], ["높이", "Height"], ["경사", "Slope"],
+  ];
+  const SUFFIX_ZH: [string, string][] = [
+    ["둘레", "围"], ["단면", "(半)"], ["너비", "宽"], ["폭", "宽"], ["통", "肥"],
+    ["길이", "长"], ["장", "长"], ["깊이", "深"], ["높이", "高"], ["경사", "斜"],
+  ];
+
+  // 조합 번역: "부위 + 측정타입" 자동 조립 (사전에 없는 새 항목 대응)
+  const composeSpec = (name: string, isEng: boolean): string | null => {
+    const parts = isEng ? PART_EN : PART_ZH;
+    const sufs = isEng ? SUFFIX_EN : SUFFIX_ZH;
+    for (const [ko, tr] of sufs) {
+      if (name.endsWith(ko)) {
+        const prefix = name.slice(0, name.length - ko.length).trim();
+        if (!prefix) return null;
+        const partTr = parts[prefix];
+        if (!partTr) return null;
+        return isEng ? `${partTr} ${tr}`.trim() : `${partTr}${tr}`;
+      }
+    }
+    // 부위 단독
+    if (parts[name]) return parts[name];
+    return null;
+  };
+
   const specName = (name: string) => {
     if (!name) return name;
     const key = name.trim();
-    if (eng) return SPEC_NAME_EN[key] ?? name;
-    if (chi) return SPEC_NAME_ZH[key] ?? name;
+    if (eng) return SPEC_NAME_EN[key] ?? composeSpec(key, true) ?? name;
+    if (chi) return SPEC_NAME_ZH[key] ?? composeSpec(key, false) ?? name;
     return name;
   };
   const t = (ko: string, en: string, zh?: string) =>
