@@ -287,10 +287,11 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
       const r = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
       const data = r.ok ? await r.json() : [];
       const saved = Array.isArray(data) ? data.find((o: WorkOrder) => o.id === id) : null;
-      setDbg(`② PATCH ${okStatus} · 서버값 approved=${saved?.directorApproved} status=${saved?.status} (${new Date().toLocaleTimeString()})`);
+      const found = Array.isArray(data) ? (saved ? "있음" : `없음(목록 ${data.length}건)`) : "GET실패";
+      setDbg((prev) => `${prev}  →  ② PATCH=${okStatus} · id매칭=${found} · 서버approved=${saved?.directorApproved}`);
       if (Array.isArray(data)) { setOrders(data); syncLocal(data); }
     } catch {
-      setDbg(`PATCH ${okStatus} · 재조회 실패`);
+      setDbg((prev) => `${prev}  →  ② PATCH=${okStatus} · 재조회 실패`);
     }
   }
 
@@ -479,7 +480,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     <div className="space-y-5">
       {/* 배포 확인용 버전 배지 (임시) */}
       <div className="text-[11px] font-bold text-white bg-emerald-500 inline-block px-2 py-0.5 rounded-full">
-        BUILD v15 · 저장최적화
+        BUILD v16 · 저장진단2
       </div>
       {dbg && (
         <div className="text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1">
