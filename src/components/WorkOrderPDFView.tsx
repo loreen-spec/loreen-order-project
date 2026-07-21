@@ -159,6 +159,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const MAT_NAME_EN: Record<string, string> = {
     "메인라벨": "Main Label",
     "케어라벨": "Care Label",
+    "취급주의라벨": "Caution Label",
     "품질보증택": "Quality Guarantee Tag",
     "가격택": "Price Tag",
     "바코드택": "Barcode Tag",
@@ -168,7 +169,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   // 중문 용어집 (공장 제공 용어 반영) — 자재명·품목·사이즈 항목 공통
   const ZH_GLOSSARY: Record<string, string> = {
     // 고정 부자재
-    "메인라벨": "主唛", "케어라벨": "水洗标", "품질보증택": "吊牌", "가격택": "价格吊牌",
+    "메인라벨": "主唛", "케어라벨": "水洗标", "취급주의라벨": "注意事项标", "품질보증택": "吊牌", "가격택": "价格吊牌",
     "바코드택": "条形码吊牌", "폴리백": "胶袋", "택끈": "吊牌绳",
     // 사이즈 항목
     "기장": "衣长", "가슴둘레": "胸围", "어깨너비": "肩宽", "소매장": "袖长", "소매부리": "袖口",
