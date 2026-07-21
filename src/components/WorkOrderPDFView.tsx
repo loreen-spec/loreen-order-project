@@ -176,6 +176,39 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   };
   const matName = (name: string) =>
     eng ? (MAT_NAME_EN[name] ?? name) : chi ? (MAT_NAME_ZH[name] ?? name) : name;
+
+  // 사이즈 스펙 항목명 번역 (영문/중문작지 미리보기)
+  const SPEC_NAME_EN: Record<string, string> = {
+    "뒷목기장": "Back Length", "앞기장": "Front Length", "총장": "Total Length", "기장": "Length",
+    "가슴둘레": "Chest", "가슴단면": "Chest (½)", "밑단둘레": "Hem", "밑단단면": "Hem (½)",
+    "어깨너비": "Shoulder", "어깨경사": "Shoulder Slope",
+    "AH직선": "Armhole (straight)", "AH곡선": "Armhole (curve)", "진동": "Armhole", "암홀": "Armhole",
+    "소매장": "Sleeve Length", "소매통": "Sleeve Width", "소매부리": "Sleeve Opening", "소매단": "Cuff",
+    "목너비": "Neck Width", "목깊이": "Neck Depth", "목둘레": "Neck", "칼라": "Collar", "카라": "Collar",
+    "허리둘레": "Waist", "허리단면": "Waist (½)", "엉덩이둘레": "Hip", "엉덩이단면": "Hip (½)",
+    "밑위": "Rise", "밑단너비": "Leg Opening", "인심": "Inseam", "아웃심": "Outseam",
+    "앞품": "Front Width", "뒤품": "Back Width", "앞길이": "Front Length", "뒷길이": "Back Length",
+    "허벅지둘레": "Thigh", "무릎둘레": "Knee", "발목둘레": "Ankle",
+  };
+  const SPEC_NAME_ZH: Record<string, string> = {
+    "뒷목기장": "后中长", "앞기장": "前中长", "총장": "总长", "기장": "衣长",
+    "가슴둘레": "胸围", "가슴단면": "胸宽(半)", "밑단둘레": "下摆围", "밑단단면": "下摆宽(半)",
+    "어깨너비": "肩宽", "어깨경사": "肩斜",
+    "AH직선": "袖窿(直量)", "AH곡선": "袖窿(弯量)", "진동": "袖窿", "암홀": "袖窿",
+    "소매장": "袖长", "소매통": "袖肥", "소매부리": "袖口", "소매단": "袖口",
+    "목너비": "领宽", "목깊이": "领深", "목둘레": "领围", "칼라": "领子", "카라": "领子",
+    "허리둘레": "腰围", "허리단면": "腰宽(半)", "엉덩이둘레": "臀围", "엉덩이단면": "臀宽(半)",
+    "밑위": "立裆", "밑단너비": "脚口", "인심": "内长", "아웃심": "外长",
+    "앞품": "前胸宽", "뒤품": "后背宽", "앞길이": "前长", "뒷길이": "后长",
+    "허벅지둘레": "大腿围", "무릎둘레": "膝围", "발목둘레": "脚踝围",
+  };
+  const specName = (name: string) => {
+    if (!name) return name;
+    const key = name.trim();
+    if (eng) return SPEC_NAME_EN[key] ?? name;
+    if (chi) return SPEC_NAME_ZH[key] ?? name;
+    return name;
+  };
   const t = (ko: string, en: string, zh?: string) =>
     lang === "en" ? en : lang === "zh" ? (zh ?? en) : ko;
 
@@ -441,12 +474,12 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                 textAlign: "center",
                                 fontWeight: 800,
                                 letterSpacing: "0.3pt",
-                              }}>{m.item}</td>
+                              }}>{specName(m.item)}</td>
                             </tr>
                           ) : (
                             // ── 일반 측정 행 ──
                             <tr key={i}>
-                              <td style={td({ fontWeight: 600, background: "#f8f8f8", padding: "1px 2px" })}>{m.item}</td>
+                              <td style={td({ fontWeight: 600, background: "#f8f8f8", padding: "1px 2px" })}>{specName(m.item)}</td>
                               {sizes.map(s => (
                                 <td key={s} style={td({ padding: "1px" })}>{m.values[s] || ""}</td>
                               ))}
