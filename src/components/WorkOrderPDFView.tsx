@@ -165,17 +165,40 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     "폴리백": "Poly Bag",
     "택끈": "Tag String",
   };
-  const MAT_NAME_ZH: Record<string, string> = {
-    "메인라벨": "主唛",
-    "케어라벨": "洗唛",
-    "품질보증택": "合格证",
-    "가격택": "价格吊牌",
-    "바코드택": "条形码吊牌",
-    "폴리백": "胶袋",
-    "택끈": "吊牌绳",
+  // 중문 용어집 (공장 제공 용어 반영) — 자재명·품목·사이즈 항목 공통
+  const ZH_GLOSSARY: Record<string, string> = {
+    // 고정 부자재
+    "메인라벨": "主唛", "케어라벨": "水洗标", "품질보증택": "吊牌", "가격택": "价格吊牌",
+    "바코드택": "条形码吊牌", "폴리백": "胶袋", "택끈": "吊牌绳",
+    // 사이즈 항목
+    "기장": "衣长", "가슴둘레": "胸围", "어깨너비": "肩宽", "소매장": "袖长", "소매부리": "袖口",
+    "암홀직선": "袖笼直线", "옆목너비": "领宽", "앞목깊이": "领深", "허리둘레": "腰围", "힙둘레": "臀围",
+    "앞밑위": "前裆", "뒤밑위": "后裆", "인심길이": "内长", "바지부리": "裤脚", "편차": "码差",
+    "화장": "袖长",
+    // 구분/카테고리
+    "상의": "上衣", "하의": "下装", "아우터": "夹克",
+    // 라벨/부자재/공정
+    "포인트라벨": "侧标", "하의라벨": "裤标", "라벨": "侧标", "지퍼백": "包装袋", "옷핀 택고리": "别针",
+    "바코드스티커": "条码贴", "윗옷에 걸다": "挂上衣", "봉투에 붙이다": "贴包装袋", "부자재": "配布",
+    "고무줄": "松紧", "삼봉": "三针五线", "말아박기": "卷边", "혼솔지퍼": "隐形拉链", "진이": "定针",
+    "자바라테이프": "织带", "해리": "贴条", "프릴단": "荷叶边", "랍빠": "包边", "봉제실": "缝纫线",
+    "인타록": "密拷线", "셔링": "打褶", "4골": "4股", "미까시": "挂面", "밀집모자": "草帽", "2겹": "双层",
+    "리본장식": "蝴蝶结装饰品", "가방": "包包", "우라": "内衬", "나나인찌": "锁眼", "큐큐": "圆眼",
+    "비조": "钳子", "우븐원단": "梭织", "폴라폴리스": "摇粒绒", "스팽글": "冲片", "심지": "衬子",
+    "패턴": "样板", "스팩": "尺码", "와펜": "胸标", "스냅": "摁扣", "마이깡": "挂钩", "스토퍼": "绳扣",
+    "아일렛": "乌眼", "포켓": "兜", "탈부착": "拆装", "마도매": "手逢", "벨트고리": "裤鼻", "봉사": "线",
+    "합폭": "合逢", "샘플": "样品", "커프스": "袖头", "스티치": "锁边缝", "카라": "领子", "단추": "扣子",
+    "배색": "配布", "소매": "袖", "어깨": "肩", "트임": "开叉", "허리": "腰", "끈장식": "带子装饰",
+    "썬그립립": "四合扣", "털방울": "毛球", "안감": "里布", "지퍼": "拉链", "재봉사": "缝纫线",
+    "4골 고무줄": "4股松紧", "8골": "8股", "E-band": "松紧", "5호": "5号", "3호": "3号",
+    "60'/3합": "60'/3合", "원단매칭": "配色", "등가데": "后内贴", "밑가시": "挂面", "레이스": "蕾丝",
+    "모빌론": "莫比龙胶带", "실고무줄": "弹力线", "샤망": "褶边", "끈": "带", "셀파고리": "扣袢",
+    "장식단추": "装饰纽扣", "전사나염": "热转印", "충전재": "棉花", "모자": "帽", "벨크로": "魔术贴",
+    "인타": "密拷线", "밴드": "松紧", "시리": "裆", "발목": "脚踝", "해리TAPE": "包边条", "프릴": "褶边",
   };
+  const MAT_NAME_ZH = ZH_GLOSSARY;
   const matName = (name: string) =>
-    eng ? (MAT_NAME_EN[name] ?? name) : chi ? (MAT_NAME_ZH[name] ?? name) : name;
+    eng ? (MAT_NAME_EN[name] ?? name) : chi ? (ZH_GLOSSARY[(name || "").trim()] ?? name) : name;
 
   // 사이즈 스펙 항목명 번역 (영문/중문작지 미리보기)
   const SPEC_NAME_EN: Record<string, string> = {
@@ -251,7 +274,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     if (!name) return name;
     const key = name.trim();
     if (eng) return SPEC_NAME_EN[key] ?? composeSpec(key, true) ?? name;
-    if (chi) return SPEC_NAME_ZH[key] ?? composeSpec(key, false) ?? name;
+    if (chi) return ZH_GLOSSARY[key] ?? SPEC_NAME_ZH[key] ?? composeSpec(key, false) ?? name;
+    return name;
+  };
+  // 품목(카테고리) 번역
+  const catName = (name: string) => {
+    if (!name) return name;
+    const key = name.trim();
+    if (eng) return MAT_NAME_EN[key] ?? name;
+    if (chi) return ZH_GLOSSARY[key] ?? name;
     return name;
   };
   const t = (ko: string, en: string, zh?: string) =>
@@ -687,7 +718,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                               <tr key={m.id ?? i}>
                                 {spanArr[i] > 0 && (
                                   <td rowSpan={spanArr[i]} style={matTd({ fontSize: rFS, padding: rPad, verticalAlign: "middle" })}>
-                                    {m.category}
+                                    {catName(m.category)}
                                   </td>
                                 )}
                                 <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{matName(m.name)}</td>
