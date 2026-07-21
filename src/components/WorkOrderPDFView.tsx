@@ -595,15 +595,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                     {m.category}
                                   </td>
                                 )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "pre-line", lineHeight: 1.25 })}>{matName(m.name)}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.color}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.spec}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{matName(m.name)}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{m.color}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{m.spec}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.unitPrice}</td>
                                 {showFabricOrder && (
                                   <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.orderUnit}</td>
                                 )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left" })}>{m.notes}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left", whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{m.notes}</td>
                               </tr>
                             );
                           };
