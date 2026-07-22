@@ -747,15 +747,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           <td style={td({ fontWeight: 700, color: "#1a56db", padding: "1.5px" })}>{row.total}</td>
                         </tr>
                       ))}
-                      {Array.from({ length: Math.max(0, 4 - wo.colorSizeTable.length) }).map((_, i) => (
-                        <tr key={`e${i}`}>
-                          <td style={td({ padding: "1.5px 2px" })}>&nbsp;</td>
-                          {sizes.map(s => <td key={s} style={td({ padding: "1.5px" })}></td>)}
-                          <td style={td({ padding: "1.5px" })}></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
+                      {/* 합계(계) 행 — 데이터 바로 아래에 붙임 */}
                       <tr>
                         <td style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px 2px" }}>{t("계", "TOTAL", "合计")}</td>
                         {sizes.map(s => (
@@ -765,7 +757,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           {wo.totalQuantity}
                         </td>
                       </tr>
-                    </tfoot>
+                      {/* 남는 여백은 합계 아래로 (빈 행) */}
+                      {Array.from({ length: Math.max(0, 4 - wo.colorSizeTable.length) }).map((_, i) => (
+                        <tr key={`e${i}`}>
+                          <td style={td({ padding: "1.5px 2px" })}>&nbsp;</td>
+                          {sizes.map(s => <td key={s} style={td({ padding: "1.5px" })}></td>)}
+                          <td style={td({ padding: "1.5px" })}></td>
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 </div>
 
@@ -851,41 +851,85 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             hasFixedFlag ? !!m.fixed : FIXED_NAMES.includes(m.name);
                           const userMats  = wo.materials.filter(m => !isFixed(m));
                           const fixedMats = wo.materials.filter(m =>  isFixed(m));
-                          const sameGroup = (a: typeof wo.materials[0], b: typeof wo.materials[0]) =>
-                            a.category === b.category && a.name === b.name;
-                          const spans: number[] = userMats.map((m, i) => {
-                            if (i > 0 && sameGroup(userMats[i - 1], m)) return 0;
+
+                          // 자재 1개의 각 칸이 줄바꿈(\n)으로 여러 값을 담고 있으면 값마다 개별 행으로 펼친다.
+                          // (예: 주원단A 하나에 IVORY/PINK/BLACK → 3행. 품목 칸만 rowspan 병합)
+                          const splitLines = (s: string) => {
+                            const a = (s ?? "").split("\n");
+                            return a.length ? a : [""];
+                          };
+                          type SubRow = {
+                            m: typeof wo.materials[0]; idx: number; li: number; multi: boolean;
+                            name: string; color: string; spec: string; yieldV: string; price: string; order: string; notes: string;
+                          };
+                          const explode = (m: typeof wo.materials[0], idx: number): SubRow[] => {
+                            const nameL = splitLines(matName(m.name));
+                            const colorL = splitLines(m.color);
+                            const specL = splitLines(m.spec);
+                            const yieldL = splitLines(m.yield);
+                            const priceL = splitLines(m.unitPrice);
+                            const orderL = splitLines(m.orderUnit);
+                            const notesL = splitLines(m.notes);
+                            const n = Math.max(nameL.length, colorL.length, specL.length, yieldL.length, priceL.length, orderL.length, notesL.length, 1);
+                            const at = (arr: string[], i: number) => arr[i] ?? "";
+                            return Array.from({ length: n }, (_, li) => ({
+                              m, idx, li, multi: n > 1,
+                              name: at(nameL, li), color: at(colorL, li), spec: at(specL, li),
+                              yieldV: at(yieldL, li), price: at(priceL, li), order: at(orderL, li), notes: at(notesL, li),
+                            }));
+                          };
+
+                          const userRows = userMats.flatMap((m, i) => explode(m, i));
+                          // 품목(카테고리) 칸: 연속 동일 카테고리 구간의 첫 행만 rowspan, 나머지는 렌더 안 함
+                          const catSpans = userRows.map((r, i) => {
+                            if (i > 0 && userRows[i - 1].m.category === r.m.category) return 0;
                             let span = 1;
-                            while (i + span < userMats.length && sameGroup(m, userMats[i + span])) span++;
+                            while (i + span < userRows.length && userRows[i + span].m.category === r.m.category) span++;
                             return span;
                           });
-                          const userEmptyCount = Math.max(0, MAT_MIN_ROWS - userMats.length - fixedMats.length);
-                          const renderRow = (m: typeof wo.materials[0], i: number, spanArr: number[]) => {
-                            const lines = m.name.split("\n").length;
-                            const rFS  = lines > 1 ? `${(parseFloat(matFS) / lines).toFixed(1)}pt` : matFS;
-                            const rPad = lines > 1 ? `0px 2px` : rowPad;
-                            return (
-                              <tr key={m.id ?? i}>
-                                {spanArr[i] > 0 && (
-                                  <td rowSpan={spanArr[i]} style={matTd({ fontSize: rFS, padding: rPad, verticalAlign: "middle", whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>
-                                    {catName(m.category)}
-                                  </td>
-                                )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:name`} auto={matName(m.name)} /></td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:color`} auto={m.color} /></td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:spec`} auto={m.spec} /></td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.unitPrice}</td>
-                                {showFabricOrder && (
-                                  <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.orderUnit}</td>
-                                )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left", whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:notes`} auto={m.notes} /></td>
-                              </tr>
-                            );
-                          };
+                          const userEmptyCount = Math.max(0, MAT_MIN_ROWS - userRows.length - fixedMats.length);
+
+                          const cellBase = { whiteSpace: "normal" as const, wordBreak: "break-word" as const, overflowWrap: "anywhere" as const, overflow: "visible" as const, textOverflow: "clip" as const, lineHeight: 1.15 };
+                          // 값 칸: 여러 값이면 개별 편집 키(#li), 단일이면 기존 키 유지(기존 수정본 호환)
+                          const edKey = (r: SubRow, field: string) => `m:${r.m.id ?? r.idx}:${field}${r.multi ? `#${r.li}` : ""}`;
+
+                          const renderUserRow = (r: SubRow, i: number) => (
+                            <tr key={`u${r.idx}-${r.li}`}>
+                              {catSpans[i] > 0 && (
+                                <td rowSpan={catSpans[i]} style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle", ...cellBase })}>
+                                  {catName(r.m.category)}
+                                </td>
+                              )}
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, ...cellBase })}><Ed k={edKey(r, "name")} auto={r.name} /></td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, ...cellBase })}><Ed k={edKey(r, "color")} auto={r.color} /></td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, ...cellBase })}><Ed k={edKey(r, "spec")} auto={r.spec} /></td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{r.yieldV}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{r.price}</td>
+                              {showFabricOrder && (
+                                <td style={matTd({ fontSize: matFS, padding: rowPad })}>{r.order}</td>
+                              )}
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, textAlign: "left", ...cellBase })}><Ed k={edKey(r, "notes")} auto={r.notes} /></td>
+                            </tr>
+                          );
+
+                          const renderFixedRow = (m: typeof wo.materials[0], i: number) => (
+                            <tr key={`f${m.id ?? i}`}>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle", ...cellBase })}>{catName(m.category)}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, ...cellBase })}><Ed k={`m:${m.id ?? i}:name`} auto={matName(m.name)} /></td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, ...cellBase })}><Ed k={`m:${m.id ?? i}:color`} auto={m.color} /></td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, ...cellBase })}><Ed k={`m:${m.id ?? i}:spec`} auto={m.spec} /></td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.yield}</td>
+                              <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.unitPrice}</td>
+                              {showFabricOrder && (
+                                <td style={matTd({ fontSize: matFS, padding: rowPad })}>{m.orderUnit}</td>
+                              )}
+                              <td style={matTd({ fontSize: matFS, padding: rowPad, textAlign: "left", ...cellBase })}><Ed k={`m:${m.id ?? i}:notes`} auto={m.notes} /></td>
+                            </tr>
+                          );
+
                           return [
-                            // 1) 사용자 추가 행
-                            ...userMats.map((m, i) => renderRow(m, i, spans)),
+                            // 1) 사용자 추가 행 (색상 등 여러 값은 개별 행으로 펼침)
+                            ...userRows.map((r, i) => renderUserRow(r, i)),
                             // 2) 빈 행 (고정 행들 아래로 밀어내는 여백)
                             ...Array.from({ length: userEmptyCount }, (_, i) => (
                               <tr key={`em${i}`}>
@@ -895,7 +939,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                               </tr>
                             )),
                             // 3) 고정 라벨 행 — 항상 표 맨 하단
-                            ...fixedMats.map((m, i) => renderRow(m, i, fixedMats.map(() => 1))),
+                            ...fixedMats.map((m, i) => renderFixedRow(m, i)),
                           ];
                         })()}
                       </tbody>
