@@ -176,8 +176,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           setOrders(data);
           // localStorage 캐시 갱신
           try { localStorage.setItem("workOrders", JSON.stringify(data)); } catch {}
-          // 백그라운드로 각 작업지시서를 최신 발주차수 기준으로 갱신
-          enrichLatestBatches(data);
+          // (저장된 값 그대로 표시 — 최신 차수 자동 덮어쓰기 제거)
         }
         setLoadError(false);
       })
@@ -198,46 +197,6 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
         localStorage.setItem("workOrders", JSON.stringify(light));
       } catch {}
     }
-  }
-
-  // 각 제품의 최신 발주차수 정보만 조회 (차수/수량/발주일/색상표/원가) — 승인·상태 등은 건드리지 않음
-  async function enrichLatestBatches(list: WorkOrder[]) {
-    type BatchFields = Partial<Pick<WorkOrder, "orderCount" | "totalQuantity" | "issueDate" | "colorSizeTable" | "sizes" | "totalCost">>;
-    const results = await Promise.all(
-      list.map(async (o): Promise<{ id: string; fields: BatchFields } | null> => {
-        try {
-          const qs = o.notionProductId
-            ? `pageId=${encodeURIComponent(o.notionProductId)}`
-            : `name=${encodeURIComponent(o.productName || "")}`;
-          const res = await fetch(`/api/order-batches?${qs}`, { cache: "no-store" });
-          const data = await res.json();
-          const batches: Batch[] = Array.isArray(data.batches) ? data.batches : [];
-          if (!batches.length) return null;
-          const latest = batches.reduce((a, b) => (b.batchNum > a.batchNum ? b : a));
-          const cost = o.batchCosts?.[latest.batchNum];
-          const fields: BatchFields = {
-            orderCount: latest.batchNum,
-            totalQuantity: latest.totalQuantity,
-            issueDate: latest.orderDate || o.issueDate,
-          };
-          if (latest.colorSizeTable && latest.colorSizeTable.length > 0) {
-            fields.colorSizeTable = latest.colorSizeTable as WorkOrder["colorSizeTable"];
-            if (latest.sizes) fields.sizes = latest.sizes;
-          }
-          if (cost) fields.totalCost = cost;
-          return { id: o.id, fields };
-        } catch {
-          return null;
-        }
-      }),
-    );
-    // 차수 관련 필드만 현재 상태에 병합 — 승인/상태/담당 등 사용자가 방금 바꾼 값은 보존
-    setOrders((prev) => {
-      const map = new Map(results.filter(Boolean).map((r) => [r!.id, r!.fields]));
-      const merged = prev.map((o) => (map.has(o.id) ? { ...o, ...map.get(o.id) } : o));
-      try { localStorage.setItem("workOrders", JSON.stringify(merged)); } catch {}
-      return merged;
-    });
   }
 
   async function deleteOrder(id: string) {
