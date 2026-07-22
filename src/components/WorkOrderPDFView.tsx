@@ -435,6 +435,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             <div className="text-xs text-gray-400">
               {[wo.styleNo, wo.productName, `${wo.orderCount}차`].filter(Boolean).join(" · ")}
               {lang !== "ko" && <span className="ml-2 text-violet-500">· 항목을 클릭하면 이 언어({lang === "en" ? "영문" : "중문"}) 전용으로 수정됩니다</span>}
+              <span className="ml-2 text-red-500">[진단 wo.i18n: en={Object.keys(wo.i18n?.en ?? {}).length} zh={Object.keys(wo.i18n?.zh ?? {}).length}]</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
