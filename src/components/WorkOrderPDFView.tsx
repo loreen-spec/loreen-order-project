@@ -159,6 +159,26 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   const [i18n, setI18n] = useState<Record<string, Record<string, string>>>(() => wo.i18n ?? {});
   const i18nRef = useRef<Record<string, Record<string, string>>>(wo.i18n ?? {});
   const [savingI18n, setSavingI18n] = useState<"idle" | "saving" | "saved">("idle");
+
+  // 열릴 때 서버에서 이 작지의 최신 i18n을 직접 가져와 반영
+  // (리스트가 옛 localStorage 캐시로 넘겨줬을 때도 최신 수정본을 표시)
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: any[]) => {
+        if (!alive || !Array.isArray(list)) return;
+        const fresh = list.find((o) => o.id === wo.id);
+        if (fresh?.i18n && typeof fresh.i18n === "object") {
+          i18nRef.current = fresh.i18n;
+          setI18n(fresh.i18n);
+        }
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wo.id]);
+
   const ov = lang === "ko" ? {} : (i18n[lang] ?? {});
   const tx = (key: string, auto: string) => {
     if (lang !== "ko" && ov[key] != null && ov[key] !== "") return ov[key];
@@ -435,7 +455,6 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             <div className="text-xs text-gray-400">
               {[wo.styleNo, wo.productName, `${wo.orderCount}차`].filter(Boolean).join(" · ")}
               {lang !== "ko" && <span className="ml-2 text-violet-500">· 항목을 클릭하면 이 언어({lang === "en" ? "영문" : "중문"}) 전용으로 수정됩니다</span>}
-              <span className="ml-2 text-red-500">[진단 wo.i18n: en={Object.keys(wo.i18n?.en ?? {}).length} zh={Object.keys(wo.i18n?.zh ?? {}).length}]</span>
             </div>
           </div>
           <div className="flex items-center gap-2">

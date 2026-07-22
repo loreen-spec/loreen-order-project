@@ -35,6 +35,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const merged = { ...existing, ...patch, id, _ver: Date.now() };
+
+  // i18n(언어별 미리보기 수정본)은 통째로 교체하지 않고 언어별 키를 병합한다.
+  // (빈 {} 또는 일부만 담긴 저장이 와도 기존 수정본이 지워지지 않도록 보호)
+  if (patch && typeof patch.i18n === "object" && patch.i18n) {
+    const prev = (existing && typeof existing.i18n === "object" && existing.i18n) ? existing.i18n : {};
+    const mergedI18n: Record<string, Record<string, string>> = { ...prev };
+    for (const langKey of Object.keys(patch.i18n)) {
+      mergedI18n[langKey] = { ...(prev[langKey] ?? {}), ...(patch.i18n[langKey] ?? {}) };
+    }
+    merged.i18n = mergedI18n;
+  }
   const { error } = await supabaseAdmin
     .from("work_orders")
     .upsert({ id, data: merged, updated_at: new Date().toISOString() }, { onConflict: "id" });
