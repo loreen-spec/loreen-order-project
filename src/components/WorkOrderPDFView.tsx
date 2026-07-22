@@ -354,6 +354,35 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     if (chi) return CAT_ZH[key] ?? ZH_GLOSSARY[key] ?? SPEC_NAME_ZH[key] ?? composeSpec(key, false) ?? text;
     return text;
   };
+  // 색상 한국어 → 영문 (발주수량 COLOR 칸은 언어와 무관하게 항상 영문 표기)
+  const COLOR_EN: Record<string, string> = {
+    "블랙": "Black", "검정": "Black", "검정색": "Black", "먹": "Black",
+    "화이트": "White", "흰색": "White", "백색": "White", "오프화이트": "Off White",
+    "아이보리": "Ivory", "크림": "Cream", "베이지": "Beige", "카멜": "Camel", "탄": "Tan",
+    "그레이": "Gray", "회색": "Gray", "챠콜": "Charcoal", "차콜": "Charcoal", "멜란지": "Melange",
+    "네이비": "Navy", "남색": "Navy", "블루": "Blue", "파랑": "Blue", "스카이블루": "Sky Blue",
+    "소라": "Sky Blue", "하늘색": "Sky Blue", "코발트": "Cobalt", "데님": "Denim",
+    "레드": "Red", "빨강": "Red", "와인": "Wine", "버건디": "Burgundy", "카키": "Khaki",
+    "그린": "Green", "초록": "Green", "연두": "Light Green", "민트": "Mint", "올리브": "Olive",
+    "옐로우": "Yellow", "옐로": "Yellow", "노랑": "Yellow", "머스타드": "Mustard", "레몬": "Lemon",
+    "핑크": "Pink", "분홍": "Pink", "연핑크": "Light Pink", "진핑크": "Hot Pink", "코랄": "Coral",
+    "퍼플": "Purple", "보라": "Purple", "라벤더": "Lavender", "바이올렛": "Violet",
+    "오렌지": "Orange", "주황": "Orange", "브라운": "Brown", "갈색": "Brown", "초코": "Chocolate",
+    "실버": "Silver", "골드": "Gold", "로즈골드": "Rose Gold",
+  };
+  const colorName = (c: string) => {
+    if (!c) return c;
+    // "블랙, 화이트" / "블랙/화이트" 등 여러 색 분리해 각각 번역, 매핑 없으면 원문 유지
+    return c
+      .split(/[,/]/)
+      .map((p) => {
+        const key = p.trim();
+        return COLOR_EN[key] ?? key;
+      })
+      .filter(Boolean)
+      .join(", ");
+  };
+
   const t = (ko: string, en: string, zh?: string) =>
     lang === "en" ? en : lang === "zh" ? (zh ?? en) : ko;
 
@@ -672,7 +701,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                     <tbody>
                       {wo.colorSizeTable.map((row, i) => (
                         <tr key={i}>
-                          <td style={td({ fontWeight: 600, padding: "1.5px 2px" })}>{row.color}</td>
+                          <td style={td({ fontWeight: 600, padding: "1.5px 2px" })}>{colorName(row.color)}</td>
                           {sizes.map(s => (
                             <td key={s} style={td({ padding: "1.5px" })}>{row.sizes[s] || 0}</td>
                           ))}
