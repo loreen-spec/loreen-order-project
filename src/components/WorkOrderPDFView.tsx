@@ -886,13 +886,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           const totalUserRows = mats.reduce((s, x) => s + x.n, 0);
                           const userEmptyCount = Math.max(0, MAT_MIN_ROWS - totalUserRows - fixedMats.length);
 
-                          // 값 칸 렌더: 값이 1개면 rowspan=n으로 병합(li===0에서만), 여러 개면 행마다
+                          // 값 칸 렌더: 값이 (사실상) 1종이면 rowspan=n으로 병합, 여러 종이면 행마다
+                          //  - "동일 값이 여러 줄"인 경우도 1종으로 보고 병합 (예: 자재명 3줄이 모두 동일)
                           const editable = (field: string) => field === "name" || field === "color" || field === "spec" || field === "notes";
                           const valCell = (x: typeof mats[0], field: keyof typeof x.cols, li: number, extra?: React.CSSProperties) => {
                             const lines = x.cols[field];
-                            const single = lines.length <= 1;
+                            const uniq = Array.from(new Set(lines.filter((v) => v !== "")));
+                            const single = uniq.length <= 1; // 값이 없거나 한 종류뿐 → 세로 병합
                             if (single && li > 0) return null; // 병합된 셀 — 첫 행에서만 렌더
-                            const val = single ? (lines[0] ?? "") : (lines[li] ?? "");
+                            const val = single ? (uniq[0] ?? "") : (lines[li] ?? "");
                             const key = `m:${x.m.id ?? x.idx}:${field}${single ? "" : `#${li}`}`;
                             const style = matTd({ fontSize: matFS, padding: rowPad, ...cellBase, ...extra });
                             return (
