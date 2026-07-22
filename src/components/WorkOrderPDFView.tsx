@@ -155,26 +155,38 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   // 원단발주 칸: 국내의류 폼에서만 표시 (그 외 폼은 비고에 합침)
   const showFabricOrder = wo.formType === "국내의류";
 
-  // ── 언어별 수동 수정본(오버라이드) ──
+  // ── 언어별 수동 수정본(오버라이드) — ref로 최신값 유지(빠른 연속 수정 시 유실 방지) ──
   const [i18n, setI18n] = useState<Record<string, Record<string, string>>>(() => wo.i18n ?? {});
+  const i18nRef = useRef<Record<string, Record<string, string>>>(wo.i18n ?? {});
+  const [savingI18n, setSavingI18n] = useState<"idle" | "saving" | "saved">("idle");
   const ov = lang === "ko" ? {} : (i18n[lang] ?? {});
-  // 표시값: 수동 수정본 우선, 없으면 자동번역값(auto)
   const tx = (key: string, auto: string) => {
     if (lang !== "ko" && ov[key] != null && ov[key] !== "") return ov[key];
     return auto;
   };
-  async function saveOverride(key: string, text: string) {
-    if (lang === "ko") return;
-    const nextLangMap = { ...(i18n[lang] ?? {}), [key]: text };
-    const nextI18n = { ...i18n, [lang]: nextLangMap };
-    setI18n(nextI18n);
+  async function persistI18n(next: Record<string, Record<string, string>>) {
+    setSavingI18n("saving");
     try {
-      await fetch(`/api/work-orders/${encodeURIComponent(wo.id)}`, {
+      const res = await fetch(`/api/work-orders/${encodeURIComponent(wo.id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ i18n: nextI18n, updatedAt: new Date().toISOString() }),
+        body: JSON.stringify({ i18n: next, updatedAt: new Date().toISOString() }),
       });
-    } catch {}
+      setSavingI18n(res.ok ? "saved" : "idle");
+      if (!res.ok) alert("수정 저장 실패 (서버). 다시 시도해주세요.");
+    } catch {
+      setSavingI18n("idle");
+      alert("수정 저장 실패 (네트워크). 다시 시도해주세요.");
+    }
+  }
+  // 항목 수정 → ref에 즉시 반영 후 저장 (연속 수정 안전)
+  function saveOverride(key: string, text: string) {
+    if (lang === "ko") return;
+    const cur = i18nRef.current;
+    const next = { ...cur, [lang]: { ...(cur[lang] ?? {}), [key]: text } };
+    i18nRef.current = next;
+    setI18n(next);
+    persistI18n(next);
   }
   // 편집 가능한 텍스트 (영문/중문에서만 편집 → 해당 언어로 저장)
   const Ed = ({ k, auto, style }: { k: string; auto: string; style?: React.CSSProperties }) => {
@@ -441,6 +453,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 </button>
               ))}
             </div>
+            {lang !== "ko" && (
+              <button onClick={() => persistI18n(i18nRef.current)}
+                disabled={savingI18n === "saving"}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl border border-violet-300 text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60">
+                {savingI18n === "saving" ? "저장 중..." : savingI18n === "saved" ? "✓ 저장됨" : "💾 수정 저장"}
+              </button>
+            )}
             <button onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors"
               style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}>
