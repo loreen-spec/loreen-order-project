@@ -281,12 +281,25 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     if (chi) return ZH_GLOSSARY[key] ?? SPEC_NAME_ZH[key] ?? composeSpec(key, false) ?? name;
     return name;
   };
-  // 품목(카테고리) 번역
+  // 품목(카테고리) 전용 번역 사전
+  const CAT_EN: Record<string, string> = {
+    "주원단": "Main Fabric", "주원단A": "Main Fabric A", "주원단B": "Main Fabric B",
+    "원단": "Fabric", "배색": "Contrast Fabric", "배색원단": "Contrast Fabric",
+    "안감": "Lining", "안감A": "Lining A", "안감B": "Lining B",
+    "부자재": "Trims", "심지": "Interlining",
+  };
+  const CAT_ZH: Record<string, string> = {
+    "주원단": "主面料", "주원단A": "主面料A", "주원단B": "主面料B",
+    "원단": "面料", "배색": "配布", "배색원단": "配布",
+    "안감": "配布", "안감A": "配布A", "안감B": "配布B",
+    "부자재": "配布", "심지": "衬子",
+  };
+  // 품목(카테고리) 번역 — 품목 전용 사전 우선, 없으면 공용 용어집
   const catName = (name: string) => {
     if (!name) return name;
     const key = name.trim();
-    if (eng) return MAT_NAME_EN[key] ?? name;
-    if (chi) return ZH_GLOSSARY[key] ?? name;
+    if (eng) return CAT_EN[key] ?? MAT_NAME_EN[key] ?? name;
+    if (chi) return CAT_ZH[key] ?? ZH_GLOSSARY[key] ?? name;
     return name;
   };
   const t = (ko: string, en: string, zh?: string) =>
