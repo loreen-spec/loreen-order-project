@@ -1448,25 +1448,37 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
     notionLookupTimer.current = setTimeout(() => lookupNotion(name), 700);
   }
 
-  // 발주수량 다시 가져오기 — 노션 발주 DB에서 색상×사이즈를 강제로 다시 채움(덮어쓰기)
+  // 발주수량 다시 가져오기 — 현재 차수(orderCount)에 맞는 색상×사이즈를 노션 발주 DB에서 강제로 다시 채움
   const [reloadingQty, setReloadingQty] = useState(false);
   async function reloadOrderQty() {
     const q = (wo.productName || "").trim();
-    if (!q) { alert("먼저 품명을 입력해주세요."); return; }
-    if (wo.colorSizeTable.length > 0 && !confirm("현재 발주수량표를 노션 발주 DB 기준으로 다시 불러올까요?\n(직접 수정한 내용은 덮어써집니다.)")) return;
+    if (!q && !wo.notionProductId) { alert("먼저 품명을 입력해주세요."); return; }
+    if (wo.colorSizeTable.length > 0 && !confirm(`현재 차수(${wo.orderCount}차)의 발주수량을 노션 발주 DB에서 다시 불러올까요?\n(직접 수정한 내용은 덮어써집니다.)`)) return;
     setReloadingQty(true);
     try {
-      const res = await fetch(`/api/notion-product-lookup?q=${encodeURIComponent(q)}`);
+      const qs = wo.notionProductId
+        ? `pageId=${encodeURIComponent(wo.notionProductId)}`
+        : `name=${encodeURIComponent(q)}`;
+      const res = await fetch(`/api/order-batches?${qs}`, { cache: "no-store" });
       const data = await res.json();
-      if (!data || !data.colorSizeTable || data.colorSizeTable.length === 0) {
-        alert("노션 발주 DB에서 발주수량을 찾지 못했습니다. (제품명/발주 내역 확인)");
+      const batches: any[] = Array.isArray(data.batches) ? data.batches : [];
+      if (batches.length === 0) {
+        alert("노션 발주 DB에서 발주 내역을 찾지 못했습니다. (제품명/발주 내역 확인)");
+        return;
+      }
+      // 현재 차수와 일치하는 배치 우선, 없으면 가장 최근 차수
+      const match = batches.find((b) => b.batchNum === wo.orderCount)
+        ?? batches.reduce((a, b) => (b.batchNum > a.batchNum ? b : a));
+      if (!match.colorSizeTable || match.colorSizeTable.length === 0) {
+        alert(`${match.batch}의 색상×사이즈 데이터가 발주 DB에 없습니다.`);
         return;
       }
       setWo((prev) => ({
         ...prev,
-        sizes: data.sizes?.length ? data.sizes : prev.sizes,
-        colorSizeTable: data.colorSizeTable,
-        totalQuantity: data.totalQuantity ?? recomputeTotal(data.colorSizeTable),
+        orderCount: match.batchNum || prev.orderCount,
+        sizes: match.sizes?.length ? match.sizes : prev.sizes,
+        colorSizeTable: match.colorSizeTable,
+        totalQuantity: match.totalQuantity ?? recomputeTotal(match.colorSizeTable),
       }));
     } catch {
       alert("다시 가져오기에 실패했습니다. 잠시 후 다시 시도해주세요.");
