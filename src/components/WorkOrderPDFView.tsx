@@ -155,6 +155,45 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
   // 원단발주 칸: 국내의류 폼에서만 표시 (그 외 폼은 비고에 합침)
   const showFabricOrder = wo.formType === "국내의류";
 
+  // ── 언어별 수동 수정본(오버라이드) ──
+  const [i18n, setI18n] = useState<Record<string, Record<string, string>>>(() => wo.i18n ?? {});
+  const ov = lang === "ko" ? {} : (i18n[lang] ?? {});
+  // 표시값: 수동 수정본 우선, 없으면 자동번역값(auto)
+  const tx = (key: string, auto: string) => {
+    if (lang !== "ko" && ov[key] != null && ov[key] !== "") return ov[key];
+    return auto;
+  };
+  async function saveOverride(key: string, text: string) {
+    if (lang === "ko") return;
+    const nextLangMap = { ...(i18n[lang] ?? {}), [key]: text };
+    const nextI18n = { ...i18n, [lang]: nextLangMap };
+    setI18n(nextI18n);
+    try {
+      await fetch(`/api/work-orders/${encodeURIComponent(wo.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ i18n: nextI18n, updatedAt: new Date().toISOString() }),
+      });
+    } catch {}
+  }
+  // 편집 가능한 텍스트 (영문/중문에서만 편집 → 해당 언어로 저장)
+  const Ed = ({ k, auto, style }: { k: string; auto: string; style?: React.CSSProperties }) => {
+    const val = tx(k, auto);
+    if (lang === "ko") return <>{val}</>;
+    return (
+      <span
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={(e) => {
+          const t = e.currentTarget.textContent ?? "";
+          if (t !== val) saveOverride(k, t);
+        }}
+        style={{ outline: "none", cursor: "text", ...style }}
+        title="클릭해서 이 언어 전용으로 수정"
+      >{val}</span>
+    );
+  };
+
   // 고정 부자재 이름 번역 (영문/중문작지 폼 미리보기)
   const MAT_NAME_EN: Record<string, string> = {
     "메인라벨": "Main Label",
@@ -341,6 +380,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             <div className="font-bold text-gray-900">작업지시서 미리보기</div>
             <div className="text-xs text-gray-400">
               {[wo.styleNo, wo.productName, `${wo.orderCount}차`].filter(Boolean).join(" · ")}
+              {lang !== "ko" && <span className="ml-2 text-violet-500">· 항목을 클릭하면 이 언어({lang === "en" ? "영문" : "중문"}) 전용으로 수정됩니다</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -505,7 +545,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       fontSize: FL, lineHeight: 1.5,
                       whiteSpace: "pre-wrap", overflow: "hidden",
                     }}>
-                      {wo.productionNotes}
+                      <Ed k="pnote" auto={wo.productionNotes} style={{ display: "block", whiteSpace: "pre-wrap" }} />
                     </div>
                   </div>
                 </div>
@@ -572,7 +612,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           ) : (
                             // ── 일반 측정 행 ──
                             <tr key={i}>
-                              <td style={td({ fontWeight: 600, background: "#f8f8f8", padding: "1px 2px" })}>{specName(m.item)}</td>
+                              <td style={td({ fontWeight: 600, background: "#f8f8f8", padding: "1px 2px" })}><Ed k={`sp:${i}:item`} auto={specName(m.item)} /></td>
                               {sizes.map(s => (
                                 <td key={s} style={td({ padding: "1px" })}>{m.values[s] || ""}</td>
                               ))}
@@ -738,15 +778,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                                     {catName(m.category)}
                                   </td>
                                 )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{matName(m.name)}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{m.color}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{m.spec}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:name`} auto={matName(m.name)} /></td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:color`} auto={m.color} /></td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:spec`} auto={m.spec} /></td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.unitPrice}</td>
                                 {showFabricOrder && (
                                   <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.orderUnit}</td>
                                 )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left", whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{m.notes}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left", whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}><Ed k={`m:${m.id ?? i}:notes`} auto={m.notes} /></td>
                               </tr>
                             );
                           };

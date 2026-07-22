@@ -124,6 +124,9 @@ export interface WorkOrder {
   // 작업지시서 폼 종류
   formType?: WorkOrderFormType;
 
+  // 미리보기 언어별 수동 수정본 (예: i18n.en["pnote"], i18n.zh["m:id:name"]) — 자동번역보다 우선
+  i18n?: Record<string, Record<string, string>>;
+
   createdAt: string;
   updatedAt: string;
 }
