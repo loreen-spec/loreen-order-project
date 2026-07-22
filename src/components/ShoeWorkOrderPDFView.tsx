@@ -2,6 +2,7 @@
 import { useRef } from "react";
 import { X, Printer } from "lucide-react";
 import type { ShoeWorkOrder } from "@/types";
+import ZoomPanViewport from "./ZoomPanViewport";
 
 interface Props { wo: ShoeWorkOrder; onClose: () => void; }
 
@@ -114,13 +115,13 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
           </div>
         </div>
 
-        {/* ── A4 미리보기 ──────────────────────────────────── */}
-        <div className="overflow-auto" style={{ background: "#d1d5db", padding: "20px" }}>
+        {/* ── A4 미리보기 (확대/축소 + 드래그 이동) ──────────── */}
+        <ZoomPanViewport>
           <div style={{
             width: "min(100%, 1122px)",
             aspectRatio: "297 / 210",
             background: "#fff",
-            margin: "0 auto",
+            flex: "0 0 auto",
             boxShadow: "0 4px 32px rgba(0,0,0,.25)",
             overflow: "hidden",
           }}>
@@ -426,7 +427,7 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
 
             </div>
           </div>
-        </div>
+        </ZoomPanViewport>
 
       </div>
     </div>

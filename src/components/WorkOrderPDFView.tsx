@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect } from "react";
 import { X, Printer } from "lucide-react";
 import type { WorkOrder } from "@/types";
+import ZoomPanViewport from "./ZoomPanViewport";
 
 interface Props { wo: WorkOrder; onClose: () => void; }
 
@@ -492,13 +493,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
           </div>
         </div>
 
-        {/* ── A4 가로 미리보기 ── */}
-        <div className="overflow-auto" style={{ background: "#d1d5db", padding: "20px" }}>
+        {/* ── A4 가로 미리보기 (확대/축소 + 드래그 이동) ── */}
+        <ZoomPanViewport>
           {/* A4 landscape 실제 비율: 297mm × 210mm */}
           <div style={{
             width: "min(100%, 1122px)",   /* 297mm @ 96dpi ≈ 1122px */
             aspectRatio: "297 / 210",
-            background: "#fff", margin: "0 auto",
+            background: "#fff", flex: "0 0 auto",
             boxShadow: "0 4px 32px rgba(0,0,0,.25)",
             overflow: "hidden",
           }}>
@@ -1029,7 +1030,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
           </div>
           </div>
-        </div>
+        </ZoomPanViewport>
 
       </div>
     </div>
