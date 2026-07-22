@@ -172,9 +172,14 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ i18n: next, updatedAt: new Date().toISOString() }),
       });
+      // 진단: 저장 후 서버에서 다시 읽어 실제 반영 확인
+      const vr = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
+      const vdata = vr.ok ? await vr.json() : [];
+      const saved = Array.isArray(vdata) ? vdata.find((o: any) => o.id === wo.id) : null;
+      const cnt = saved?.i18n?.[lang] ? Object.keys(saved.i18n[lang]).length : 0;
+      alert(`[진단] PATCH=${res.status}\nid=${wo.id}\n서버 재조회: ${saved ? `찾음, ${lang} 수정본 ${cnt}개` : "id 못 찾음"}`);
       setSavingI18n(res.ok ? "saved" : "idle");
-      if (!res.ok) alert("수정 저장 실패 (서버). 다시 시도해주세요.");
-    } catch {
+    } catch (e) {
       setSavingI18n("idle");
       alert("수정 저장 실패 (네트워크). 다시 시도해주세요.");
     }
@@ -266,7 +271,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     "소매장": "Sleeve Length", "소매통": "Sleeve Width", "소매부리": "Sleeve Opening", "소매단": "Cuff",
     "목너비": "Neck Width", "목깊이": "Neck Depth", "목둘레": "Neck", "칼라": "Collar", "카라": "Collar",
     "옆목너비": "Neck Width", "옆목깊이": "Neck Depth", "앞목너비": "Front Neck Width", "뒷목너비": "Back Neck Width",
-    "암홀직선": "Armhole (straight)", "암홀": "Armhole", "화장": "Sleeve Length", "바지부리": "Leg Opening",
+    "암홀직선": "Armhole (straight)", "화장": "Sleeve Length", "바지부리": "Leg Opening",
     "앞밑위": "Front Rise", "뒤밑위": "Back Rise", "인심길이": "Inseam", "힙둘레": "Hip",
     "허리둘레": "Waist", "허리단면": "Waist (½)", "엉덩이둘레": "Hip", "엉덩이단면": "Hip (½)",
     "밑위": "Rise", "밑단너비": "Leg Opening", "인심": "Inseam", "아웃심": "Outseam",
