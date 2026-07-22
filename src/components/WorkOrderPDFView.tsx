@@ -188,7 +188,12 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
           const t = e.currentTarget.textContent ?? "";
           if (t !== val) saveOverride(k, t);
         }}
-        style={{ outline: "none", cursor: "text", ...style }}
+        style={{
+          outline: "none", cursor: "text",
+          whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere",
+          display: "inline-block", maxWidth: "100%",
+          ...style,
+        }}
         title="클릭해서 이 언어 전용으로 수정"
       >{val}</span>
     );
