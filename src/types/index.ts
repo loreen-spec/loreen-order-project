@@ -192,6 +192,7 @@ export interface ShoeWorkOrder {
   totalQuantity: number;
 
   suppliedMaterials: string;
+  suppliedImages?: string[]; // 오즈키즈 제공 부자재 첨부 사진 (base64 또는 URL)
   cautions: string;
   specs: ShoeSpec[];
 

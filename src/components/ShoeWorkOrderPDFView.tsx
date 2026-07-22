@@ -417,8 +417,17 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
                       lineHeight: 1.5,
                       flex: 1,
                       overflow: "hidden",
+                      whiteSpace: "pre-wrap",
                     }}>
                       {wo.suppliedMaterials || "제공 없음"}
+                      {(wo.suppliedImages ?? []).length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", marginTop: "4px" }}>
+                          {(wo.suppliedImages ?? []).map((src, i) => (
+                            <img key={i} src={src} alt={`제공부자재 ${i + 1}`}
+                              style={{ width: "48px", height: "48px", objectFit: "contain", border: ".3pt solid #bbb", background: "#fff" }} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

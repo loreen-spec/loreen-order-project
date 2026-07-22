@@ -133,6 +133,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
   const notionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const detailImageInputRef = useRef<HTMLInputElement>(null);
+  const suppliedImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initial) setWo({ ...initial });
@@ -274,6 +275,23 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
     const reader = new FileReader();
     reader.onload = (e) => set(field, e.target?.result as string ?? "");
     reader.readAsDataURL(file);
+  }
+
+  // ── 오즈키즈 제공 부자재 첨부 사진 (여러 장) ──
+  function addSuppliedImages(files: FileList | File[]) {
+    Array.from(files)
+      .filter((f) => f.type.startsWith("image/"))
+      .forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const url = (e.target?.result as string) ?? "";
+          if (url) setWo((w) => ({ ...w, suppliedImages: [...(w.suppliedImages ?? []), url] }));
+        };
+        reader.readAsDataURL(file);
+      });
+  }
+  function removeSuppliedImage(idx: number) {
+    setWo((w) => ({ ...w, suppliedImages: (w.suppliedImages ?? []).filter((_, i) => i !== idx) }));
   }
 
   // ── 제품 사양 ──────────────────────────────────────────────
@@ -580,6 +598,44 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
               placeholder="제공되는 부자재를 입력하거나 '제공 없음'으로 입력"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
+            {/* 사진 첨부 (여러 장) */}
+            <div
+              className="mt-2"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files?.length) addSuppliedImages(e.dataTransfer.files); }}
+            >
+              <div className="flex flex-wrap gap-2">
+                {(wo.suppliedImages ?? []).map((src, i) => (
+                  <div key={i} className="relative w-20 h-20 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 group">
+                    <img src={src} alt={`제공부자재 ${i + 1}`} className="w-full h-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => removeSuppliedImage(i)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition"
+                      title="삭제"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => suppliedImageInputRef.current?.click()}
+                  className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 flex flex-col items-center justify-center text-[11px] transition"
+                >
+                  <span className="text-lg leading-none">＋</span>
+                  사진 첨부
+                </button>
+              </div>
+              <input
+                ref={suppliedImageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => { if (e.target.files?.length) addSuppliedImages(e.target.files); e.target.value = ""; }}
+              />
+            </div>
           </SectionCard>
           <SectionCard title="주의 사항 (빨간 글씨로 PDF 표시)" accentColor="#ef4444">
             <textarea
