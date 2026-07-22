@@ -76,7 +76,9 @@ export interface WorkOrder {
   customLabels: string[]; // 직접 추가 라벨 목록
 
   // Images (base64 data URL)
-  sketchImage: string;    // 도식화
+  sketchImage: string;    // 도식화 (기본/한국어)
+  sketchImageEn?: string; // 도식화 (영문 버전)
+  sketchImageZh?: string; // 도식화 (중문 버전)
   productImage: string;   // 제품 사진
   labelImage: string;     // 라벨 위치 다이어그램 (기존 단일 이미지)
 

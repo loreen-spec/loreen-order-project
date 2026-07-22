@@ -1758,7 +1758,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   }
 
   // ─── 이미지 업로드 ────────────────────────────────────
-  function handleImageUpload(field: "sketchImage" | "productImage" | "labelImage", file: File) {
+  function handleImageUpload(field: "sketchImage" | "sketchImageEn" | "sketchImageZh" | "productImage" | "labelImage", file: File) {
     if (!file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -2500,6 +2500,44 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         {(wo.sketchLabels ?? []).length === 0 && (
                           <div className="text-xs text-gray-300">라벨을 추가하면 도식화 위에 표시되고, 미리보기에서 영문/중문으로 자동 번역됩니다.</div>
                         )}
+                      </div>
+                    </div>
+
+                    {/* 언어별 도식화 (영문/중문) — 미리보기 언어에 맞춰 표시 */}
+                    <div className="mt-3">
+                      <div className="text-xs font-semibold text-gray-500 mb-1.5">언어별 도식화 <span className="text-gray-400 font-normal">(선택 — 없으면 위 기본 도식화 사용)</span></div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {([["sketchImageEn", "영문 도식화"], ["sketchImageZh", "중문 도식화"]] as ["sketchImageEn" | "sketchImageZh", string][]).map(([field, label]) => {
+                          const val = wo[field] as string | undefined;
+                          return (
+                            <div key={field}>
+                              <div className="text-[11px] text-gray-400 mb-1">{label}</div>
+                              {val ? (
+                                <div className="relative group rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                                  <img src={val} alt={label} className="w-full object-contain" style={{ maxHeight: "140px", minHeight: "80px" }} />
+                                  <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                    <label className="cursor-pointer flex items-center gap-1 px-2 py-1 bg-white text-gray-800 text-[10px] font-medium rounded shadow hover:bg-gray-50">
+                                      교체<input type="file" accept="image/*" className="hidden"
+                                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(field, f); }} />
+                                    </label>
+                                    <button onClick={() => set(field, "")}
+                                      className="px-2 py-1 bg-red-500 text-white text-[10px] font-medium rounded hover:bg-red-600 shadow">삭제</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-all"
+                                  style={{ minHeight: "80px" }}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload(field, f); }}>
+                                  <input type="file" accept="image/*" className="hidden"
+                                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(field, f); }} />
+                                  <ImagePlus size={18} className="text-gray-300 mb-1" />
+                                  <div className="text-[11px] text-gray-400">{label} 업로드</div>
+                                </label>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     </>
