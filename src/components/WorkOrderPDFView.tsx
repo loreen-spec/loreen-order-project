@@ -985,8 +985,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       id: `empty-${i}`, materialType: "", vendorName: "", manager: "", contact: "", notes: "",
                     })),
                   ];
-                  const border = ".3pt solid #888";
-                  const vPad = "0.5px 3px";
+                  const vPad = "2px 3px";
+                  const nb = (s?: string) => (s && s !== "" ? s : " "); // 빈 셀도 공백으로 채워 행 높이 균등
                   return (
                     <div style={{ flex: `${colBLabelFlex} 0 0`, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                       <table style={{ width: "100%", height: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
@@ -1005,18 +1005,18 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                               ? ["种类", "工厂", "负责人", "联系方式", "备注"]
                               : ["종류", "업체명", "담당자", "연락처", "비고"]
                             ).map((h) => (
-                              <th key={h} style={lbl({ padding: vPad, fontSize: FM })}>{h}</th>
+                              <th key={h} style={lbl({ padding: vPad })}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {displayRows.map((row) => (
                             <tr key={row.id}>
-                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.materialType}</td>
-                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.vendorName}</td>
-                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{(row as any).manager ?? ""}</td>
-                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.contact}</td>
-                              <td style={td({ padding: vPad, fontSize: FS, textAlign: "left" })}>{row.notes}</td>
+                              <td style={td({ padding: vPad, textAlign: "left" })}>{nb(row.materialType)}</td>
+                              <td style={td({ padding: vPad, textAlign: "left" })}>{nb(row.vendorName)}</td>
+                              <td style={td({ padding: vPad, textAlign: "left" })}>{nb((row as any).manager)}</td>
+                              <td style={td({ padding: vPad, textAlign: "left" })}>{nb(row.contact)}</td>
+                              <td style={td({ padding: vPad, textAlign: "left" })}>{nb(row.notes)}</td>
                             </tr>
                           ))}
                         </tbody>
