@@ -1448,6 +1448,33 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
     notionLookupTimer.current = setTimeout(() => lookupNotion(name), 700);
   }
 
+  // 발주수량 다시 가져오기 — 노션 발주 DB에서 색상×사이즈를 강제로 다시 채움(덮어쓰기)
+  const [reloadingQty, setReloadingQty] = useState(false);
+  async function reloadOrderQty() {
+    const q = (wo.productName || "").trim();
+    if (!q) { alert("먼저 품명을 입력해주세요."); return; }
+    if (wo.colorSizeTable.length > 0 && !confirm("현재 발주수량표를 노션 발주 DB 기준으로 다시 불러올까요?\n(직접 수정한 내용은 덮어써집니다.)")) return;
+    setReloadingQty(true);
+    try {
+      const res = await fetch(`/api/notion-product-lookup?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (!data || !data.colorSizeTable || data.colorSizeTable.length === 0) {
+        alert("노션 발주 DB에서 발주수량을 찾지 못했습니다. (제품명/발주 내역 확인)");
+        return;
+      }
+      setWo((prev) => ({
+        ...prev,
+        sizes: data.sizes?.length ? data.sizes : prev.sizes,
+        colorSizeTable: data.colorSizeTable,
+        totalQuantity: data.totalQuantity ?? recomputeTotal(data.colorSizeTable),
+      }));
+    } catch {
+      alert("다시 가져오기에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setReloadingQty(false);
+    }
+  }
+
   function handleMatKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter" && e.key !== "Tab") return;
     if (e.key === "Tab") return; // Tab은 브라우저 기본 동작 유지
@@ -2152,6 +2179,13 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                     <span className="font-bold text-violet-700 text-lg">{wo.totalQuantity.toLocaleString()}</span>
                     <span className="text-gray-500">장</span>
                   </div>
+                  <button onClick={reloadOrderQty} disabled={reloadingQty}
+                    title="노션 발주 DB에서 발주수량을 다시 불러옵니다"
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-violet-200 text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60">
+                    {reloadingQty
+                      ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-violet-300 border-t-violet-600 rounded-full" />불러오는 중...</>
+                      : <>↻ 발주수량 다시 가져오기</>}
+                  </button>
                   <button onClick={addColorRow}
                     className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors">
                     <Plus size={14} />컬러 추가
