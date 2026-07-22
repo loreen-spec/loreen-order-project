@@ -734,19 +734,19 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             return (
                               <tr key={m.id ?? i}>
                                 {spanArr[i] > 0 && (
-                                  <td rowSpan={spanArr[i]} style={matTd({ fontSize: rFS, padding: rPad, verticalAlign: "middle" })}>
+                                  <td rowSpan={spanArr[i]} style={matTd({ fontSize: rFS, padding: rPad, verticalAlign: "middle", whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>
                                     {catName(m.category)}
                                   </td>
                                 )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{matName(m.name)}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{m.color}</td>
-                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{m.spec}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{matName(m.name)}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{m.color}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{m.spec}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.yield}</td>
                                 <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.unitPrice}</td>
                                 {showFabricOrder && (
                                   <td style={matTd({ fontSize: rFS, padding: rPad })}>{m.orderUnit}</td>
                                 )}
-                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left", whiteSpace: "normal", wordBreak: "break-word", overflow: "visible", textOverflow: "clip", lineHeight: 1.2 })}>{m.notes}</td>
+                                <td style={matTd({ fontSize: rFS, padding: rPad, textAlign: "left", whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere", overflow: "visible", textOverflow: "clip", lineHeight: 1.15 })}>{m.notes}</td>
                               </tr>
                             );
                           };
