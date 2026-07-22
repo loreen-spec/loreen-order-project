@@ -341,6 +341,14 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     if (chi) return CAT_ZH[key] ?? ZH_GLOSSARY[key] ?? name;
     return name;
   };
+  // 도식화 라벨 자동 번역 (모든 사전 종합)
+  const labelAuto = (text: string) => {
+    if (!text) return text;
+    const key = text.trim();
+    if (eng) return CAT_EN[key] ?? MAT_NAME_EN[key] ?? SPEC_NAME_EN[key] ?? composeSpec(key, true) ?? text;
+    if (chi) return CAT_ZH[key] ?? ZH_GLOSSARY[key] ?? SPEC_NAME_ZH[key] ?? composeSpec(key, false) ?? text;
+    return text;
+  };
   const t = (ko: string, en: string, zh?: string) =>
     lang === "en" ? en : lang === "zh" ? (zh ?? en) : ko;
 
@@ -525,8 +533,20 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               {/* ── COL A: 도식화 / 제품사진+비고 / 고정문구 ── */}
               <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
 
-                <ImgBox src={wo.sketchImage} label="도식화"
-                  style={{ flex: "0 0 50%", minHeight: 0 }} />
+                <div style={{ flex: "0 0 50%", minHeight: 0, position: "relative" }}>
+                  <ImgBox src={wo.sketchImage} label="도식화" style={{ width: "100%", height: "100%" }} />
+                  {(wo.sketchLabels ?? []).map((l) => (
+                    <div key={l.id} style={{
+                      position: "absolute", left: `${l.x}%`, top: `${l.y}%`,
+                      transform: "translate(-50%,-50%)",
+                      fontSize: FM, fontWeight: 700, color: "#111",
+                      background: "rgba(255,255,255,0.85)", padding: "0 2px", borderRadius: "2px",
+                      whiteSpace: "nowrap", lineHeight: 1.2,
+                    }}>
+                      <Ed k={`skl:${l.id}`} auto={labelAuto(l.text)} />
+                    </div>
+                  ))}
+                </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "38% 1fr", gap: "2px", flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
                   <div style={{ ...S.cell, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>

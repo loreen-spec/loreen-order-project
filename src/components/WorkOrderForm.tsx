@@ -1728,6 +1728,28 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
     reader.readAsDataURL(file);
   }
 
+  // ─── 도식화 라벨 (위치 %저장, 미리보기에서 언어 자동번역) ───
+  const sketchBoxRef = useRef<HTMLDivElement>(null);
+  const dragLabelId = useRef<string | null>(null);
+
+  function addSketchLabel() {
+    const label = { id: `skl_${Date.now()}`, x: 50, y: 50, text: "" };
+    setWo((w) => ({ ...w, sketchLabels: [...(w.sketchLabels ?? []), label] }));
+  }
+  function updateSketchLabel(id: string, patch: Partial<{ x: number; y: number; text: string }>) {
+    setWo((w) => ({ ...w, sketchLabels: (w.sketchLabels ?? []).map((l) => (l.id === id ? { ...l, ...patch } : l)) }));
+  }
+  function removeSketchLabel(id: string) {
+    setWo((w) => ({ ...w, sketchLabels: (w.sketchLabels ?? []).filter((l) => l.id !== id) }));
+  }
+  function onLabelDrag(e: React.MouseEvent) {
+    if (!dragLabelId.current || !sketchBoxRef.current) return;
+    const r = sketchBoxRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100));
+    updateSketchLabel(dragLabelId.current, { x: Math.round(x), y: Math.round(y) });
+  }
+
   // ─── 저장 ─────────────────────────────────────────────
   function handleSave() {
     const e: Record<string, string> = {};
@@ -2374,9 +2396,29 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 {/* 이미지 영역 */}
                 <div className="flex-1">
                   {wo.sketchImage ? (
-                    <div className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
-                      <img src={wo.sketchImage} alt="도식화" className="w-full object-contain" style={{ maxHeight: "320px", minHeight: "160px" }} />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
+                    <>
+                    <div
+                      ref={sketchBoxRef}
+                      className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 select-none"
+                      onMouseMove={onLabelDrag}
+                      onMouseUp={() => (dragLabelId.current = null)}
+                      onMouseLeave={() => (dragLabelId.current = null)}
+                    >
+                      <img src={wo.sketchImage} alt="도식화" className="w-full object-contain pointer-events-none" style={{ maxHeight: "320px", minHeight: "160px" }} draggable={false} />
+                      {/* 라벨 오버레이 (드래그로 위치 이동) */}
+                      {(wo.sketchLabels ?? []).map((l) => (
+                        <div
+                          key={l.id}
+                          onMouseDown={(e) => { e.preventDefault(); dragLabelId.current = l.id; }}
+                          className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center gap-0.5 cursor-move"
+                          style={{ left: `${l.x}%`, top: `${l.y}%` }}
+                        >
+                          <span className="text-[11px] font-semibold text-violet-700 bg-white/90 border border-violet-300 rounded px-1 py-0.5 shadow-sm whitespace-nowrap">
+                            {l.text || "라벨"}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
                         <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 text-xs font-medium rounded-lg shadow hover:bg-gray-50">
                           <Upload size={12} />교체
                           <input type="file" accept="image/*" className="hidden"
@@ -2388,6 +2430,32 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                         </button>
                       </div>
                     </div>
+                    {/* 라벨 편집 목록 */}
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-gray-500">도식화 라벨 <span className="text-gray-400 font-normal">(위치는 이미지 위에서 드래그, 미리보기에서 언어 자동번역)</span></span>
+                        <button onClick={addSketchLabel} className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 border border-violet-200 rounded-lg px-2 py-1">
+                          <Plus size={12} />라벨 추가
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {(wo.sketchLabels ?? []).map((l) => (
+                          <div key={l.id} className="flex items-center gap-2">
+                            <input
+                              value={l.text}
+                              onChange={(e) => updateSketchLabel(l.id, { text: e.target.value })}
+                              placeholder="라벨 내용 (예: 주원단A, 서링, 혼솔지퍼)"
+                              className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                            />
+                            <button onClick={() => removeSketchLabel(l.id)} className="text-gray-300 hover:text-red-400"><Trash2 size={14} /></button>
+                          </div>
+                        ))}
+                        {(wo.sketchLabels ?? []).length === 0 && (
+                          <div className="text-xs text-gray-300">라벨을 추가하면 도식화 위에 표시되고, 미리보기에서 영문/중문으로 자동 번역됩니다.</div>
+                        )}
+                      </div>
+                    </div>
+                    </>
                   ) : (
                     <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-all"
                       style={{ minHeight: "200px" }}

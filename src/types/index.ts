@@ -127,6 +127,9 @@ export interface WorkOrder {
   // 미리보기 언어별 수동 수정본 (예: i18n.en["pnote"], i18n.zh["m:id:name"]) — 자동번역보다 우선
   i18n?: Record<string, Record<string, string>>;
 
+  // 도식화 위 텍스트 라벨 (x,y는 % 위치) — 미리보기에서 언어별 자동 번역
+  sketchLabels?: { id: string; x: number; y: number; text: string }[];
+
   createdAt: string;
   updatedAt: string;
 }
