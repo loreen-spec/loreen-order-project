@@ -852,75 +852,72 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           const userMats  = wo.materials.filter(m => !isFixed(m));
                           const fixedMats = wo.materials.filter(m =>  isFixed(m));
 
-                          // 자재 1개의 각 칸이 줄바꿈(\n)으로 여러 값을 담고 있으면 값마다 개별 행으로 펼친다.
-                          // 단, 값이 하나뿐인 칸(자재명·규격·요척 등)은 세로 병합(rowspan)하고,
-                          // 여러 값인 칸(색상 등)만 행별로 나눈다. (예: 주원단A / 골지 피치 기모 / 60" / 0.427YD 는 병합,
-                          //  색상만 BLACK·PINK·IVORY 3행)
-                          const splitLines = (s: string) => {
-                            const a = (s ?? "").split("\n").map((x) => x.trim());
-                            return a.length ? a : [""];
+                          // 같은 카테고리(품목)끼리 연속 그룹으로 묶는다. 각 자재 = 1행.
+                          // 그룹 안에서 값이 모두 같은 컬럼(자재명·규격·요척 등)은 세로 병합(rowspan),
+                          // 값이 다른 컬럼(색상 등)만 행별로 표시한다.
+                          // (예: 주원단A 3개[IVORY/PINK/BLACK] → 품목·자재명·규격·요척은 병합, 색상만 3행)
+                          const cellBase = { whiteSpace: "pre-line" as const, wordBreak: "break-word" as const, overflowWrap: "anywhere" as const, overflow: "visible" as const, textOverflow: "clip" as const, lineHeight: 1.15 };
+                          const editable = (field: string) => field === "name" || field === "color" || field === "spec" || field === "notes";
+                          type Field = "name" | "color" | "spec" | "yield" | "price" | "order" | "notes";
+                          const fieldVal = (m: typeof wo.materials[0], f: Field): string => {
+                            switch (f) {
+                              case "name":  return matName(m.name);
+                              case "color": return m.color ?? "";
+                              case "spec":  return m.spec ?? "";
+                              case "yield": return m.yield ?? "";
+                              case "price": return m.unitPrice ?? "";
+                              case "order": return m.orderUnit ?? "";
+                              case "notes": return m.notes ?? "";
+                            }
                           };
-                          const cellBase = { whiteSpace: "normal" as const, wordBreak: "break-word" as const, overflowWrap: "anywhere" as const, overflow: "visible" as const, textOverflow: "clip" as const, lineHeight: 1.15 };
 
-                          // material별 정보 (컬럼별 줄 배열 + 이 자재의 총 행수 n)
-                          const mats = userMats.map((m, idx) => {
-                            const cols = {
-                              name:  splitLines(matName(m.name)),
-                              color: splitLines(m.color),
-                              spec:  splitLines(m.spec),
-                              yield: splitLines(m.yield),
-                              price: splitLines(m.unitPrice),
-                              order: splitLines(m.orderUnit),
-                              notes: splitLines(m.notes),
-                            };
-                            const n = Math.max(1, cols.name.length, cols.color.length, cols.spec.length, cols.yield.length, cols.price.length, cols.order.length, cols.notes.length);
-                            return { m, idx, n, cols };
-                          });
-                          // 품목(카테고리) 칸: 연속 동일 카테고리 구간 전체 행수만큼 rowspan (그룹 첫 material에만)
-                          const catGroupSpan = mats.map((x, i) => {
-                            if (i > 0 && mats[i - 1].m.category === x.m.category) return 0;
-                            let span = x.n, j = i + 1;
-                            while (j < mats.length && mats[j].m.category === x.m.category) { span += mats[j].n; j++; }
-                            return span;
-                          });
-                          const totalUserRows = mats.reduce((s, x) => s + x.n, 0);
+                          // 연속 동일 카테고리 그룹으로 분할
+                          const groups: (typeof wo.materials)[] = [];
+                          for (let i = 0; i < userMats.length; ) {
+                            const cat = userMats[i].category;
+                            let j = i;
+                            while (j < userMats.length && userMats[j].category === cat) j++;
+                            groups.push(userMats.slice(i, j));
+                            i = j;
+                          }
+                          const totalUserRows = userMats.length;
                           const userEmptyCount = Math.max(0, MAT_MIN_ROWS - totalUserRows - fixedMats.length);
 
-                          // 값 칸 렌더: 값이 (사실상) 1종이면 rowspan=n으로 병합, 여러 종이면 행마다
-                          //  - "동일 값이 여러 줄"인 경우도 1종으로 보고 병합 (예: 자재명 3줄이 모두 동일)
-                          const editable = (field: string) => field === "name" || field === "color" || field === "spec" || field === "notes";
-                          const valCell = (x: typeof mats[0], field: keyof typeof x.cols, li: number, extra?: React.CSSProperties) => {
-                            const lines = x.cols[field];
-                            const uniq = Array.from(new Set(lines.filter((v) => v !== "")));
-                            const single = uniq.length <= 1; // 값이 없거나 한 종류뿐 → 세로 병합
-                            if (single && li > 0) return null; // 병합된 셀 — 첫 행에서만 렌더
-                            const val = single ? (uniq[0] ?? "") : (lines[li] ?? "");
-                            const key = `m:${x.m.id ?? x.idx}:${field}${single ? "" : `#${li}`}`;
-                            const style = matTd({ fontSize: matFS, padding: rowPad, ...cellBase, ...extra });
-                            return (
-                              <td key={field} rowSpan={single ? x.n : 1} style={style}>
-                                {editable(field) ? <Ed k={key} auto={val} /> : val}
-                              </td>
-                            );
-                          };
-
-                          const renderMatRows = (x: typeof mats[0], groupSpan: number) =>
-                            Array.from({ length: x.n }, (_, li) => (
-                              <tr key={`u${x.idx}-${li}`}>
-                                {li === 0 && groupSpan > 0 && (
-                                  <td rowSpan={groupSpan} style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle", ...cellBase })}>
-                                    {catName(x.m.category)}
+                          // 그룹 렌더: 각 자재 1행, 그룹 내 동일값 컬럼은 첫 행에서 rowspan 병합
+                          const renderGroup = (g: typeof wo.materials, gi: number) => {
+                            const k = g.length;
+                            const allSame = (f: Field) => new Set(g.map((m) => fieldVal(m, f))).size <= 1;
+                            const catId = g[0]?.id ?? `g${gi}`;
+                            const valCell = (m: typeof wo.materials[0], mi: number, f: Field, extra?: React.CSSProperties) => {
+                              const merged = allSame(f);
+                              if (merged && mi > 0) return null; // 병합됨 — 첫 행에서만
+                              const val = fieldVal(m, f);
+                              // 병합 셀은 그룹 대표 id로 편집키 고정(기존 수정본 호환), 아니면 개별 자재 id
+                              const key = `m:${(merged ? catId : (m.id ?? `${gi}-${mi}`))}:${f}`;
+                              const style = matTd({ fontSize: matFS, padding: rowPad, ...cellBase, ...extra });
+                              return (
+                                <td key={f} rowSpan={merged ? k : 1} style={style}>
+                                  {editable(f) ? <Ed k={key} auto={val} /> : val}
+                                </td>
+                              );
+                            };
+                            return g.map((m, mi) => (
+                              <tr key={`g${gi}-${m.id ?? mi}`}>
+                                {mi === 0 && (
+                                  <td rowSpan={k} style={matTd({ fontSize: matFS, padding: rowPad, verticalAlign: "middle", ...cellBase })}>
+                                    {catName(g[0].category)}
                                   </td>
                                 )}
-                                {valCell(x, "name", li)}
-                                {valCell(x, "color", li)}
-                                {valCell(x, "spec", li)}
-                                {valCell(x, "yield", li)}
-                                {valCell(x, "price", li)}
-                                {showFabricOrder && valCell(x, "order", li)}
-                                {valCell(x, "notes", li, { textAlign: "left" })}
+                                {valCell(m, mi, "name")}
+                                {valCell(m, mi, "color")}
+                                {valCell(m, mi, "spec")}
+                                {valCell(m, mi, "yield")}
+                                {valCell(m, mi, "price")}
+                                {showFabricOrder && valCell(m, mi, "order")}
+                                {valCell(m, mi, "notes", { textAlign: "left" })}
                               </tr>
                             ));
+                          };
 
                           const renderFixedRow = (m: typeof wo.materials[0], i: number) => (
                             <tr key={`f${m.id ?? i}`}>
@@ -938,8 +935,8 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           );
 
                           return [
-                            // 1) 사용자 추가 행 (동일값 칸은 병합, 색상 등 여러 값은 개별 행으로 펼침)
-                            ...mats.flatMap((x, i) => renderMatRows(x, catGroupSpan[i])),
+                            // 1) 사용자 추가 행 (그룹 내 동일값 칸은 병합, 색상 등 다른 값만 행 분리)
+                            ...groups.flatMap((g, gi) => renderGroup(g, gi)),
                             // 2) 빈 행 (고정 행들 아래로 밀어내는 여백)
                             ...Array.from({ length: userEmptyCount }, (_, i) => (
                               <tr key={`em${i}`}>
