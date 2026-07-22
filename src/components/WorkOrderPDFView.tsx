@@ -748,7 +748,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           <td style={td({ fontWeight: 700, color: "#1a56db", padding: "1.5px" })}>{row.total}</td>
                         </tr>
                       ))}
-                      {/* 합계(계) 행 — 데이터 바로 아래에 붙임 */}
+                      {/* 남는 여백 (빈 행) — 데이터와 합계 사이 */}
+                      {Array.from({ length: Math.max(0, 4 - wo.colorSizeTable.length) }).map((_, i) => (
+                        <tr key={`e${i}`}>
+                          <td style={td({ padding: "1.5px 2px" })}>&nbsp;</td>
+                          {sizes.map(s => <td key={s} style={td({ padding: "1.5px" })}></td>)}
+                          <td style={td({ padding: "1.5px" })}></td>
+                        </tr>
+                      ))}
+                      {/* 합계(계) 행 — 항상 표 맨 아래 줄에 고정 */}
                       <tr>
                         <td style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px 2px" }}>{t("계", "TOTAL", "合计")}</td>
                         {sizes.map(s => (
@@ -758,14 +766,6 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                           {wo.totalQuantity}
                         </td>
                       </tr>
-                      {/* 남는 여백은 합계 아래로 (빈 행) */}
-                      {Array.from({ length: Math.max(0, 4 - wo.colorSizeTable.length) }).map((_, i) => (
-                        <tr key={`e${i}`}>
-                          <td style={td({ padding: "1.5px 2px" })}>&nbsp;</td>
-                          {sizes.map(s => <td key={s} style={td({ padding: "1.5px" })}></td>)}
-                          <td style={td({ padding: "1.5px" })}></td>
-                        </tr>
-                      ))}
                     </tbody>
                   </table>
                 </div>
