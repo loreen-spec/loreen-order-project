@@ -93,7 +93,7 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto py-6 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full" style={{ maxWidth: "1180px" }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full" style={{ maxWidth: "1280px" }}>
 
         {/* ── 모달 헤더 ────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -118,7 +118,7 @@ export default function ShoeWorkOrderPDFView({ wo, onClose }: Props) {
         {/* ── A4 미리보기 (확대/축소 + 드래그 이동) ──────────── */}
         <ZoomPanViewport>
           <div style={{
-            width: "min(100%, 1122px)",
+            width: "1122px",
             aspectRatio: "297 / 210",
             background: "#fff",
             flex: "0 0 auto",

@@ -1,29 +1,63 @@
 "use client";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 /**
  * 작업지시서 미리보기용 확대/축소 + 자유 드래그 이동 뷰포트.
- * - 상단 툴바: 축소 / 배율 / 확대 / 초기화
+ * - 처음 열릴 때 전체 작지가 화면에 다 보이도록 자동으로 맞춰(fit) 표시
+ * - 상단 툴바: 축소 / 배율 / 확대 / 전체보기(fit)
  * - 본문: 마우스로 드래그하면 이동, Ctrl+휠로 확대/축소
  * - contentEditable(언어별 수정 입력) 위에서는 드래그를 시작하지 않아 편집과 충돌하지 않음
+ *
+ * contentWidth/Height = 내부 A4 용지의 기준 픽셀 크기(가로 297mm ≈ 1122px, 세로 210mm ≈ 793.6px)
  */
 export default function ZoomPanViewport({
   children,
-  height = "72vh",
+  height = "80vh",
+  contentWidth = 1122,
+  contentHeight = 793.6,
 }: {
   children: React.ReactNode;
   height?: string;
+  contentWidth?: number;
+  contentHeight?: number;
 }) {
+  const vpRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
+  const [fit, setFit] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const readyRef = useRef(false);
   const drag = useRef({ sx: 0, sy: 0, ox: 0, oy: 0, active: false });
 
-  const clamp = (z: number) => Math.min(3, Math.max(0.4, +z.toFixed(2)));
-  const reset = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
+  const clamp = (z: number) => Math.min(3, Math.max(0.2, +z.toFixed(3)));
+
+  // 뷰포트 크기를 측정해 전체가 보이는 배율(fit) 계산 — 처음 한 번은 그 배율로 시작
+  useLayoutEffect(() => {
+    const el = vpRef.current;
+    if (!el) return;
+    const measure = () => {
+      const padding = 40; // 좌우/상하 여백(20px)
+      const availW = el.clientWidth - padding;
+      const availH = el.clientHeight - padding;
+      if (availW <= 0 || availH <= 0) return;
+      const f = clamp(Math.min(availW / contentWidth, availH / contentHeight));
+      setFit(f);
+      if (!readyRef.current) {
+        setZoom(f);
+        setPan({ x: 0, y: 0 });
+        readyRef.current = true;
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentWidth, contentHeight]);
+
+  const fitView = () => { setZoom(fit); setPan({ x: 0, y: 0 }); };
 
   const onDown = (e: React.MouseEvent) => {
-    // 편집 가능한 셀 클릭 시에는 드래그하지 않음 (텍스트 편집 우선)
     if ((e.target as HTMLElement).closest('[contenteditable="true"]')) return;
     drag.current = { sx: e.clientX, sy: e.clientY, ox: pan.x, oy: pan.y, active: true };
     setDragging(true);
@@ -60,9 +94,10 @@ export default function ZoomPanViewport({
         <button className={iconBtn} onClick={() => setZoom((z) => clamp(z + 0.2))} title="확대">+</button>
         <button
           className="px-3 h-8 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 text-sm select-none"
-          onClick={reset}
+          onClick={fitView}
+          title="전체가 보이도록 맞춤"
         >
-          초기화
+          전체보기
         </button>
         <span style={{ fontSize: 12, color: "#9ca3af", marginLeft: 8 }}>
           드래그로 이동 · Ctrl+휠로 확대/축소
@@ -71,6 +106,7 @@ export default function ZoomPanViewport({
 
       {/* 뷰포트 (드래그 이동 영역) */}
       <div
+        ref={vpRef}
         onMouseDown={onDown}
         onMouseMove={onMove}
         onMouseUp={onUp}

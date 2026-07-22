@@ -447,7 +447,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto py-6 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full" style={{ maxWidth: "1180px" }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full" style={{ maxWidth: "1280px" }}>
 
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -497,7 +497,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
         <ZoomPanViewport>
           {/* A4 landscape 실제 비율: 297mm × 210mm */}
           <div style={{
-            width: "min(100%, 1122px)",   /* 297mm @ 96dpi ≈ 1122px */
+            width: "1122px",   /* 297mm @ 96dpi ≈ 1122px (기준 크기 고정 — 확대/축소는 transform으로) */
             aspectRatio: "297 / 210",
             background: "#fff", flex: "0 0 auto",
             boxShadow: "0 4px 32px rgba(0,0,0,.25)",
