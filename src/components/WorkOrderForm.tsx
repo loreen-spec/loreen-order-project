@@ -2296,8 +2296,11 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
 
             <SectionCard title="비용 및 원가" sub={`작업처 타입: ${{ china:"중국 위안 계산", outsourcing:"완사입 (VAT포함)", domestic:"국내 공임 계산", india:"인도 달러→원 환산", other:"직접 입력" }[wo.formType === "국내의류" ? "domestic" : getVendorType(wo.vendor)]}`}>
               {(() => {
-                // 국내의류 폼은 항상 한국 원(국내 공임) 기준으로 계산
-                const vtype = wo.formType === "국내의류" ? "domestic" : getVendorType(wo.vendor);
+                // 폼 종류가 명시돼 있으면 그 기준으로 계산 (없으면 작업처로 판단)
+                const vtype =
+                  wo.formType === "국내의류" ? "domestic" :
+                  wo.formType === "완사입"   ? "outsourcing" :
+                  getVendorType(wo.vendor);
                 const matSum = calcMaterialsSum(wo.materials);
                 const sp = wo.salePrice;
                 const setSale = (v: string) => set("salePrice", v);
@@ -2314,27 +2317,53 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 }
 
                 // ── 완사입 (코니키즈 등) ───────────────────────────────
+                //   총 원가 = 완사입가 + 패턴비 + 제공 부자재 (패턴비·부자재는 원부자재 탭 입력분 자동 합산, 있을 때만)
                 if (vtype === "outsourcing") {
                   const basePrice = parseFloat(wo.totalCost?.replace(/,/g, "") || "0");
-                  const vatExcl = basePrice > 0 ? basePrice / 1.1 : 0;
+                  const isPattern = (m: WorkOrderMaterial) =>
+                    (m.category?.includes("패턴") || m.name?.includes("패턴"));
+                  const patternFee = calcMaterialsSum(wo.materials.filter(isPattern));   // 패턴비
+                  const suppliedMat = Math.max(0, matSum - patternFee);                  // 그 외 제공 부자재
                   const total = basePrice + matSum;
+                  const parts = [
+                    basePrice > 0 ? `완사입가 ${fmtKRW(basePrice)}` : null,
+                    patternFee > 0 ? `패턴비 ${fmtKRW(patternFee)}` : null,
+                    suppliedMat > 0 ? `부자재 ${fmtKRW(suppliedMat)}` : null,
+                  ].filter(Boolean).join("  +  ");
                   return <CostLayout finalCost={total} salePrice={sp} onSaleChange={setSale} inputCls={inputCls} cost={
                     <div className="border border-violet-200 rounded-2xl bg-violet-50/60 px-5 py-4 space-y-2">
-                      <div className="text-xs text-violet-600 font-semibold mb-1">납품가 (VAT 포함)</div>
+                      {/* 완사입가 입력 */}
+                      <div className="text-xs text-violet-600 font-semibold mb-1">완사입가 (VAT 포함)</div>
                       <input value={wo.totalCost} onChange={(e) => set("totalCost", e.target.value)}
                         placeholder="23,500" className={inputCls} />
-                      {vatExcl > 0 && <div className="text-[11px] text-gray-400">(VAT제외: {Math.round(vatExcl).toLocaleString()}원)</div>}
-                      {matSum > 0 && (
-                        <div className="border-t border-violet-200 pt-2 text-xs text-violet-600">
-                          <span className="font-semibold">추가 부자재</span> +{fmtKRW(matSum)}
+
+                      {/* 항목별 내역 (있을 때만) */}
+                      <div className="border-t border-violet-200 pt-2 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">완사입가</span>
+                          <span className="font-semibold text-gray-700">{basePrice > 0 ? fmtKRW(basePrice) : "—"}</span>
                         </div>
-                      )}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">패턴비 <span className="text-gray-300">(원부자재 탭)</span></span>
+                          <span className={`font-semibold ${patternFee > 0 ? "text-violet-600" : "text-gray-300"}`}>{patternFee > 0 ? `+ ${fmtKRW(patternFee)}` : "없음"}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">제공 부자재 <span className="text-gray-300">(원부자재 탭)</span></span>
+                          <span className={`font-semibold ${suppliedMat > 0 ? "text-violet-600" : "text-gray-300"}`}>{suppliedMat > 0 ? `+ ${fmtKRW(suppliedMat)}` : "없음"}</span>
+                        </div>
+                      </div>
+
+                      {/* 총 원가 */}
                       {total > 0 && (
-                        <div className="border-t border-violet-200 pt-2 flex items-baseline gap-2">
-                          <span className="text-xs text-violet-500 font-semibold">총 원가</span>
-                          <span className="text-xl font-bold text-violet-700">{fmtKRW(total)}</span>
+                        <div className="border-t border-violet-200 pt-2">
+                          {parts && <div className="text-[11px] text-violet-400 mb-0.5">{parts}</div>}
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs text-violet-500 font-semibold">총 원가</span>
+                            <span className="text-xl font-bold text-violet-700">{fmtKRW(total)}</span>
+                          </div>
                         </div>
                       )}
+                      <div className="text-[10px] text-gray-400">패턴비·제공 부자재는 원부자재 탭에서 단가·요척을 입력하면 자동 합산됩니다.</div>
                     </div>
                   } />;
                 }
