@@ -172,14 +172,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ i18n: next, updatedAt: new Date().toISOString() }),
       });
-      // 진단: 저장 후 서버에서 다시 읽어 실제 반영 확인
-      const vr = await fetch(`/api/work-orders?t=${Date.now()}`, { cache: "no-store" });
-      const vdata = vr.ok ? await vr.json() : [];
-      const saved = Array.isArray(vdata) ? vdata.find((o: any) => o.id === wo.id) : null;
-      const cnt = saved?.i18n?.[lang] ? Object.keys(saved.i18n[lang]).length : 0;
-      alert(`[진단] PATCH=${res.status}\nid=${wo.id}\n서버 재조회: ${saved ? `찾음, ${lang} 수정본 ${cnt}개` : "id 못 찾음"}`);
       setSavingI18n(res.ok ? "saved" : "idle");
-    } catch (e) {
+      if (!res.ok) alert("수정 저장 실패 (서버). 다시 시도해주세요.");
+    } catch {
       setSavingI18n("idle");
       alert("수정 저장 실패 (네트워크). 다시 시도해주세요.");
     }
