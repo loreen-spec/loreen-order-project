@@ -1199,8 +1199,8 @@ function formTypeFromVendor(vendor: string): WorkOrderFormType | null {
     case "outsourcing": return "완사입";   // 코니키즈·성은교역·와이티트레이딩
     case "domestic":    return "국내의류"; // 민주·내주(실업)
     case "china":       return "오중";     // 오중생산
-    case "india":       return "영문";     // 인도·CEEDEE
-    default:            return null;       // 기타 → 유지
+    // 인도·CEEDEE: 영문 폼 제거 — 폼 자동지정 안 함(미리보기에서 영어로 토글)
+    default:            return null;       // 인도·기타 → 유지
   }
 }
 

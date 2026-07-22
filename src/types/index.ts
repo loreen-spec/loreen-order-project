@@ -137,19 +137,19 @@ export interface WorkOrder {
 }
 
 // 작업지시서 폼 종류
+// (영문/중문은 레거시 — 더 이상 새로 선택하지 않지만, 기존 저장분 호환 및
+//  미리보기 기본 언어 지정을 위해 타입에는 유지. 미리보기에서 한/영/중 토글로 전환)
 export type WorkOrderFormType =
   | "완사입"   // 기본
   | "국내의류"
   | "오중"
-  | "영문"
-  | "중문";
+  | "영문"     // legacy
+  | "중문";    // legacy
 
 export const WORK_ORDER_FORM_OPTIONS: { value: WorkOrderFormType; label: string }[] = [
   { value: "완사입",   label: "완사입(기본)" },
   { value: "국내의류", label: "국내의류" },
   { value: "오중",     label: "오중" },
-  { value: "영문",     label: "영문작지" },
-  { value: "중문",     label: "중문작지" },
 ];
 
 // ─── Shoe Work Order Types ─────────────────────────────────
