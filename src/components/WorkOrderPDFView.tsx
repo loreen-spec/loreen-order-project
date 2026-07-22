@@ -37,16 +37,16 @@ const FM = "6.5pt";  // 테이블 라벨 헤더
 const FL = "7.5pt";  // 기본 데이터
 const FX = "8.5pt";  // 강조 (상품명·담당자·원가)
 
-/* 기본 셀: 중앙 정렬 + 중앙 수직 */
+/* 기본 셀: 중앙 정렬 + 중앙 수직 + 긴 내용 자동 줄바꿈(잘림 방지) */
 const S = {
-  cell: { border: ".3pt solid #888", textAlign: "center" as const, verticalAlign: "middle" as const, fontSize: FL },
-  lbl:  { border: ".3pt solid #888", background: "#e8e8e8", fontWeight: 700, textAlign: "center" as const, verticalAlign: "middle" as const, fontSize: FM },
+  cell: { border: ".3pt solid #888", textAlign: "center" as const, verticalAlign: "middle" as const, fontSize: FL, whiteSpace: "normal" as const, wordBreak: "break-word" as const, overflowWrap: "anywhere" as const },
+  lbl:  { border: ".3pt solid #888", background: "#e8e8e8", fontWeight: 700, textAlign: "center" as const, verticalAlign: "middle" as const, fontSize: FM, whiteSpace: "normal" as const, wordBreak: "break-word" as const, overflowWrap: "anywhere" as const },
 };
 const td  = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.cell, ...x });
 const lbl = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.lbl,  ...x });
-// 원부자재 전용 셀 — 줄바꿈 금지로 행 높이 균일 유지
+// 원부자재 셀 — 긴 내용 자동 줄바꿈(말줄임 없이 전부 표시)
 const matTd = (x?: React.CSSProperties): React.CSSProperties => ({
-  ...S.cell, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...x,
+  ...S.cell, overflow: "visible", lineHeight: 1.15, ...x,
 });
 
 function ImgBox({ src, label, style }: { src: string; label: string; style?: React.CSSProperties }) {
