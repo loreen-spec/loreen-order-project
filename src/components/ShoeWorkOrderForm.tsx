@@ -21,7 +21,6 @@ const SPEC_DEFAULTS: [string, string][] = [
   ["간지",     "1 EA"],
   ["인박스",   "1 EA"],
   ["택끈",     "1 EA"],
-  ["폴리백",   "1 EA"],
   ["별봉",     "1 EA"],
   ["LED",      "1 EA"],
 ];
