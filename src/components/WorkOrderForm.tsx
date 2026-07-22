@@ -2319,12 +2319,15 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                 // ── 완사입 (코니키즈 등) ───────────────────────────────
                 //   총 원가 = 완사입가 + 패턴비 + 제공 부자재 (패턴비·부자재는 원부자재 탭 입력분 자동 합산, 있을 때만)
                 if (vtype === "outsourcing") {
-                  const basePrice = parseFloat(wo.totalCost?.replace(/,/g, "") || "0");
+                  const basePrice = parseFloat(wo.totalCost?.replace(/,/g, "") || "0"); // 완사입가(이미 VAT 포함)
                   const isPattern = (m: WorkOrderMaterial) =>
                     (m.category?.includes("패턴") || m.name?.includes("패턴"));
-                  const patternFee = calcMaterialsSum(wo.materials.filter(isPattern));   // 패턴비
-                  const suppliedMat = Math.max(0, matSum - patternFee);                  // 그 외 제공 부자재
-                  const total = basePrice + matSum;
+                  const patternRaw  = calcMaterialsSum(wo.materials.filter(isPattern));       // 패턴비(공급가)
+                  const suppliedRaw = Math.max(0, matSum - patternRaw);                       // 그 외 제공 부자재(공급가)
+                  // 패턴비·부자재는 VAT(10%) 포함 금액으로 원가에 합산 (완사입가는 이미 VAT 포함)
+                  const patternFee  = Math.round(patternRaw  * 1.1);
+                  const suppliedMat = Math.round(suppliedRaw * 1.1);
+                  const total = basePrice + patternFee + suppliedMat;
                   const parts = [
                     basePrice > 0 ? `완사입가 ${fmtKRW(basePrice)}` : null,
                     patternFee > 0 ? `패턴비 ${fmtKRW(patternFee)}` : null,
@@ -2344,16 +2347,16 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                           <span className="font-semibold text-gray-700">{basePrice > 0 ? fmtKRW(basePrice) : "—"}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">패턴비 <span className="text-gray-300">(원부자재 탭)</span></span>
+                          <span className="text-gray-500">패턴비 <span className="text-gray-300">(VAT포함·원부자재 탭)</span></span>
                           <span className={`font-semibold ${patternFee > 0 ? "text-violet-600" : "text-gray-300"}`}>{patternFee > 0 ? `+ ${fmtKRW(patternFee)}` : "없음"}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">제공 부자재 <span className="text-gray-300">(원부자재 탭)</span></span>
+                          <span className="text-gray-500">제공 부자재 <span className="text-gray-300">(VAT포함·원부자재 탭)</span></span>
                           <span className={`font-semibold ${suppliedMat > 0 ? "text-violet-600" : "text-gray-300"}`}>{suppliedMat > 0 ? `+ ${fmtKRW(suppliedMat)}` : "없음"}</span>
                         </div>
                       </div>
 
-                      {/* 총 원가 */}
+                      {/* 총 원가 = 이 스타일의 최종 원가 (판매가 배수 기준) */}
                       {total > 0 && (
                         <div className="border-t border-violet-200 pt-2">
                           {parts && <div className="text-[11px] text-violet-400 mb-0.5">{parts}</div>}
@@ -2363,7 +2366,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                           </div>
                         </div>
                       )}
-                      <div className="text-[10px] text-gray-400">패턴비·제공 부자재는 원부자재 탭에서 단가·요척을 입력하면 자동 합산됩니다.</div>
+                      <div className="text-[10px] text-gray-400">패턴비·제공 부자재는 원부자재 탭에서 단가·요척을 입력하면 VAT(10%) 포함으로 자동 합산됩니다. 총 원가 기준으로 판매가 배수가 계산됩니다.</div>
                     </div>
                   } />;
                 }
