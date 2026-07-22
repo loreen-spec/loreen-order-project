@@ -49,6 +49,16 @@ const lbl = (x?: React.CSSProperties): React.CSSProperties => ({ ...S.lbl,  ...x
 const matTd = (x?: React.CSSProperties): React.CSSProperties => ({
   ...S.cell, overflow: "visible", lineHeight: 1.15, ...x,
 });
+// 숫자 셀 — 자릿수가 많아지면 폰트를 살짝 줄여 한 줄에 다 보이게(줄바꿈 금지)
+const numFit = (v: number | string): React.CSSProperties => {
+  const len = String(v ?? "").length;
+  return {
+    whiteSpace: "nowrap",
+    overflow: "visible",
+    fontSize: len <= 3 ? undefined : len === 4 ? "6.6pt" : len === 5 ? "5.8pt" : "5pt",
+    letterSpacing: len >= 5 ? "-0.2pt" : undefined,
+  };
+};
 
 function ImgBox({ src, label, style }: { src: string; label: string; style?: React.CSSProperties }) {
   return (
@@ -708,9 +718,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                             <tr key={i}>
                               <td style={td({ fontWeight: 600, background: "#f8f8f8", padding: "1px 2px" })}><Ed k={`sp:${i}:item`} auto={specName(m.item)} /></td>
                               {sizes.map(s => (
-                                <td key={s} style={td({ padding: "1px" })}>{m.values[s] || ""}</td>
+                                <td key={s} style={td({ padding: "1px", ...numFit(m.values[s] || "") })}>{m.values[s] || ""}</td>
                               ))}
-                              <td style={td({ padding: "1px" })}>{m.diff}</td>
+                              <td style={td({ padding: "1px", ...numFit(m.diff) })}>{m.diff}</td>
                             </tr>
                           ))}
                           {/* 15줄 고정 — 기존과 동일한 패딩으로 공란 */}
@@ -743,9 +753,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                         <tr key={i}>
                           <td style={td({ fontWeight: 600, padding: "1.5px 2px" })}>{colorName(row.color)}</td>
                           {sizes.map(s => (
-                            <td key={s} style={td({ padding: "1.5px" })}>{row.sizes[s] || 0}</td>
+                            <td key={s} style={td({ padding: "1.5px", ...numFit(row.sizes[s] || 0) })}>{row.sizes[s] || 0}</td>
                           ))}
-                          <td style={td({ fontWeight: 700, color: "#1a56db", padding: "1.5px" })}>{row.total}</td>
+                          <td style={td({ fontWeight: 700, color: "#1a56db", padding: "1.5px", ...numFit(row.total) })}>{row.total}</td>
                         </tr>
                       ))}
                       {/* 남는 여백 (빈 행) — 데이터와 합계 사이 */}
@@ -760,9 +770,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                       <tr>
                         <td style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px 2px" }}>{t("계", "TOTAL", "合计")}</td>
                         {sizes.map(s => (
-                          <td key={s} style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px" }}>{colTotal(s)}</td>
+                          <td key={s} style={{ ...S.cell, background: "#f0f0f0", fontWeight: 700, padding: "1.5px", ...numFit(colTotal(s)) }}>{colTotal(s)}</td>
                         ))}
-                        <td style={{ ...S.cell, background: "#dde8ff", fontWeight: 900, color: "#1a56db", fontSize: FX, padding: "1.5px" }}>
+                        <td style={{ ...S.cell, background: "#dde8ff", fontWeight: 900, color: "#1a56db", fontSize: FX, padding: "1.5px", ...numFit(wo.totalQuantity) }}>
                           {wo.totalQuantity}
                         </td>
                       </tr>

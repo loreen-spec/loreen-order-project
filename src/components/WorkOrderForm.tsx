@@ -2294,9 +2294,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               </div>
             </SectionCard>
 
-            <SectionCard title="비용 및 원가" sub={`작업처 타입: ${{ china:"중국 위안 계산", outsourcing:"완사입 (VAT포함)", domestic:"국내 공임 계산", india:"인도 달러→원 환산", other:"직접 입력" }[getVendorType(wo.vendor)]}`}>
+            <SectionCard title="비용 및 원가" sub={`작업처 타입: ${{ china:"중국 위안 계산", outsourcing:"완사입 (VAT포함)", domestic:"국내 공임 계산", india:"인도 달러→원 환산", other:"직접 입력" }[wo.formType === "국내의류" ? "domestic" : getVendorType(wo.vendor)]}`}>
               {(() => {
-                const vtype = getVendorType(wo.vendor);
+                // 국내의류 폼은 항상 한국 원(국내 공임) 기준으로 계산
+                const vtype = wo.formType === "국내의류" ? "domestic" : getVendorType(wo.vendor);
                 const matSum = calcMaterialsSum(wo.materials);
                 const sp = wo.salePrice;
                 const setSale = (v: string) => set("salePrice", v);
