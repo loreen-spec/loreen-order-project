@@ -1425,6 +1425,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           ...prev,
           notionProductId:  prev.notionProductId  || data.notionProductId || "",
           vendor:           mergedVendor,
+          manager:          prev.manager || data.manager || "",
           ...(ft ? { formType: ft } : {}),
           year:             data.year             || prev.year,
           season:           data.season           || prev.season,

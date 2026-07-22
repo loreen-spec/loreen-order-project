@@ -186,6 +186,7 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
         ...prev,
         notionProductId: prev.notionProductId || data.notionProductId || "",
         vendor:         prev.vendor || data.vendor || "",
+        manager:        prev.manager || data.manager || "",
         season:         prev.season || data.season || "",
         year:           prev.year || data.year || "",
         productImage:   prev.productImage || imageUrl,

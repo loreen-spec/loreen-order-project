@@ -53,6 +53,24 @@ export async function GET(req: Request) {
     const category = getText(p["복종"]);
     const vendor  = getText(p["생산공장"]);
 
+    // 담당자: 노션 이름(로린/써니 등) → "한글이름(영문)" 형식으로 매핑
+    const MANAGER_MAP: Record<string, string> = {
+      "로린": "박정은(LOREEN)", "loreen": "박정은(LOREEN)",
+      "써니": "김진선(SUNNY)",  "sunny":  "김진선(SUNNY)",
+      "실버": "박가은(SILVER)", "silver": "박가은(SILVER)",
+      "안나": "임은영(ANNA)",   "anna":   "임은영(ANNA)",
+      "제시카": "유가현(JESSICA)", "jessica": "유가현(JESSICA)",
+    };
+    const managerProp = p["담당자"];
+    let managerRaw = "";
+    if (managerProp) {
+      if (managerProp.type === "people")     managerRaw = managerProp.people?.[0]?.name ?? "";
+      else if (managerProp.type === "select") managerRaw = managerProp.select?.name ?? "";
+      else if (managerProp.type === "multi_select") managerRaw = managerProp.multi_select?.[0]?.name ?? "";
+      else managerRaw = getText(managerProp);
+    }
+    const manager = MANAGER_MAP[managerRaw.trim().toLowerCase()] ?? MANAGER_MAP[managerRaw.trim()] ?? managerRaw;
+
     let imageUrl: string | undefined;
     const imgProp = p["대표이미지"];
     if (imgProp?.type === "files" && imgProp.files?.length > 0) {
@@ -133,6 +151,7 @@ export async function GET(req: Request) {
       notionProductId: productPageId.replace(/-/g, ""),
       productName:     getText(p["제품명"]),
       vendor,
+      manager,
       year,
       season,
       category,
