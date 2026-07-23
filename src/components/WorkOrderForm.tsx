@@ -40,7 +40,7 @@ type YieldUnit = typeof YIELD_UNITS[number];
 const LINING_NAMES = ["폴리트윌", "T/C", "단면폴라폴리스", "양면폴라폴리스", "직접입력"];
 
 const SEASONS = ["봄", "여름", "가을", "겨울", "사계절"];
-const YEARS   = ["2024", "2025", "2026", "2027"];
+const YEARS   = ["2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027", "2028"];
 
 type TemplateMat = Pick<WorkOrderMaterial, "category"|"name"|"yield"|"yieldUnit"|"notes">;
 const mk = (category: string, name="", yld="", yieldUnit="YD", notes=""): TemplateMat =>
@@ -1927,7 +1927,8 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
                   </Field>
                   <Field label="연도">
                     <select value={wo.year} onChange={(e) => set("year", e.target.value)} className={selectCls}>
-                      {YEARS.map((y) => <option key={y}>{y}</option>)}
+                      {/* 노션에서 불러온 년도가 목록에 없어도 항상 표시 */}
+                      {(wo.year && !YEARS.includes(wo.year) ? [wo.year, ...YEARS] : YEARS).map((y) => <option key={y}>{y}</option>)}
                     </select>
                   </Field>
                   <Field label="시즌">
