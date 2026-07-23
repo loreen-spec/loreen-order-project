@@ -1428,26 +1428,25 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
       const data = await res.json();
       if (!data) { setNotionFillStatus("notfound"); return; }
       setNotionFillStatus("found");
-      // 자동완성: 빈 필드만 채우고, 이미 입력된 건 유지
+      // 제품명으로 조회된 새 제품 데이터로 자동완성 — 제품 파생 정보는 새 값으로 덮어씀
+      // (제품명을 다른 제품으로 바꾸면 이미지·작업처·담당·시즌·발주수량표가 모두 새로 반영)
       setWo(prev => {
-        const hasSizes  = prev.sizes && prev.sizes.length > 0;
-        const hasColors = prev.colorSizeTable && prev.colorSizeTable.length > 0;
         const mergedVendor = data.vendor || prev.vendor || "";
         const ft = formTypeFromVendor(mergedVendor); // 작업처 기반 폼 자동 인식
         return {
           ...prev,
-          notionProductId:  prev.notionProductId  || data.notionProductId || "",
+          notionProductId:  data.notionProductId || prev.notionProductId || "",
           vendor:           mergedVendor,
-          manager:          prev.manager || data.manager || "",
+          manager:          data.manager  || prev.manager  || "",
           ...(ft ? { formType: ft } : {}),
-          year:             data.year             || prev.year,
-          season:           data.season           || prev.season,
-          category:         prev.category         || data.category        || "",
-          productImage:     prev.productImage     || data.imageUrl        || "",
-          // 발주수량표: 비어있을 때만 채움
-          sizes:            hasSizes  ? prev.sizes         : (data.sizes         ?? prev.sizes),
-          colorSizeTable:   hasColors ? prev.colorSizeTable : (data.colorSizeTable ?? prev.colorSizeTable),
-          totalQuantity:    hasColors ? prev.totalQuantity  : (data.totalQuantity  ?? prev.totalQuantity),
+          year:             data.year      || prev.year,
+          season:           data.season    || prev.season,
+          category:         data.category  || prev.category || "",
+          productImage:     data.imageUrl  || prev.productImage || "",
+          // 발주수량표: 새 제품 값으로 반영 (없으면 기존 유지)
+          sizes:            (data.sizes && data.sizes.length)                 ? data.sizes         : prev.sizes,
+          colorSizeTable:   (data.colorSizeTable && data.colorSizeTable.length) ? data.colorSizeTable : prev.colorSizeTable,
+          totalQuantity:    (data.colorSizeTable && data.colorSizeTable.length) ? (data.totalQuantity ?? prev.totalQuantity) : prev.totalQuantity,
         };
       });
     } catch {
