@@ -1283,7 +1283,20 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   const [driveError, setDriveError]   = useState<string | null>(null);
   const [driveTotal, setDriveTotal]   = useState<number | null>(null);
   const driveSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const driveBoxRef   = useRef<HTMLDivElement>(null);
   const matTableRef   = useRef<HTMLTableElement>(null);
+
+  // 패턴 파일 드롭다운: 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!driveOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (driveBoxRef.current && !driveBoxRef.current.contains(e.target as Node)) {
+        setDriveOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [driveOpen]);
 
   // ─── 원부자재 드래그 정렬 ──────────────────────────────────
   const dragIdx = useRef<number | null>(null);
@@ -2014,7 +2027,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
               }
             >
             {/* 드라이브 검색 */}
-            <div className="relative mb-3">
+            <div ref={driveBoxRef} className="relative mb-3">
               <div className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition">
                 <Search size={14} className="text-gray-400 shrink-0" />
                 <input
