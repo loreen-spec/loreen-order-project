@@ -19,6 +19,20 @@ export default function ImportWorkOrdersModal({
   const [preview, setPreview] = useState<WorkOrder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // 노션 제품 조회 → 이미지/기본정보. 전체명 → (없으면) '카테고리-' 뒤 이름으로 재시도
+  async function lookupNotion(productName: string): Promise<any | null> {
+    const tries = [productName, productName.split("-").slice(1).join("-").replace(/\(.*?\)/g, "").trim()]
+      .filter((s, i, arr) => s && arr.indexOf(s) === i);
+    for (const q of tries) {
+      try {
+        const res = await fetch(`/api/notion-product-lookup?q=${encodeURIComponent(q)}`);
+        const data = res.ok ? await res.json() : null;
+        if (data) return data;
+      } catch { /* 무시 */ }
+    }
+    return null;
+  }
+
   async function handleFiles(files: FileList | File[]) {
     setParsing(true);
     const next: Row[] = [];
@@ -35,6 +49,20 @@ export default function ImportWorkOrdersModal({
         });
       }
     }
+    // 노션 조회로 제품 이미지·빈 기본정보 자동 채움 (이미 값이 있으면 유지)
+    await Promise.all(next.map(async (r) => {
+      if (!r.order.styleNo && !r.order.productName) return;
+      const data = await lookupNotion(r.order.productName || "");
+      if (!data) return;
+      const o = r.order;
+      o.productImage    = o.productImage    || data.imageUrl        || "";
+      o.notionProductId = o.notionProductId || data.notionProductId || "";
+      o.vendor          = o.vendor          || data.vendor          || "";
+      o.manager         = o.manager         || data.manager         || "";
+      o.season          = o.season          || data.season          || "";
+      o.year            = o.year            || data.year            || "";
+      o.category        = o.category        || data.category        || "";
+    }));
     setRows((prev) => [...prev, ...next]);
     setParsing(false);
   }
