@@ -4,9 +4,10 @@ import {
   Search, Plus, FileText, PenLine,
   ChevronDown, Edit3, Trash2,
   CheckCircle2, Clock, Settings2, Check, X,
-  ExternalLink, Loader2, SlidersHorizontal
+  ExternalLink, Loader2, SlidersHorizontal, Upload
 } from "lucide-react";
 import type { WorkOrder } from "@/types";
+import ImportWorkOrdersModal from "./ImportWorkOrdersModal";
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
   draft:           { label: "작성중",   bg: "bg-gray-100",   text: "text-gray-500",   dot: "bg-gray-400"   },
@@ -157,6 +158,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     // localStorage 캐시로 즉시 표시 (로딩 중 빈 화면 방지)
@@ -435,6 +437,13 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   return (
     <div className="space-y-5">
+      {/* ── 엑셀 가져오기 모달 ─────────────────────────────── */}
+      {showImport && (
+        <ImportWorkOrdersModal
+          onClose={() => setShowImport(false)}
+          onImported={() => { resyncFromServer(); }}
+        />
+      )}
       {/* ── 발주 DB 차수 선택 모달 ─────────────────────────── */}
       {batchPopup && (
         <div
@@ -668,6 +677,13 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
               className="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-100"
             />
           </div>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl border border-violet-300 text-violet-600 hover:bg-violet-50 transition-colors"
+            title="기존 엑셀 작업지시서 가져오기"
+          >
+            <Upload size={14} />엑셀 가져오기
+          </button>
           <button
             onClick={onNew}
             className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors" style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}
