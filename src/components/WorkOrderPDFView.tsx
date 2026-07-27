@@ -1,8 +1,9 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
-import { X, Printer } from "lucide-react";
+import { X, Printer, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import type { WorkOrder } from "@/types";
 import ZoomPanViewport from "./ZoomPanViewport";
+import { exportNodeAsPng, exportWorkOrderXlsx } from "@/lib/exportWorkOrder";
 
 interface Props { wo: WorkOrder; onClose: () => void; }
 
@@ -491,10 +492,20 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 {savingI18n === "saving" ? "저장 중..." : savingI18n === "saved" ? "✓ 저장됨" : "💾 수정 저장"}
               </button>
             )}
+            <button onClick={async () => { if (sheetRef.current) await exportNodeAsPng(sheetRef.current, `${wo.styleNo || wo.productName || "작업지시서"}${lang !== "ko" ? `_${lang}` : ""}`); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              title="현재 언어 화면을 이미지(PNG)로 저장 — 위챗/카톡 전송용">
+              <ImageIcon size={14} />이미지
+            </button>
+            <button onClick={() => exportWorkOrderXlsx(wo)}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              title="엑셀(.xlsx)로 내보내기">
+              <FileSpreadsheet size={14} />엑셀
+            </button>
             <button onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors"
               style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}>
-              <Printer size={14} />인쇄 / PDF 저장
+              <Printer size={14} />인쇄 / PDF
             </button>
             <button onClick={onClose}
               className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors">
