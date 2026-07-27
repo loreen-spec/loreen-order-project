@@ -233,6 +233,15 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   // ── 다중 선택 / 일괄 삭제 ─────────────────────────────
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const lastCheckedIndex = useRef<number | null>(null);
+  // Shift 키 눌림 상태를 전역으로 추적 (클릭 이벤트 shiftKey에 의존하지 않음)
+  const shiftDown = useRef(false);
+  useEffect(() => {
+    const kd = (e: KeyboardEvent) => { if (e.key === "Shift") shiftDown.current = true; };
+    const ku = (e: KeyboardEvent) => { if (e.key === "Shift") shiftDown.current = false; };
+    window.addEventListener("keydown", kd);
+    window.addEventListener("keyup", ku);
+    return () => { window.removeEventListener("keydown", kd); window.removeEventListener("keyup", ku); };
+  }, []);
   const toggleSelect = (id: string) => setSelected((prev) => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
@@ -880,11 +889,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     <td className="px-3 py-3 text-center">
                       <input
                         type="checkbox"
-                        data-rowsel="v2"
+                        data-rowsel="v3"
                         className="accent-violet-600 w-4 h-4 align-middle"
                         checked={selected.has(o.id)}
-                        readOnly
-                        onClick={(e) => handleRowCheck(i, o.id, e.shiftKey, filtered)}
+                        onChange={() => handleRowCheck(i, o.id, shiftDown.current, filtered)}
                       />
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{o.styleNo || "—"}</td>
