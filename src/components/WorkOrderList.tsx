@@ -880,9 +880,10 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     <td className="px-3 py-3 text-center">
                       <input
                         type="checkbox"
+                        data-rowsel="v2"
                         className="accent-violet-600 w-4 h-4 align-middle"
                         checked={selected.has(o.id)}
-                        onChange={() => {}}
+                        readOnly
                         onClick={(e) => handleRowCheck(i, o.id, e.shiftKey, filtered)}
                       />
                     </td>
