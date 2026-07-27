@@ -230,6 +230,35 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     } catch {}
   }
 
+  // ── 다중 선택 / 일괄 삭제 ─────────────────────────────
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSelect = (id: string) => setSelected((prev) => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  async function deleteSelected(ids: string[]) {
+    if (!ids.length) return;
+    if (!confirm(`선택한 ${ids.length}건을 삭제하시겠습니까?`)) return;
+    setBulkDeleting(true);
+    const idset = new Set(ids);
+    const next = orders.filter((o) => !idset.has(o.id));
+    setOrders(next);
+    syncLocal(next);
+    let fail = 0;
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const res = await fetch(`/api/work-orders/${encodeURIComponent(id)}`, { method: "DELETE" });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || body?.deletedCount === 0) fail++;
+      } catch { fail++; }
+    }));
+    setSelected(new Set());
+    setBulkDeleting(false);
+    if (fail) alert(`${fail}건이 서버에 반영되지 않았을 수 있습니다. 새로고침 후 확인해주세요.`);
+    await resyncFromServer();
+  }
+
   // 서버 재동기화 (localStorage/화면을 서버 최신으로 맞춤)
   async function resyncFromServer() {
     try {
@@ -763,9 +792,36 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-violet-50 border-b border-violet-100">
+              <span className="text-sm font-semibold text-violet-700">{selected.size}건 선택됨</span>
+              <button onClick={() => setSelected(new Set())}
+                className="text-xs text-gray-500 hover:text-gray-700">선택 해제</button>
+              <button
+                onClick={() => deleteSelected([...selected])}
+                disabled={bulkDeleting}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {bulkDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                선택 삭제
+              </button>
+            </div>
+          )}
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-3 py-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    className="accent-violet-600 w-4 h-4 align-middle"
+                    checked={filtered.length > 0 && filtered.every((o) => selected.has(o.id))}
+                    ref={(el) => { if (el) el.indeterminate = filtered.some((o) => selected.has(o.id)) && !filtered.every((o) => selected.has(o.id)); }}
+                    onChange={(e) => {
+                      setSelected(e.target.checked ? new Set(filtered.map((o) => o.id)) : new Set());
+                    }}
+                    title="전체 선택"
+                  />
+                </th>
                 {["스타일넘버", "품명", "이미지", "시즌", "차수", "총수량", "원가", "작업처", "담당", "작업지시서/PDF", "상태"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
                 ))}
@@ -803,8 +859,16 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                 const displayLabel = o.status === "custom" ? (o.customStatus || "기타") : meta.label;
                 return (
                   <tr key={o.id}
-                    className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/30"}`}
+                    className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${selected.has(o.id) ? "bg-violet-50/50" : i % 2 === 0 ? "" : "bg-gray-50/30"}`}
                   >
+                    <td className="px-3 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        className="accent-violet-600 w-4 h-4 align-middle"
+                        checked={selected.has(o.id)}
+                        onChange={() => toggleSelect(o.id)}
+                      />
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{o.styleNo || "—"}</td>
                     <td className="px-4 py-3" style={{ background: "rgba(245, 243, 255, 0.5)" }}>
                       {(() => {
