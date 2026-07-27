@@ -5,33 +5,28 @@ import type {
 
 /**
  * 기존 엑셀 작업지시서(오즈키즈 템플릿)를 파싱해 WorkOrder 배열로 변환한다.
- * - "STYLE NO" 셀을 기준점(anchor)으로 블록을 인식 → 한 시트에 여러 스타일이 있어도 각각 분리
- * - 시트가 제품/언어별로 나뉜 파일도 시트마다 파싱. "(중)" 시트는 중복이라 건너뜀(미리보기 번역으로 대체)
+ * - "STYLE NO" 셀을 기준점(anchor)으로 블록 인식 → 한 시트에 여러 스타일 분리
+ * - 열 위치를 고정하지 않고 헤더(편차/품목/COLOR/담당/납품예정일 등)를 찾아 상대적으로 읽음
+ *   → 사이즈 개수(4·5개)나 열이 밀린 변형 템플릿도 자연스럽게 인식
+ * - "(중)" 시트는 중복이라 건너뜀(미리보기 번역으로 대체)
  */
-
-const col = (letter: string) => XLSX.utils.decode_col(letter);
-const SIZE_COLS = ["F", "G", "H", "I", "J"];
 
 const emptyLabels = () => ({
   main: false, care: false, reorderInfo: false, priceTag: false, qualityTag: false,
   polybag: false, wappen: false, pointLabel: false, artworkLabel: false,
 });
 
-const FIXED_LABEL_HINT = /(라벨|택$|택끈|택고리|실고리|폴리백|옷핀|봉투|지퍼\s*폴리백|바코드)/;
+const FIXED_LABEL_HINT = /(라벨|택$|택끈|택고리|실고리|폴리백|옷핀|봉투|바코드)/;
 
 function makeId(i: number) {
   try { return crypto.randomUUID(); } catch { return `imp-${Date.now()}-${i}`; }
 }
-
-// "25.10.30" → 년도 "2025"
 function yearFromDate(s: string): string {
   const m = s.match(/(\d{2})\.\d{1,2}\.\d{1,2}/);
   if (m) return `20${m[1]}`;
   const y = s.match(/(20\d{2})/);
   return y ? y[1] : "";
 }
-
-// 파일명에서 시즌 추정
 function seasonFromName(fileName: string): string {
   const m = fileName.match(/(봄|여름|가을|겨울)/);
   if (m) return m[1];
@@ -53,12 +48,14 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
   let idx = 0;
 
   for (const sheetName of wb.SheetNames) {
-    // "(중)" 시트는 중문 중복본 → 건너뜀
     if (/\(중\)\s*$/.test(sheetName)) continue;
     const ws = wb.Sheets[sheetName];
     if (!ws || !ws["!ref"]) continue;
     const range = XLSX.utils.decode_range(ws["!ref"]);
+    const maxC = Math.min(range.e.c, 30);
+
     const T = (r: number, c: number): string => {
+      if (r < 0 || c < 0) return "";
       const v = ws[XLSX.utils.encode_cell({ r, c })];
       return v ? String(v.w ?? v.v ?? "").replace(/\s+/g, " ").trim() : "";
     };
@@ -69,109 +66,145 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
       const n = parseFloat(String(v.v).replace(/,/g, ""));
       return isNaN(n) ? undefined : n;
     };
+    // 지정 행에서 정규식에 맞는 첫 셀의 열
+    const findColInRow = (r: number, re: RegExp, cFrom = 0): number => {
+      for (let c = cFrom; c <= maxC; c++) if (re.test(T(r, c))) return c;
+      return -1;
+    };
+    // 라벨 셀의 오른쪽에서 가장 가까운 비어있지 않은 값 (같은 행, 최대 4칸)
+    const valueRightOf = (r: number, labelCol: number): string => {
+      for (let c = labelCol + 1; c <= Math.min(labelCol + 4, maxC); c++) {
+        const t = T(r, c);
+        if (t) return t;
+      }
+      return "";
+    };
+    // 블록 상단 영역에서 라벨 셀 찾기 → 오른쪽 값
+    const findLabelValue = (top: number, bottom: number, re: RegExp): string => {
+      for (let r = top; r <= bottom; r++) {
+        const c = findColInRow(r, re);
+        if (c >= 0) { const v = valueRightOf(r, c); if (v) return v; }
+      }
+      return "";
+    };
 
-    // anchor: B열 === STYLE NO
     const anchors: number[] = [];
     for (let r = 0; r <= range.e.r; r++) {
-      if (/STYLE\s*NO/i.test(T(r, col("B")))) anchors.push(r);
+      if (/STYLE\s*NO/i.test(T(r, 1)) || /STYLE\s*NO/i.test(T(r, 0))) anchors.push(r);
     }
 
     for (let i = 0; i < anchors.length; i++) {
       const a = anchors[i];
       const end = i + 1 < anchors.length ? anchors[i + 1] : range.e.r + 1;
-      const vRow = a + 1;
-      const styleNo = T(vRow, col("B"));
-      const productName = T(vRow, col("C"));
-      const vendor = T(vRow, col("D"));
-      if (!styleNo && !productName) continue;
-
+      const v = a + 1; // 값 행 (사이즈 헤더도 여기)
       const warnings: string[] = [];
 
-      // 사이즈: 값 행 F..J
-      const sizes: string[] = [];
-      SIZE_COLS.forEach((cl) => { const t = T(vRow, col(cl)); if (t) sizes.push(t); });
+      // 헤더 열 탐지 (STYLE NO / 상품명 / 작업처)
+      const styleCol = findColInRow(a, /STYLE\s*NO/i);
+      const nameCol  = findColInRow(a, /상품명|품\s*명|PRODUCT/i);
+      const vendorCol = findColInRow(a, /작업처|공장|VENDOR/i);
+      const styleNo = T(v, styleCol >= 0 ? styleCol : 1);
+      const productName = T(v, nameCol >= 0 ? nameCol : 2);
+      const vendor = T(v, vendorCol >= 0 ? vendorCol : 3);
+      if (!styleNo && !productName) continue;
 
-      const manager = T(a, col("M"));
-      const director = T(a, col("N"));
-      const productionDate = T(vRow, col("R"));      // 생산이관일 (값 행 R)
-      const issueDate = T(a - 1 >= 0 ? a - 1 : a, col("R")); // 작성일 (SAMPLE NO 행 R)
-      const deliveryDate = T(vRow + 1, col("R"));    // 납품예정일
-      const sampleRaw = T(a - 1 >= 0 ? a - 1 : a, col("B"));
-      const sampleNo = sampleRaw.replace(/SAMPLE\s*NO\.?/i, "").trim();
-
-      // 측정(사이즈 스펙): 값행+1 .. COLOR 전까지, E열 항목
-      const measurements: WorkOrderMeasurement[] = [];
-      let colorRow = -1;
-      for (let r = vRow + 1; r < end; r++) {
-        const e = T(r, col("E"));
-        if (/^COLOR$/i.test(e)) { colorRow = r; break; }
-        if (e && !/^TOTAL$/i.test(e)) {
-          const values: Record<string, string> = {};
-          sizes.forEach((s, si) => { const t = T(r, col(SIZE_COLS[si])); if (t) values[s] = t; });
-          measurements.push({ item: e, values, diff: T(r, col("K")) });
+      // 편차/DEV 열 → 사이즈 열 역산 (블록 상단 4행 내에서 탐지)
+      let sizeHeaderRow = v, diffCol = -1;
+      for (let r = a; r <= Math.min(a + 3, end - 1); r++) {
+        const c = findColInRow(r, /^(편차|DEV\.?|편\s*차)$/i);
+        if (c >= 0) { sizeHeaderRow = r; diffCol = c; break; }
+      }
+      const sizeCols: number[] = [];
+      if (diffCol > 0) {
+        for (let c = diffCol - 1; c >= 3; c--) {
+          if (/^\d{2,3}$/.test(T(sizeHeaderRow, c))) sizeCols.unshift(c);
+          else break;
         }
       }
+      const itemCol = sizeCols.length ? sizeCols[0] - 1 : 4;
+      const sizes = sizeCols.map((c) => T(sizeHeaderRow, c));
 
-      // 원부자재: L열 품목
-      const materials: WorkOrderMaterial[] = [];
-      for (let r = vRow + 1; r < end; r++) {
-        const cat = T(r, col("L"));
-        if (!cat) continue;
-        if (/품목/.test(cat)) continue;             // 헤더
-        if (/중국\s*위안|완사입|최종\s*원가/.test(cat)) continue;
-        const pVal = T(r, col("P"));
-        if (FIXED_LABEL_HINT.test(cat)) {
-          // 고정 라벨류 → fixed 자재로 추가
-          materials.push({
-            id: makeId(idx++), category: "", name: cat, color: "", spec: "",
-            yield: "", yieldUnit: "", unitPrice: "", orderUnit: pVal, notes: "", fixed: true,
-          });
-          continue;
+      // 측정(사이즈 스펙): itemCol 항목, COLOR 만나면 중단
+      const measurements: WorkOrderMeasurement[] = [];
+      let colorRow = -1;
+      for (let r = sizeHeaderRow + 1; r < end; r++) {
+        const item = T(r, itemCol);
+        if (/^COLOR$/i.test(item)) { colorRow = r; break; }
+        if (item && !/^TOTAL$/i.test(item) && !/^계$/.test(item)) {
+          const values: Record<string, string> = {};
+          sizeCols.forEach((c, si) => { const t = T(r, c); if (t) values[sizes[si]] = t; });
+          measurements.push({ item, values, diff: diffCol > 0 ? T(r, diffCol) : "" });
         }
-        materials.push({
-          id: makeId(idx++),
-          category: cat,
-          name: T(r, col("M")),
-          color: T(r, col("N")),
-          spec: T(r, col("O")),
-          yield: pVal,
-          yieldUnit: "",
-          unitPrice: T(r, col("Q")),
-          orderUnit: T(r, col("R")),
-          notes: T(r, col("S")),
-        });
+      }
+      if (colorRow < 0) {
+        for (let r = v; r < end; r++) { if (/^COLOR$/i.test(T(r, itemCol))) { colorRow = r; break; } }
+      }
+
+      // 원부자재: "품목" 헤더 열 찾기 → 오른쪽으로 자재명/색상/규격/요척/단가/발주량/비고
+      let matHdrRow = -1, catCol = -1;
+      for (let r = a; r <= Math.min(a + 5, end - 1); r++) {
+        const c = findColInRow(r, /^품\s*목$/);
+        if (c >= 0) { matHdrRow = r; catCol = c; break; }
+      }
+      const materials: WorkOrderMaterial[] = [];
+      if (catCol >= 0) {
+        const C = (o: number) => catCol + o; // 0품목 1자재명 2색상 3규격 4요척 5단가 6발주량 7비고
+        for (let r = matHdrRow + 1; r < end; r++) {
+          const cat = T(r, catCol);
+          if (!cat) continue;
+          if (/중국\s*위안|완사입|최종\s*원가/.test(cat)) break;
+          if (FIXED_LABEL_HINT.test(cat)) {
+            materials.push({
+              id: makeId(idx++), category: "", name: cat, color: "", spec: "",
+              yield: "", yieldUnit: "", unitPrice: "", orderUnit: T(r, C(4)) || T(r, C(5)), notes: "", fixed: true,
+            });
+            continue;
+          }
+          materials.push({
+            id: makeId(idx++), category: cat,
+            name: T(r, C(1)), color: T(r, C(2)), spec: T(r, C(3)),
+            yield: T(r, C(4)), yieldUnit: "", unitPrice: T(r, C(5)),
+            orderUnit: T(r, C(6)), notes: T(r, C(7)),
+          });
+        }
       }
 
       // 색상 × 사이즈 수량표
       const colorSizeTable: WorkOrderColorSize[] = [];
-      if (colorRow >= 0) {
+      if (colorRow >= 0 && sizeCols.length) {
         for (let r = colorRow + 1; r < end; r++) {
-          const c0 = T(r, col("E"));
+          const c0 = T(r, itemCol);
           if (!c0) continue;
-          if (/^TOTAL$/i.test(c0)) break;
+          if (/^TOTAL$/i.test(c0) || /^계$/.test(c0)) break;
           const szMap: Record<string, number> = {};
           let tot = 0;
-          sizes.forEach((s, si) => {
-            const n = NUM(r, col(SIZE_COLS[si]));
-            if (n != null) { szMap[s] = n; tot += n; }
-          });
-          const kTotal = NUM(r, col("K"));
+          sizeCols.forEach((c, si) => { const n = NUM(r, c); if (n != null) { szMap[sizes[si]] = n; tot += n; } });
+          const kTotal = diffCol > 0 ? NUM(r, diffCol) : undefined;
           colorSizeTable.push({ color: c0, colorCode: "", sizes: szMap, total: kTotal ?? tot });
         }
       }
       const totalQuantity = colorSizeTable.reduce((s, r) => s + (r.total || 0), 0);
 
-      // 준수사항: B열 '*' 문장
+      // 담당/실장 (헤더는 값 위쪽 행)
+      const manager = findLabelValue(a - 1, a + 1, /담당|DESIGNER|담\s*당/);
+      const director = findLabelValue(a - 1, a + 1, /실장|실\s*장|팀장|组长/);
+      const issueDate = findLabelValue(a - 1, a + 2, /작성일|작\s*성\s*일/);
+      const productionDate = findLabelValue(a - 1, a + 2, /생산이관일|이관일/);
+      const deliveryDate = findLabelValue(a - 1, a + 3, /납품예정일|납품일/);
+      const sampleNo = findLabelValue(a - 2, a + 1, /SAMPLE\s*NO/i);
+
+      // 준수사항
       const fixedLines: string[] = [];
       for (let r = a; r < end; r++) {
-        const b = T(r, col("B"));
-        if (b.startsWith("*") || /준수사항/.test(b)) fixedLines.push(b);
+        const b = T(r, 1) || T(r, 0);
+        if (b.startsWith("*")) fixedLines.push(b);
       }
-      const fixedNotes = fixedLines.filter((l) => l.startsWith("*")).join("\n");
+      const fixedNotes = fixedLines.join("\n");
 
       if (!sizes.length) warnings.push("사이즈를 찾지 못했습니다");
       if (!colorSizeTable.length) warnings.push("색상×수량표를 찾지 못했습니다");
       if (!measurements.length) warnings.push("사이즈 스펙을 찾지 못했습니다");
+      if (catCol < 0) warnings.push("원부자재(품목)를 찾지 못했습니다");
 
       const category = (productName.split("-")[0] || sheetName.replace(/\(.*?\)/, "")).trim();
       const now = new Date().toISOString();
