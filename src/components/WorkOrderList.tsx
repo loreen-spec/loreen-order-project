@@ -247,20 +247,20 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   });
   // 체크박스 클릭 — Shift 누르면 마지막 클릭~현재 사이 전체 선택
   function handleRowCheck(index: number, id: string, shift: boolean, list: WorkOrder[]) {
+    // 이전 앵커 인덱스를 먼저 캡처 (setSelected 업데이터가 지연 실행되므로 ref를 그 안에서 읽으면 안 됨)
+    const prevIndex = lastCheckedIndex.current;
+    lastCheckedIndex.current = index;
     setSelected((prev) => {
       const n = new Set(prev);
-      const added: string[] = [];
-      if (shift && lastCheckedIndex.current != null) {
-        const lo = Math.min(lastCheckedIndex.current, index);
-        const hi = Math.max(lastCheckedIndex.current, index);
-        for (let k = lo; k <= hi; k++) if (list[k]) { n.add(list[k].id); added.push(list[k].id); }
+      if (shift && prevIndex != null) {
+        const lo = Math.min(prevIndex, index);
+        const hi = Math.max(prevIndex, index);
+        for (let k = lo; k <= hi; k++) if (list[k]) n.add(list[k].id);
       } else {
         n.has(id) ? n.delete(id) : n.add(id);
       }
-      try { (window as any).__hrc = { index, shift, last: lastCheckedIndex.current, len: list.length, added, result: [...n], rowIds: list.map((x) => x.id) }; } catch {}
       return n;
     });
-    lastCheckedIndex.current = index;
   }
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -891,7 +891,6 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     <td className="px-3 py-3 text-center">
                       <input
                         type="checkbox"
-                        data-rowsel="v3"
                         className="accent-violet-600 w-4 h-4 align-middle"
                         checked={selected.has(o.id)}
                         onChange={() => handleRowCheck(i, o.id, shiftDown.current, filtered)}
