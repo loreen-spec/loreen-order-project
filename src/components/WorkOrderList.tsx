@@ -247,16 +247,17 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   });
   // 체크박스 클릭 — Shift 누르면 마지막 클릭~현재 사이 전체 선택
   function handleRowCheck(index: number, id: string, shift: boolean, list: WorkOrder[]) {
-    try { (window as any).__hrc = { index, shift, last: lastCheckedIndex.current, len: list.length }; } catch {}
     setSelected((prev) => {
       const n = new Set(prev);
+      const added: string[] = [];
       if (shift && lastCheckedIndex.current != null) {
         const lo = Math.min(lastCheckedIndex.current, index);
         const hi = Math.max(lastCheckedIndex.current, index);
-        for (let k = lo; k <= hi; k++) if (list[k]) n.add(list[k].id);
+        for (let k = lo; k <= hi; k++) if (list[k]) { n.add(list[k].id); added.push(list[k].id); }
       } else {
         n.has(id) ? n.delete(id) : n.add(id);
       }
+      try { (window as any).__hrc = { index, shift, last: lastCheckedIndex.current, len: list.length, added, result: [...n], rowIds: list.map((x) => x.id) }; } catch {}
       return n;
     });
     lastCheckedIndex.current = index;
