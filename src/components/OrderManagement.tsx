@@ -178,8 +178,8 @@ const ProductCard = memo(function ProductCard({
           )}
         </div>
 
-        {/* COL 3: 제품명 + 입고일 — 내용 폭(최대치)만 차지, 뒤 여백은 spacer가 담당 */}
-        <div className="min-w-0 max-w-[240px]">
+        {/* COL 3: 제품명 + 입고일 — flex-1로 남은 공간 차지 (아이콘/체크박스를 우측으로 밀어냄) */}
+        <div className="flex-1 min-w-0">
           <span className={`font-semibold text-sm truncate block transition-colors ${
             checked ? "text-gray-400 line-through decoration-emerald-400" : "text-gray-900"
           }`}>
@@ -193,20 +193,21 @@ const ProductCard = memo(function ProductCard({
           )}
         </div>
 
-        {/* COL 3.5: 작업지시서 미리보기 버튼 — 제품명 바로 오른쪽 */}
+        {/* COL 3.5: 작업지시서 미리보기 버튼 — 체크박스에서 2cm 왼쪽 */}
         {onOpenWO && (
-          <div
-            className="shrink-0 w-8 flex items-center justify-center ml-2"
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenWO(product); }}
-            style={{ cursor: "pointer" }}
-            title={hasWO ? "작업지시서 보기" : "제품 정보 보기 (미등록)"}
-          >
-            <FileText size={16} className={hasWO ? "text-violet-500 hover:text-violet-700" : "text-gray-300 hover:text-gray-400"} />
-          </div>
+          <>
+            <div
+              className="shrink-0 w-8 flex items-center justify-center"
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenWO(product); }}
+              style={{ cursor: "pointer" }}
+              title={hasWO ? "작업지시서 보기" : "제품 정보 보기 (미등록)"}
+            >
+              <FileText size={16} className={hasWO ? "text-violet-500 hover:text-violet-700" : "text-gray-300 hover:text-gray-400"} />
+            </div>
+            {/* 체크박스와 2cm 간격 */}
+            <div className="shrink-0" style={{ width: "2cm" }} />
+          </>
         )}
-
-        {/* 여백 spacer — 체크박스/차수/수량을 오른쪽으로 밀어냄 */}
-        <div className="flex-1" />
 
         {/* COL 4: 체크박스 — 고정 너비 w-8, 중앙정렬 */}
         <div
