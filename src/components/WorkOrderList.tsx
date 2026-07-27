@@ -247,6 +247,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   });
   // 체크박스 클릭 — Shift 누르면 마지막 클릭~현재 사이 전체 선택
   function handleRowCheck(index: number, id: string, shift: boolean, list: WorkOrder[]) {
+    try { (window as any).__hrc = { index, shift, last: lastCheckedIndex.current, len: list.length }; } catch {}
     setSelected((prev) => {
       const n = new Set(prev);
       if (shift && lastCheckedIndex.current != null) {
