@@ -3,11 +3,13 @@ import { useEffect, useState, useMemo, memo, useCallback, useRef } from "react";
 import {
   ChevronDown, ChevronRight, Loader2, RefreshCw,
   Layers, Calendar, Package, Shirt, Footprints, ShoppingBag,
-  Bell, Check
+  Bell, Check, FileText, X
 } from "lucide-react";
 import type { OrderProduct } from "@/app/api/orders/route";
 import { format, parseISO, differenceInDays, isValid } from "date-fns";
 import { ko } from "date-fns/locale";
+import WorkOrderPDFView from "./WorkOrderPDFView";
+import ShoeWorkOrderPDFView from "./ShoeWorkOrderPDFView";
 
 function parseColorSize(raw: string) {
   const parts = raw.split(",").map((s) => s.replace(/^:/, "").trim());
@@ -89,10 +91,14 @@ const ProductCard = memo(function ProductCard({
   product,
   initialChecked,
   onCheckChange,
+  onOpenWO,
+  hasWO,
 }: {
   product: OrderProduct;
   initialChecked: boolean;
   onCheckChange: (id: string, checked: boolean) => void;
+  onOpenWO?: (p: OrderProduct) => void;
+  hasWO?: boolean;
 }) {
   const [open,    setOpen]    = useState(false);
   const [checked, setChecked] = useState(initialChecked);
@@ -187,6 +193,18 @@ const ProductCard = memo(function ProductCard({
           )}
         </div>
 
+        {/* COL 3.5: 작업지시서 미리보기 버튼 */}
+        {onOpenWO && (
+          <div
+            className="shrink-0 w-7 flex items-center justify-center mr-1"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenWO(product); }}
+            style={{ cursor: "pointer" }}
+            title={hasWO ? "작업지시서 보기" : "제품 정보 보기 (미등록)"}
+          >
+            <FileText size={15} className={hasWO ? "text-violet-500 hover:text-violet-700" : "text-gray-300 hover:text-gray-400"} />
+          </div>
+        )}
+
         {/* COL 4: 체크박스 — 고정 너비 w-8, 중앙정렬 */}
         <div
           className="shrink-0 w-8 flex flex-col items-center justify-center relative"
@@ -275,12 +293,14 @@ const ProductCard = memo(function ProductCard({
 
 // ── 보드 패널: 업체 필터 포함
 const BoardPanel = memo(function BoardPanel({
-  board, products, approvals, onCheckChange,
+  board, products, approvals, onCheckChange, onOpenWO, hasWO,
 }: {
   board: string;
   products: OrderProduct[];
   approvals: Record<string, boolean>;
   onCheckChange: (id: string, checked: boolean) => void;
+  onOpenWO?: (p: OrderProduct) => void;
+  hasWO?: (p: OrderProduct) => boolean;
 }) {
   const meta = BOARD_META[board] ?? BOARD_META["의류"];
   const Icon = meta.icon;
@@ -337,6 +357,8 @@ const BoardPanel = memo(function BoardPanel({
                 product={p}
                 initialChecked={!!approvals[p.id]}
                 onCheckChange={onCheckChange}
+                onOpenWO={onOpenWO}
+                hasWO={hasWO ? hasWO(p) : false}
               />
             ))
         }
@@ -466,6 +488,36 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
   // 현재 저장 중인 항목 ID 집합 — 저장 완료 전에 폴링이 덮어쓰는 것을 방지
   const pendingSaves = useRef<Set<string>>(new Set());
+
+  // 저장된 작업지시서 (발주 제품과 매칭해 미리보기)
+  const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [previewWO, setPreviewWO] = useState<{ type: "clothing" | "shoe"; wo: any } | null>(null);
+  const [simplePreview, setSimplePreview] = useState<OrderProduct | null>(null);
+
+  useEffect(() => {
+    fetch("/api/work-orders")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setWorkOrders(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
+
+  const nameKey = (s: string) => (s || "").replace(/\s+/g, "").toLowerCase();
+  const stripId = (s: string) => (s || "").replace(/-/g, "");
+  const findWO = useCallback((product: OrderProduct) => {
+    const pk = nameKey(product.name);
+    const pid = stripId(product.id);
+    return workOrders.find((w) => {
+      if (w.notionProductId && pid && stripId(w.notionProductId) === pid) return true;
+      const wk = nameKey(w.productName || "");
+      return !!wk && !!pk && (wk === pk || wk.includes(pk) || pk.includes(wk));
+    }) || null;
+  }, [workOrders]);
+  const hasWO = useCallback((p: OrderProduct) => !!findWO(p), [findWO]);
+  const openWO = useCallback((p: OrderProduct) => {
+    const wo = findWO(p);
+    if (wo) setPreviewWO({ type: wo.board === "슈즈" ? "shoe" : "clothing", wo });
+    else setSimplePreview(p);
+  }, [findWO]);
 
   const fetchFromServer = useCallback(async () => {
     setFetching(true);
@@ -631,13 +683,63 @@ export default function OrderManagement({ categoryFilter }: { categoryFilter?: "
       ) : (
         <div className="flex-1 min-h-0">
           {(!categoryFilter || categoryFilter === "의류") && (
-            <BoardPanel board="의류" products={clothes} approvals={approvals} onCheckChange={handleCheckChange} />
+            <BoardPanel board="의류" products={clothes} approvals={approvals} onCheckChange={handleCheckChange} onOpenWO={openWO} hasWO={hasWO} />
           )}
           {(!categoryFilter || categoryFilter === "슈즈") && (
-            <BoardPanel board="슈즈" products={shoes} approvals={approvals} onCheckChange={handleCheckChange} />
+            <BoardPanel board="슈즈" products={shoes} approvals={approvals} onCheckChange={handleCheckChange} onOpenWO={openWO} hasWO={hasWO} />
           )}
         </div>
       )}
+
+      {/* 등록된 작업지시서 미리보기 */}
+      {previewWO?.type === "clothing" && <WorkOrderPDFView wo={previewWO.wo} onClose={() => setPreviewWO(null)} />}
+      {previewWO?.type === "shoe" && <ShoeWorkOrderPDFView wo={previewWO.wo} onClose={() => setPreviewWO(null)} />}
+
+      {/* 미등록 제품 간단 미리보기 (제품명·이미지·발주 수량표) */}
+      {simplePreview && (
+        <SimpleProductPreview product={simplePreview} onClose={() => setSimplePreview(null)} />
+      )}
+    </div>
+  );
+}
+
+// ── 미등록 제품 간단 미리보기 모달 (작업지시서 미작성 시 이름·이미지·발주 수량만) ──
+function SimpleProductPreview({ product, onClose }: { product: OrderProduct; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <div className="font-bold text-gray-900">{product.name}</div>
+            <div className="text-xs text-amber-600 mt-0.5">작업지시서 미등록 — 제품 정보만 표시</div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500"><X size={18} /></button>
+        </div>
+        <div className="p-5 overflow-y-auto space-y-4">
+          <div className="flex gap-4">
+            <div className="w-32 h-40 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 shrink-0">
+              {product.imageUrl
+                ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain" />
+                : <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">이미지 없음</div>}
+            </div>
+            <div className="flex-1 text-sm space-y-1.5">
+              <div><span className="text-gray-400">제품명</span> <span className="font-semibold text-gray-800">{product.name}</span></div>
+              <div><span className="text-gray-400">작업처</span> <span className="text-gray-700">{product.vendor || "—"}</span></div>
+              <div><span className="text-gray-400">차수</span> <span className="text-orange-600 font-semibold">{product.latestBatch || "—"}</span></div>
+              <div><span className="text-gray-400">총수량</span> <span className="text-violet-700 font-bold">{product.totalQuantity > 0 ? `${product.totalQuantity.toLocaleString()}장` : "미정"}</span></div>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-gray-500 mb-1.5">발주 색상 × 사이즈</div>
+            {product.rows.length === 0
+              ? <p className="text-xs text-gray-400 py-2 text-center">발주 데이터 없음</p>
+              : <ColorSizeTable rows={product.rows} />}
+          </div>
+          <div className="text-[11px] text-gray-400 border-t border-gray-100 pt-3">
+            이 제품의 작업지시서를 작성하면, 다음부터 여기서 실제 작업지시서를 바로 볼 수 있어요.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
