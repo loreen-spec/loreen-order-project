@@ -232,9 +232,25 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   // ── 다중 선택 / 일괄 삭제 ─────────────────────────────
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const lastCheckedIndex = useRef<number | null>(null);
   const toggleSelect = (id: string) => setSelected((prev) => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
+  // 체크박스 클릭 — Shift 누르면 마지막 클릭~현재 사이 전체 선택
+  function handleRowCheck(index: number, id: string, shift: boolean, list: WorkOrder[]) {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (shift && lastCheckedIndex.current != null) {
+        const lo = Math.min(lastCheckedIndex.current, index);
+        const hi = Math.max(lastCheckedIndex.current, index);
+        for (let k = lo; k <= hi; k++) if (list[k]) n.add(list[k].id);
+      } else {
+        n.has(id) ? n.delete(id) : n.add(id);
+      }
+      return n;
+    });
+    lastCheckedIndex.current = index;
+  }
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   async function deleteSelected(ids: string[]) {
@@ -866,7 +882,8 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                         type="checkbox"
                         className="accent-violet-600 w-4 h-4 align-middle"
                         checked={selected.has(o.id)}
-                        onChange={() => toggleSelect(o.id)}
+                        onChange={() => {}}
+                        onClick={(e) => handleRowCheck(i, o.id, e.shiftKey, filtered)}
                       />
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{o.styleNo || "—"}</td>
