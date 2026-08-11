@@ -14,6 +14,9 @@ export async function GET() {
     return NextResponse.json({ ok: false, reason: "SUPABASE_ANON_KEY 환경변수 없음" });
   }
 
+  let host = "";
+  try { host = new URL(url).host; } catch {}
+
   // 실제 Supabase 연결 테스트
   try {
     const res = await fetch(`${url}/rest/v1/work_orders?limit=1`, {
@@ -25,11 +28,11 @@ export async function GET() {
     const body = await res.text();
 
     if (res.ok) {
-      return NextResponse.json({ ok: true, status: res.status, rowCount: JSON.parse(body).length });
+      return NextResponse.json({ ok: true, host, status: res.status, rowCount: JSON.parse(body).length });
     } else {
-      return NextResponse.json({ ok: false, status: res.status, body });
+      return NextResponse.json({ ok: false, host, status: res.status, body });
     }
   } catch (e: any) {
-    return NextResponse.json({ ok: false, reason: e.message });
+    return NextResponse.json({ ok: false, host, reason: e.message });
   }
 }
