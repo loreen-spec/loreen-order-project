@@ -19,8 +19,8 @@ function bytesToBase64(u8: Uint8Array): string {
   for (let i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, Array.from(u8.subarray(i, i + CH)) as any);
   return typeof btoa !== "undefined" ? btoa(s) : Buffer.from(u8).toString("base64");
 }
-function extractSheetImages(data: ArrayBuffer): Map<string, { row: number; dataURL: string; size: number }[]> {
-  const map = new Map<string, { row: number; dataURL: string; size: number }[]>();
+function extractSheetImages(data: ArrayBuffer): Map<string, { row: number; col: number; dataURL: string; size: number }[]> {
+  const map = new Map<string, { row: number; col: number; dataURL: string; size: number }[]>();
   let files: Record<string, Uint8Array>;
   try { files = unzipSync(new Uint8Array(data)); } catch { return map; }
   const dec = (p: string) => (files[p] ? new TextDecoder("utf-8").decode(files[p]) : "");
@@ -49,11 +49,14 @@ function extractSheetImages(data: ArrayBuffer): Map<string, { row: number; dataU
     const drawFile = drawPath.split("/").pop()!;
     const drawRels = dec(`xl/drawings/_rels/${drawFile}.rels`);
     const anchors = [...drawXml.matchAll(/<xdr:(oneCellAnchor|twoCellAnchor|absoluteAnchor)[\s\S]*?<\/xdr:\1>/g)].map((a) => a[0]);
-    const imgs: { row: number; dataURL: string; size: number }[] = [];
+    const imgs: { row: number; col: number; dataURL: string; size: number }[] = [];
     for (const anc of anchors) {
       const emb = anc.match(/r:embed="([^"]+)"/);
       if (!emb) continue;
-      const rowM = anc.match(/<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/);
+      const fromM = anc.match(/<xdr:from>([\s\S]*?)<\/xdr:from>/);
+      const fromXml = fromM ? fromM[1] : "";
+      const rowM = fromXml.match(/<xdr:row>(\d+)<\/xdr:row>/);
+      const colM = fromXml.match(/<xdr:col>(\d+)<\/xdr:col>/);
       const mediaTarget = relTarget(drawRels, emb[1]);
       if (!mediaTarget) continue;
       const mediaPath = normalizePath("xl/drawings/", mediaTarget);
@@ -62,7 +65,7 @@ function extractSheetImages(data: ArrayBuffer): Map<string, { row: number; dataU
       const ext = (mediaPath.split(".").pop() || "png").toLowerCase();
       const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "gif" ? "image/gif" : ext === "emf" || ext === "wmf" ? "" : "image/png";
       if (!mime) continue; // emf/wmf 등 미지원 포맷 스킵
-      imgs.push({ row: rowM ? parseInt(rowM[1]) : 0, dataURL: `data:${mime};base64,${bytesToBase64(bytes)}`, size: bytes.length });
+      imgs.push({ row: rowM ? parseInt(rowM[1]) : 0, col: colM ? parseInt(colM[1]) : 0, dataURL: `data:${mime};base64,${bytesToBase64(bytes)}`, size: bytes.length });
     }
     if (imgs.length) map.set(name.trim().toLowerCase(), imgs);
   }
@@ -276,13 +279,17 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
       const category = (productName.split("-")[0] || sheetName.replace(/\(.*?\)/, "")).trim();
       const now = new Date().toISOString();
 
-      // 이 시트의 도식화 이미지 자동 첨부 — 블록 행 범위 내에서 가장 용량 큰(=상세한 도식화) 이미지 선택
+      // 이 시트의 도식화 이미지 자동 첨부.
+      // 도식화(라인 드로잉)는 좌측(측정표 왼쪽) 상단에 위치 → 좌측 컬럼(col ≤ 8) 중 가장 위(row 최소) 이미지 선택.
+      // (제품사진은 그 아래, OZKIZ 로고는 우측이라 자연히 제외됨)
       let sketchImage = "";
       const sheetImgs = imgMap.get(sheetName.trim().toLowerCase());
       if (sheetImgs && sheetImgs.length) {
         const inBlock = sheetImgs.filter((im) => im.row >= a - 2 && im.row < end);
-        const pool = inBlock.length ? inBlock : sheetImgs;
-        const best = pool.reduce((m, im) => (im.size > m.size ? im : m), pool[0]);
+        const scope = inBlock.length ? inBlock : sheetImgs;
+        const left = scope.filter((im) => im.col <= 8);
+        const pool = left.length ? left : scope;
+        const best = pool.reduce((m, im) => (im.row < m.row ? im : m), pool[0]);
         sketchImage = best.dataURL;
       }
 
