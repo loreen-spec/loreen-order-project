@@ -6,6 +6,27 @@ import * as XLSX from "xlsx";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+// 공개(링크 뷰어) 구글시트를 docs.google.com 공개 export로 받기.
+// API 키 불필요 + 용량 한도 없음(수동 다운로드와 동일 경로). 비공개면 HTML(로그인)이 와서 null 반환.
+async function fetchPublicSheetXlsx(fileId: string): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(
+      `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`,
+      { redirect: "follow", cache: "no-store", headers: { "User-Agent": "Mozilla/5.0" } }
+    );
+    if (!res.ok) return null;
+    const ct = res.headers.get("content-type") || "";
+    if (/text\/html/i.test(ct)) return null; // 비공개 → 로그인/권한 페이지
+    const buf = await res.arrayBuffer();
+    // xlsx(zip) 매직넘버 'PK' 확인
+    const head = new Uint8Array(buf.slice(0, 2));
+    if (head[0] !== 0x50 || head[1] !== 0x4b) return null;
+    return buf;
+  } catch {
+    return null;
+  }
+}
+
 // 큰 구글시트는 export(약 10MB) 한도에 걸리므로 Sheets API로 셀 값을 직접 읽어 xlsx로 조립
 async function buildXlsxFromSheetsApi(fileId: string, apiKey: string): Promise<ArrayBuffer> {
   const metaRes = await fetch(
@@ -39,7 +60,20 @@ export async function GET(req: NextRequest) {
   const apiKey = process.env.GOOGLE_API_KEY;
 
   if (!fileId) return NextResponse.json({ error: "id required" }, { status: 400 });
-  if (!apiKey) return NextResponse.json({ error: "API key not configured" }, { status: 500 });
+
+  // 0) 공개 구글시트 → docs.google.com 공개 export (API 키·용량제한 없음). 큰 시트도 링크로 처리.
+  const publicBuf = await fetchPublicSheetXlsx(fileId);
+  if (publicBuf) {
+    return new NextResponse(publicBuf, {
+      status: 200,
+      headers: {
+        "Content-Type": XLSX_MIME,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent("sheet")}.xlsx`,
+      },
+    });
+  }
+
+  if (!apiKey) return NextResponse.json({ error: "구글시트를 읽지 못했습니다. 시트를 '링크가 있는 모든 사용자 - 뷰어'로 공유했는지 확인해주세요." }, { status: 502 });
 
   try {
     // 파일 메타데이터로 mimeType 확인
