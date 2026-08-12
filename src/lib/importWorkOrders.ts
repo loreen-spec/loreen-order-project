@@ -1,7 +1,73 @@
 import * as XLSX from "xlsx";
+import { unzipSync } from "fflate";
 import type {
   WorkOrder, WorkOrderMaterial, WorkOrderMeasurement, WorkOrderColorSize,
 } from "@/types";
+
+// ── xlsx 내부 도식화 이미지 추출 (시트명 → [{row, dataURL}]) ──
+function normalizePath(baseDir: string, rel: string): string {
+  const out: string[] = [];
+  for (const p of (baseDir + rel).split("/")) {
+    if (p === "..") out.pop();
+    else if (p === "." || p === "") continue;
+    else out.push(p);
+  }
+  return out.join("/");
+}
+function bytesToBase64(u8: Uint8Array): string {
+  let s = ""; const CH = 0x8000;
+  for (let i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, Array.from(u8.subarray(i, i + CH)) as any);
+  return typeof btoa !== "undefined" ? btoa(s) : Buffer.from(u8).toString("base64");
+}
+function extractSheetImages(data: ArrayBuffer): Map<string, { row: number; dataURL: string; size: number }[]> {
+  const map = new Map<string, { row: number; dataURL: string; size: number }[]>();
+  let files: Record<string, Uint8Array>;
+  try { files = unzipSync(new Uint8Array(data)); } catch { return map; }
+  const dec = (p: string) => (files[p] ? new TextDecoder("utf-8").decode(files[p]) : "");
+  const relTarget = (relsXml: string, rId: string): string => {
+    const m = relsXml.match(new RegExp(`Id="${rId}"[^>]*?Target="([^"]+)"`)) ||
+              relsXml.match(new RegExp(`Target="([^"]+)"[^>]*?Id="${rId}"`));
+    return m ? m[1] : "";
+  };
+  const wbXml = dec("xl/workbook.xml");
+  const wbRels = dec("xl/_rels/workbook.xml.rels");
+  const sheetTags = [...wbXml.matchAll(/<sheet[^>]*?name="([^"]+)"[^>]*?r:id="([^"]+)"/g)];
+  for (const st of sheetTags) {
+    const name = st[1]; const rid = st[2];
+    const target = relTarget(wbRels, rid);
+    if (!target) continue;
+    const sheetPath = normalizePath("xl/", target);
+    const sheetXml = dec(sheetPath);
+    const dm = sheetXml.match(/<drawing[^>]*?r:id="([^"]+)"/);
+    if (!dm) continue;
+    const sheetFile = sheetPath.split("/").pop()!;
+    const sheetRels = dec(`xl/worksheets/_rels/${sheetFile}.rels`);
+    const drawTarget = relTarget(sheetRels, dm[1]);
+    if (!drawTarget) continue;
+    const drawPath = normalizePath("xl/worksheets/", drawTarget);
+    const drawXml = dec(drawPath);
+    const drawFile = drawPath.split("/").pop()!;
+    const drawRels = dec(`xl/drawings/_rels/${drawFile}.rels`);
+    const anchors = [...drawXml.matchAll(/<xdr:(oneCellAnchor|twoCellAnchor|absoluteAnchor)[\s\S]*?<\/xdr:\1>/g)].map((a) => a[0]);
+    const imgs: { row: number; dataURL: string; size: number }[] = [];
+    for (const anc of anchors) {
+      const emb = anc.match(/r:embed="([^"]+)"/);
+      if (!emb) continue;
+      const rowM = anc.match(/<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/);
+      const mediaTarget = relTarget(drawRels, emb[1]);
+      if (!mediaTarget) continue;
+      const mediaPath = normalizePath("xl/drawings/", mediaTarget);
+      const bytes = files[mediaPath];
+      if (!bytes) continue;
+      const ext = (mediaPath.split(".").pop() || "png").toLowerCase();
+      const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "gif" ? "image/gif" : ext === "emf" || ext === "wmf" ? "" : "image/png";
+      if (!mime) continue; // emf/wmf 등 미지원 포맷 스킵
+      imgs.push({ row: rowM ? parseInt(rowM[1]) : 0, dataURL: `data:${mime};base64,${bytesToBase64(bytes)}`, size: bytes.length });
+    }
+    if (imgs.length) map.set(name.trim().toLowerCase(), imgs);
+  }
+  return map;
+}
 
 /**
  * 기존 엑셀 작업지시서(오즈키즈 템플릿)를 파싱해 WorkOrder 배열로 변환한다.
@@ -43,6 +109,7 @@ export interface ParsedOrder {
 
 export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[] {
   const wb = XLSX.read(data, { type: "array" });
+  const imgMap = extractSheetImages(data); // 시트별 도식화 이미지
   const results: ParsedOrder[] = [];
   const season = seasonFromName(fileName);
   let idx = 0;
@@ -209,6 +276,16 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
       const category = (productName.split("-")[0] || sheetName.replace(/\(.*?\)/, "")).trim();
       const now = new Date().toISOString();
 
+      // 이 시트의 도식화 이미지 자동 첨부 — 블록 행 범위 내에서 가장 용량 큰(=상세한 도식화) 이미지 선택
+      let sketchImage = "";
+      const sheetImgs = imgMap.get(sheetName.trim().toLowerCase());
+      if (sheetImgs && sheetImgs.length) {
+        const inBlock = sheetImgs.filter((im) => im.row >= a - 2 && im.row < end);
+        const pool = inBlock.length ? inBlock : sheetImgs;
+        const best = pool.reduce((m, im) => (im.size > m.size ? im : m), pool[0]);
+        sketchImage = best.dataURL;
+      }
+
       const order: WorkOrder = {
         id: makeId(idx++),
         styleNo, productName, vendor,
@@ -219,7 +296,7 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
         orderCount: 1, totalQuantity, sizes,
         measurements, materials, colorSizeTable,
         labels: emptyLabels(), customLabels: [],
-        sketchImage: "", productImage: "", labelImage: "",
+        sketchImage, productImage: "", labelImage: "",
         productionNotes: "", fixedNotes, vendorNotes: "", specialNotes: "",
         totalCost: "", salePrice: "", laborCost: "", packagingCost: "",
         status: "draft",
