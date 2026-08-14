@@ -330,5 +330,27 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
     }
   }
 
-  return results;
+  // 같은 제품이 시트별로 차수만 다르게 여러 개인 경우(예: "새마을어린이", "새마을어린이 13차")
+  // → 스타일넘버(없으면 품명) 기준으로 1개만 남김. 데이터가 가장 많은(수량·색상 많은) 것을 채택.
+  const deduped: ParsedOrder[] = [];
+  const seenIdx = new Map<string, number>();
+  const keyOf = (o: ParsedOrder) =>
+    (o.order.styleNo || o.order.productName || "").replace(/\s+/g, "").toLowerCase();
+  const richness = (o: ParsedOrder) =>
+    (o.order.totalQuantity || 0) * 1000 +
+    (o.order.colorSizeTable?.length || 0) * 10 +
+    (o.order.measurements?.length || 0);
+  for (const r of results) {
+    const key = keyOf(r);
+    if (!key) { deduped.push(r); continue; } // 식별 불가 → 그대로 유지
+    const idxExisting = seenIdx.get(key);
+    if (idxExisting == null) {
+      seenIdx.set(key, deduped.length);
+      deduped.push(r);
+    } else if (richness(r) > richness(deduped[idxExisting])) {
+      deduped[idxExisting] = r; // 더 완전한 것으로 교체
+    }
+  }
+
+  return deduped;
 }
