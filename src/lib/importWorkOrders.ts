@@ -149,11 +149,27 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
       }
       return "";
     };
-    // 블록 상단 영역에서 라벨 셀 찾기 → 오른쪽 값
+    // 라벨로 오인되는 값(옆/아래 칸에 또 다른 헤더가 오는 경우) 걸러내기
+    const LABEL_RE = /^(담당|담\s*당|실장|실\s*장|작성일|작\s*성\s*일|생산이관일|이관일|납품예정일|납품일|SAMPLE\s*NO|DESIGNER|팀장|组长|设计师|结|결|제\b|품\s*목|COLOR|SIZE|STYLE\s*NO|자재명|색상)/i;
+    const clean = (val: string) => (val && !LABEL_RE.test(val) ? val : "");
+    // 블록 상단 영역에서 라벨 셀 찾기 → 오른쪽 값 (라벨스러운 값은 제외)
     const findLabelValue = (top: number, bottom: number, re: RegExp): string => {
       for (let r = top; r <= bottom; r++) {
         const c = findColInRow(r, re);
-        if (c >= 0) { const v = valueRightOf(r, c); if (v) return v; }
+        if (c >= 0) { const val = clean(valueRightOf(r, c)); if (val) return val; }
+      }
+      return "";
+    };
+    // 담당/실장처럼 라벨 '아래' 칸이 값인 경우: 아래 우선, 없으면 오른쪽
+    const findLabelBelowOrRight = (top: number, bottom: number, re: RegExp): string => {
+      for (let r = top; r <= bottom; r++) {
+        const c = findColInRow(r, re);
+        if (c >= 0) {
+          const below = clean(T(r + 1, c));
+          if (below) return below;
+          const right = clean(valueRightOf(r, c));
+          if (right) return right;
+        }
       }
       return "";
     };
@@ -255,9 +271,9 @@ export function parseWorkbook(data: ArrayBuffer, fileName: string): ParsedOrder[
       }
       const totalQuantity = colorSizeTable.reduce((s, r) => s + (r.total || 0), 0);
 
-      // 담당/실장 (헤더는 값 위쪽 행)
-      const manager = findLabelValue(a - 1, a + 1, /담당|DESIGNER|담\s*당/);
-      const director = findLabelValue(a - 1, a + 1, /실장|실\s*장|팀장|组长/);
+      // 담당/실장 — 라벨 바로 아래 칸이 실제 이름 (가로 라벨 배치: 담당|실장|작성일)
+      const manager = findLabelBelowOrRight(a - 1, a + 1, /^담\s*당$|DESIGNER|设计师/);
+      const director = findLabelBelowOrRight(a - 1, a + 1, /^실\s*장$|팀장|组长/);
       const issueDate = findLabelValue(a - 1, a + 2, /작성일|작\s*성\s*일/);
       const productionDate = findLabelValue(a - 1, a + 2, /생산이관일|이관일/);
       const deliveryDate = findLabelValue(a - 1, a + 3, /납품예정일|납품일/);
