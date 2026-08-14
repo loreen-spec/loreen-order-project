@@ -87,14 +87,8 @@ export default function ImportWorkOrdersModal({
       try {
         const res = await fetch(`/api/drive-file?id=${encodeURIComponent(id)}`);
         if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          const msg = String((e as any).error || "");
-          if (res.status === 502 || /too large|size|blocked|sheets/i.test(msg)) {
-            // 용량이 큰 시트는 링크 변환 불가 → 엑셀 다운로드 업로드 안내
-            setLinkError("이 시트는 용량이 커서 링크로는 가져올 수 없어요. 구글시트에서 [파일 → 다운로드 → Microsoft Excel(.xlsx)]로 받은 뒤, 위의 ‘엑셀 파일 선택’으로 올려주세요.");
-          } else {
-            setLinkError("시트를 읽지 못했습니다. ‘링크가 있는 모든 사용자 - 뷰어’로 공유했는지 확인해주세요.");
-          }
+          // 용량은 제한이 없음(공개 시트는 그대로 받음). 실패는 대개 '공개 공유 안 됨'.
+          setLinkError("시트를 읽지 못했습니다. 구글시트 [공유]에서 ‘링크가 있는 모든 사용자 - 뷰어’로 바꾼 뒤 다시 시도해주세요. (용량 제한은 없어요.)");
           continue;
         }
         const buf = await res.arrayBuffer();
@@ -174,7 +168,7 @@ export default function ImportWorkOrdersModal({
           {/* 구글시트 링크로 가져오기 */}
           <div className="rounded-2xl border border-gray-200 p-4">
             <div className="text-sm font-semibold text-gray-700 mb-1">구글시트 링크로 가져오기</div>
-            <div className="text-xs text-gray-400 mb-2">시트를 <b>‘링크가 있는 모든 사용자 - 뷰어’</b>로 공유한 뒤 링크를 붙여넣으세요. (여러 개는 줄바꿈으로 구분) · 용량이 큰 시트는 <b>[파일→다운로드→Excel(.xlsx)]</b>로 받아 위의 파일 업로드를 이용하세요.</div>
+            <div className="text-xs text-gray-400 mb-2">시트를 <b>‘링크가 있는 모든 사용자 - 뷰어’</b>로 공유한 뒤 링크를 붙여넣으세요. (여러 개는 줄바꿈으로 구분) · <b>용량 제한 없음</b> — 큰 시트도 링크로 바로 가져옵니다.</div>
             <div className="flex items-start gap-2">
               <textarea
                 value={linkInput}
