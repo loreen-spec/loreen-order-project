@@ -83,3 +83,31 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
+
+/* ── 기안메이트 (gian) 공용 입력 스타일 ── */
+.gm-inp {
+  width: 100%;
+  border: 1px solid #DDD7EC;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  background: #fff;
+  color: #1E1B2E;
+  font-family: inherit;
+}
+.gm-inp:focus {
+  outline: none;
+  border-color: #836CE0;
+  box-shadow: 0 0 0 3px #EFEAFB;
+}
+.gm-inp.gm-flag {
+  border-color: #D97706;
+  background: #FBF0DF;
+}
+.gm-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9B94AA;
+}

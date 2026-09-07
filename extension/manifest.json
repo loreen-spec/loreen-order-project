@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "기안메이트 — 하이웍스 자동입력",
+  "version": "0.1.0",
+  "description": "기안메이트에서 만든 기안서를 하이웍스 전자결재 작성화면에 자동으로 채워줍니다.",
+  "permissions": ["storage", "clipboardWrite"],
+  "host_permissions": [
+    "https://*.office.hiworks.com/*",
+    "https://*.hiworks.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "https://*.vercel.app/*"
+      ],
+      "js": ["content-app.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.office.hiworks.com/*",
+        "https://*.hiworks.com/*"
+      ],
+      "js": ["content-hiworks.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.office.hiworks.com/*",
+        "https://*.hiworks.com/*"
+      ],
+      "js": ["inpage-hiworks.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
