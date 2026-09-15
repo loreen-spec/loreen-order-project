@@ -719,6 +719,7 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [checked, setChecked] = useState(false);
+  const [needConnect, setNeedConnect] = useState(false);
 
   useEffect(() => {
     const s = (() => { try { return localStorage.getItem("gm_bill_sender") || ""; } catch { return ""; } })();
@@ -741,7 +742,11 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     try {
       const res = await fetch(`/api/gian/email-sync?sender=${encodeURIComponent(s)}&days=45&limit=6`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "메일 조회 실패");
+      if (!res.ok) {
+        if (data.needConnect) { setNeedConnect(true); setErr(""); return; }
+        throw new Error(data.error || "메일 조회 실패");
+      }
+      setNeedConnect(false);
       const done = new Set(processedIds());
       setBills((data.bills || []).filter((b: Bill) => !done.has(b.id)));
     } catch (e: any) {
@@ -776,6 +781,13 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
       </div>
       {err && <div className="text-[12.5px] rounded-lg px-3 py-2 mb-2 flex items-center gap-1.5" style={{ background: "#FBF0DF", color: "#B45309" }}><AlertTriangle size={14} /> {err}</div>}
 
+      {needConnect && (
+        <div className="rounded-xl p-4 mb-2 text-center" style={{ background: "#EFEAFB", border: "1px solid #DDD7EC" }}>
+          <div className="text-[13px] font-semibold mb-2" style={{ color: VD }}>Gmail을 한 번 연결하면 청구서를 자동으로 읽어와요 (읽기 전용)</div>
+          <Btn onClick={() => { window.location.href = "/api/gian/gmail-auth"; }}>📧 Gmail 연결하기</Btn>
+        </div>
+      )}
+
       {!err && checked && bills.length === 0 && !loading && (
         <Empty text="새로 온 청구서가 없어요. (이미 처리했거나, 발신처와 일치하는 메일 없음)" />
       )}
@@ -805,7 +817,7 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
         ))}
       </div>
       <p className="text-[11.5px] text-gray-400 mt-3 leading-relaxed">
-        💡 <b>Gmail 앱 비밀번호</b>를 Vercel 환경변수(<code>GMAIL_USER</code>, <code>GMAIL_APP_PASSWORD</code>)에 넣으면 작동해요. 발신처는 위 칸에 저장됩니다.
+        💡 <b>Gmail 연결(OAuth 읽기 전용)</b> 후 작동해요. 발신처는 위 칸에 저장됩니다.
       </p>
     </Card>
   );
