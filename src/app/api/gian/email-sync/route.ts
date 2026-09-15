@@ -40,8 +40,9 @@ export async function GET(req: Request) {
   const origin = new URL(req.url).origin;
   const url = new URL(req.url);
   const sender = url.searchParams.get("sender") || process.env.GIAN_BILL_SENDER || "";
-  const days = Math.min(Number(url.searchParams.get("days")) || 45, 120);
-  const limit = Math.min(Number(url.searchParams.get("limit")) || 5, 10);
+  const days = Math.min(Number(url.searchParams.get("days")) || 45, 400);
+  const after = url.searchParams.get("after") || ""; // YYYY-MM-DD 이후 전체
+  const limit = Math.min(Number(url.searchParams.get("limit")) || 5, 25);
 
   if (!hasOAuthCreds()) {
     return NextResponse.json({ error: "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET 미설정", needConnect: true }, { status: 400 });
@@ -62,7 +63,9 @@ export async function GET(req: Request) {
 
   const bills: any[] = [];
   try {
-    const q = `from:(${sender}) has:attachment newer_than:${days}d`;
+    const q = after
+      ? `from:(${sender}) has:attachment after:${after.replace(/-/g, "/")}`
+      : `from:(${sender}) has:attachment newer_than:${days}d`;
     const list = await gmail.users.messages.list({ userId: "me", q, maxResults: limit });
     const ids = (list.data.messages || []).map((m: any) => m.id);
 

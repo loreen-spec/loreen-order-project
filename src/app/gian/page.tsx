@@ -713,6 +713,22 @@ function RecurringScreen({ go }: { go: (s: Screen) => void }) {
 
 // ── 받은 청구서 (Gmail) ──────────────────────────────────────
 type Bill = { id: string; date: string; subject: string; from: string; fileName: string; statement: Statement | null; extractError?: string };
+const BILL_START = "2026-05"; // 이 달부터 수집
+
+function monthKey(iso: string) { return (iso || "").slice(0, 7); } // YYYY-MM
+function monthsFrom(start: string): string[] {
+  const [sy, sm] = start.split("-").map(Number);
+  const now = new Date();
+  const out: string[] = [];
+  let y = now.getFullYear(), m = now.getMonth() + 1;
+  while (y > sy || (y === sy && m >= sm)) {
+    out.push(`${y}-${String(m).padStart(2, "0")}`); // 최신부터
+    m--; if (m === 0) { m = 12; y--; }
+  }
+  return out;
+}
+const monthLabel = (k: string) => { const [y, m] = k.split("-"); return `${y.slice(2)}.${m}`; };
+
 function MailBills({ go }: { go: (s: Screen) => void }) {
   const [sender, setSender] = useState("");
   const [bills, setBills] = useState<Bill[]>([]);
@@ -720,11 +736,16 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
   const [err, setErr] = useState("");
   const [checked, setChecked] = useState(false);
   const [needConnect, setNeedConnect] = useState(false);
+  const months = useMemo(() => monthsFrom(BILL_START), []);
+  const [selMonth, setSelMonth] = useState(months[0]); // 기본 = 현재 달
 
   useEffect(() => {
-    const s = (() => { try { return localStorage.getItem("gm_bill_sender") || ""; } catch { return ""; } })();
+    let s = ""; let cached: Bill[] = [];
+    try { s = localStorage.getItem("gm_bill_sender") || ""; } catch {}
+    try { cached = JSON.parse(localStorage.getItem("gm_bills") || "[]"); } catch {}
     setSender(s);
-    if (s) fetchBills(s);
+    if (cached.length) { setBills(cached); setChecked(true); }
+    else if (s) fetchBills(s);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -732,7 +753,7 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     try { return JSON.parse(localStorage.getItem("gm_processed_bills") || "[]"); } catch { return []; }
   }
   function markProcessed(id: string) {
-    try { localStorage.setItem("gm_processed_bills", JSON.stringify([...processedIds(), id].slice(-200))); } catch {}
+    try { localStorage.setItem("gm_processed_bills", JSON.stringify([...processedIds(), id].slice(-300))); } catch {}
   }
 
   async function fetchBills(s: string) {
@@ -740,15 +761,16 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     setLoading(true); setErr(""); setChecked(true);
     try { localStorage.setItem("gm_bill_sender", s); } catch {}
     try {
-      const res = await fetch(`/api/gian/email-sync?sender=${encodeURIComponent(s)}&days=45&limit=6`);
+      const res = await fetch(`/api/gian/email-sync?sender=${encodeURIComponent(s)}&after=${BILL_START}-01&limit=25`);
       const data = await res.json();
       if (!res.ok) {
         if (data.needConnect) { setNeedConnect(true); setErr(""); return; }
         throw new Error(data.error || "메일 조회 실패");
       }
       setNeedConnect(false);
-      const done = new Set(processedIds());
-      setBills((data.bills || []).filter((b: Bill) => !done.has(b.id)));
+      const list: Bill[] = data.bills || [];
+      setBills(list);
+      try { localStorage.setItem("gm_bills", JSON.stringify(list)); } catch {}
     } catch (e: any) {
       setErr(e.message || "메일 조회 중 오류");
     } finally { setLoading(false); }
@@ -760,16 +782,15 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     markProcessed(b.id);
     go("create");
   }
-  function ignore(b: Bill) {
-    markProcessed(b.id);
-    setBills((prev) => prev.filter((x) => x.id !== b.id));
-  }
+
+  const done = new Set(processedIds());
+  const monthBills = bills.filter((b) => monthKey(b.date) === selMonth);
+  const countByMonth = (k: string) => bills.filter((b) => monthKey(b.date) === k).length;
 
   return (
     <Card className="p-5 mb-5">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 className="font-extrabold text-[15px] flex items-center gap-2">📧 받은 청구서 <span className="text-[12px] font-semibold text-gray-400">(메일 자동 읽기)</span></h3>
-        {bills.length > 0 && <Pill tone="warn">새 청구서 {bills.length}건</Pill>}
       </div>
       <div className="flex gap-2 mb-3 flex-wrap">
         <input className="gm-inp flex-1" style={{ minWidth: 200 }} value={sender}
@@ -788,36 +809,59 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
         </div>
       )}
 
-      {!err && checked && bills.length === 0 && !loading && (
-        <Empty text="새로 온 청구서가 없어요. (이미 처리했거나, 발신처와 일치하는 메일 없음)" />
+      {/* 월 토글 */}
+      {(bills.length > 0 || checked) && !needConnect && (
+        <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide">
+          {months.map((k) => {
+            const on = k === selMonth; const c = countByMonth(k);
+            return (
+              <button key={k} onClick={() => setSelMonth(k)}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-bold border transition-colors"
+                style={on ? { background: V, color: "#fff", borderColor: V }
+                  : { background: "#fff", color: "#6B6579", borderColor: "#E9E5F2" }}>
+                {monthLabel(k)}
+                {c > 0 && <span className="text-[10.5px] rounded-full px-1.5" style={on ? { background: "rgba(255,255,255,.25)" } : { background: "#EFEAFB", color: VD }}>{c}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {!err && checked && !loading && monthBills.length === 0 && (
+        <Empty text={`${monthLabel(selMonth)}월엔 받은 청구서가 없어요.`} />
       )}
 
       <div className="space-y-2.5">
-        {bills.map((b) => (
-          <div key={b.id} className="border rounded-xl p-3.5" style={{ borderColor: "#E9E5F2" }}>
-            <div className="flex items-start gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-[13.5px] truncate">{b.subject}</div>
-                <div className="text-[12px] text-gray-400 mt-0.5">{b.from} · {new Date(b.date).toLocaleDateString("ko-KR")} · {b.fileName}</div>
-                {b.statement ? (
-                  <div className="text-[13px] mt-1.5">
-                    <b>{b.statement.vendor || "거래처 미상"}</b> · <span className="tabular-nums font-extrabold" style={{ color: VD }}>₩{won(b.statement.grandTotal)}</span>
-                    <span className="text-gray-400"> · 품목 {b.statement.items.length}건</span>
-                  </div>
-                ) : (
-                  <div className="text-[12px] mt-1.5" style={{ color: "#D97706" }}>⚠️ 첨부 인식 실패{b.extractError ? ` (${b.extractError})` : ""} — 직접 업로드해주세요</div>
-                )}
+        {monthBills.map((b) => {
+          const isDone = done.has(b.id);
+          return (
+            <div key={b.id} className="border rounded-xl p-3.5" style={{ borderColor: "#E9E5F2" }}>
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-[13.5px] truncate">{b.subject}</div>
+                  <div className="text-[12px] text-gray-400 mt-0.5">{new Date(b.date).toLocaleDateString("ko-KR")} · {b.fileName}</div>
+                  {b.statement ? (
+                    <div className="text-[13px] mt-1.5">
+                      <b>{b.statement.vendor || "거래처 미상"}</b> · <span className="tabular-nums font-extrabold" style={{ color: VD }}>₩{won(b.statement.grandTotal)}</span>
+                      <span className="text-gray-400"> · 품목 {b.statement.items.length}건</span>
+                    </div>
+                  ) : (
+                    <div className="text-[12px] mt-1.5" style={{ color: "#D97706" }}>⚠️ 첨부 인식 실패{b.extractError ? ` (${b.extractError})` : ""} — 직접 업로드해주세요</div>
+                  )}
+                </div>
+                {isDone && <Pill tone="ok">작성함</Pill>}
+              </div>
+              <div className="mt-3">
+                <Btn onClick={() => writeGian(b)} disabled={!b.statement} style={{ width: "100%" }}>
+                  <ArrowRight size={15} /> {isDone ? "다시 기안서 작성" : "기안서 작성"}
+                </Btn>
               </div>
             </div>
-            <div className="flex gap-2 mt-3">
-              <Btn onClick={() => writeGian(b)} disabled={!b.statement} style={{ flex: 1 }}><ArrowRight size={15} /> 기안서 작성</Btn>
-              <Btn kind="ghost" onClick={() => ignore(b)}>무시</Btn>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <p className="text-[11.5px] text-gray-400 mt-3 leading-relaxed">
-        💡 <b>Gmail 연결(OAuth 읽기 전용)</b> 후 작동해요. 발신처는 위 칸에 저장됩니다.
+        💡 {BILL_START.replace("-", "년 ")}월부터 받은 청구서를 월별로 볼 수 있어요. [메일 확인]으로 최신 메일을 다시 불러옵니다.
       </p>
     </Card>
   );
