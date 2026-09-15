@@ -342,6 +342,24 @@ function ReviewStep({ st, setSt, vendor, setVendor, onNext, imgUrl, fileName }: 
   }
   function delItem(i: number) { setSt(recalcTotals({ ...st, items: st.items.filter((_, idx) => idx !== i) })); }
 
+  // 항목 한 줄로 합치기 (여러 품목 → 1개 통짜 + 전체금액)
+  const [mergedBackup, setMergedBackup] = useState<StatementItem[] | null>(null);
+  function mergeOne() {
+    if (st.items.length <= 1) return;
+    setMergedBackup(st.items);
+    const merged: StatementItem = {
+      name: summarizeItems(st.items),
+      unitPrice: st.supplyTotal, qty: 1,
+      supply: st.supplyTotal, vat: st.vatTotal, total: st.grandTotal,
+    };
+    setSt(recalcTotals({ ...st, items: [merged] }));
+  }
+  function expandBack() {
+    if (!mergedBackup) return;
+    setSt(recalcTotals({ ...st, items: mergedBackup }));
+    setMergedBackup(null);
+  }
+
   const vatLow = (conf.vat ?? 1) < 0.7;
 
   return (
@@ -367,14 +385,6 @@ function ReviewStep({ st, setSt, vendor, setVendor, onNext, imgUrl, fileName }: 
           </Field>
           <Field label="거래일자" conf={conf.date}>
             <input className="gm-inp" type="date" value={st.date} onChange={(e) => set("date", e.target.value)} />
-          </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="사업자번호" conf={vendor ? 1 : conf.bizNo}>
-            <input className="gm-inp" value={st.bizNo || vendor?.bizNo || ""} onChange={(e) => set("bizNo", e.target.value)} />
-          </Field>
-          <Field label={<>계정과목 {vendor && <Pill tone="draft">DB 자동</Pill>}</>}>
-            <input className="gm-inp" value={vendor?.account || ""} onChange={(e) => setVendor(vendor ? { ...vendor, account: e.target.value } : { id: uid(), name: st.vendor, account: e.target.value })} placeholder="예: 원부자재비" />
           </Field>
         </div>
         {!vendor && st.vendor && (
@@ -406,7 +416,16 @@ function ReviewStep({ st, setSt, vendor, setVendor, onNext, imgUrl, fileName }: 
             </tbody>
           </table>
         </div>
-        <button onClick={addItem} className="text-[12.5px] font-bold mt-2 flex items-center gap-1" style={{ color: VD }}><Plus size={14} /> 품목 추가</button>
+        <div className="flex items-center gap-4 mt-2">
+          <button onClick={addItem} className="text-[12.5px] font-bold flex items-center gap-1" style={{ color: VD }}><Plus size={14} /> 품목 추가</button>
+          {mergedBackup ? (
+            <button onClick={expandBack} className="text-[12.5px] font-bold flex items-center gap-1 text-gray-500 hover:text-gray-700">↩ 항목별로 되돌리기</button>
+          ) : (
+            st.items.length > 1 && (
+              <button onClick={mergeOne} className="text-[12.5px] font-bold flex items-center gap-1" style={{ color: VD }}>▤ 한 줄로 합치기</button>
+            )
+          )}
+        </div>
 
         <div className="mt-4 rounded-xl px-4 py-3 flex items-center justify-between" style={{ background: "#EFEAFB" }}>
           <span className="font-bold" style={{ color: VD }}>합계 금액</span>
