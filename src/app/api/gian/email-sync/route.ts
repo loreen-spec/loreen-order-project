@@ -5,6 +5,7 @@ export const maxDuration = 60;
 import { NextResponse } from "next/server";
 import { gmailClient, hasOAuthCreds } from "@/lib/gian/google";
 import { extractStatement } from "@/lib/gian/extractServer";
+import * as XLSX from "xlsx";
 
 // ── Gmail(OAuth 읽기전용)에서 청구서 메일을 읽어와 구조화 ──────
 // GET /api/gian/email-sync?sender=adc&days=45&limit=5
@@ -18,22 +19,40 @@ function getHeader(headers: any[], name: string) {
 // payload 트리를 순회하며 PDF/이미지 첨부 파트를 찾는다
 function findAttachmentPart(payload: any): any | null {
   if (!payload) return null;
-  const parts = payload.parts || [];
-  // 우선 PDF
+  // 우선순위: PDF → 엑셀 → 이미지
   const isPdf = (p: any) => /pdf/i.test(p.mimeType || "") || /\.pdf$/i.test(p.filename || "");
+  const isExcel = (p: any) => /spreadsheet|excel|ms-excel|officedocument.spreadsheet/i.test(p.mimeType || "") || /\.(xlsx|xls|csv)$/i.test(p.filename || "");
   const isImg = (p: any) => /^image\//i.test(p.mimeType || "");
-  const stack = [...parts];
-  let imgFallback: any = null;
+  const stack = [...(payload.parts || [])];
+  let excelFallback: any = null, imgFallback: any = null;
   while (stack.length) {
     const p = stack.shift();
     if (!p) continue;
     if (p.parts) stack.push(...p.parts);
     if (p.body?.attachmentId) {
       if (isPdf(p)) return p;
+      if (isExcel(p) && !excelFallback) excelFallback = p;
       if (isImg(p) && !imgFallback) imgFallback = p;
     }
   }
-  return imgFallback;
+  return excelFallback || imgFallback;
+}
+
+function isExcelPart(p: any) {
+  return /spreadsheet|excel|ms-excel|officedocument.spreadsheet/i.test(p?.mimeType || "") || /\.(xlsx|xls|csv)$/i.test(p?.filename || "");
+}
+
+// 모든 첨부(파일명/타입) 수집 — 진단용
+function collectAttachments(payload: any): { filename: string; mimeType: string }[] {
+  const out: { filename: string; mimeType: string }[] = [];
+  const stack = [...(payload?.parts || [])];
+  while (stack.length) {
+    const p = stack.shift();
+    if (!p) continue;
+    if (p.parts) stack.push(...p.parts);
+    if (p.body?.attachmentId && p.filename) out.push({ filename: p.filename, mimeType: p.mimeType || "" });
+  }
+  return out;
 }
 
 export async function GET(req: Request) {
@@ -62,50 +81,75 @@ export async function GET(req: Request) {
   }
 
   const bills: any[] = [];
+  let matched = 0;
   try {
+    // has:attachment 를 빼서 발신처 매칭 자체를 먼저 확인(진단), 첨부 유무는 각 메일에서 판단
     const q = after
-      ? `from:(${sender}) has:attachment after:${after.replace(/-/g, "/")}`
-      : `from:(${sender}) has:attachment newer_than:${days}d`;
+      ? `from:(${sender}) after:${after.replace(/-/g, "/")}`
+      : `from:(${sender}) newer_than:${days}d`;
     const list = await gmail.users.messages.list({ userId: "me", q, maxResults: limit });
     const ids = (list.data.messages || []).map((m: any) => m.id);
+    matched = ids.length;
 
     for (const id of ids) {
       const msg = await gmail.users.messages.get({ userId: "me", id, format: "full" });
       const payload = msg.data.payload;
       const headers = payload?.headers || [];
-      const att = findAttachmentPart(payload);
-      if (!att) continue;
+      const allAtts = collectAttachments(payload);
+      const att = findAttachmentPart(payload); // PDF/이미지 우선
 
-      const attData = await gmail.users.messages.attachments.get({
-        userId: "me", messageId: id, id: att.body.attachmentId,
-      });
-      const base64 = Buffer.from(attData.data.data, "base64url").toString("base64");
-
-      let statement: any = null;
-      let extractError = "";
-      try {
-        statement = await extractStatement({
-          imageBase64: base64,
-          mimeType: att.mimeType || (/\.pdf$/i.test(att.filename || "") ? "application/pdf" : "image/jpeg"),
-        });
-      } catch (e: any) {
-        extractError = e.message || "인식 실패";
-      }
-
-      bills.push({
+      const base = {
         id: getHeader(headers, "Message-ID") || id,
         gmailId: id,
         date: new Date(Number(msg.data.internalDate) || Date.now()).toISOString(),
         subject: getHeader(headers, "Subject") || "(제목 없음)",
         from: getHeader(headers, "From") || "",
-        fileName: att.filename || "attachment",
-        statement,
-        extractError,
+      };
+
+      if (!att) {
+        // PDF/이미지 첨부 없음 → 진단용으로 목록엔 포함(인식은 불가)
+        const names = allAtts.map((a) => a.filename).filter(Boolean).join(", ");
+        bills.push({
+          ...base,
+          fileName: names || "(첨부 없음)",
+          statement: null,
+          extractError: names ? `PDF/이미지가 아닌 첨부(${names}) — 자동인식 불가` : "첨부 파일 없음",
+        });
+        continue;
+      }
+
+      const attData = await gmail.users.messages.attachments.get({
+        userId: "me", messageId: id, id: att.body.attachmentId,
       });
+      const buf = Buffer.from(attData.data.data, "base64url");
+
+      let statement: any = null;
+      let extractError = "";
+      try {
+        if (isExcelPart(att)) {
+          // 엑셀 → 텍스트(CSV)로 변환 후 인식
+          const wb = XLSX.read(buf, { type: "buffer" });
+          const chunks: string[] = [];
+          for (const name of wb.SheetNames) {
+            const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name], { blankrows: false });
+            if (csv.trim()) chunks.push(`[시트: ${name}]\n${csv}`);
+          }
+          statement = await extractStatement({ text: chunks.join("\n\n").slice(0, 20000) });
+        } else {
+          statement = await extractStatement({
+            imageBase64: buf.toString("base64"),
+            mimeType: att.mimeType || (/\.pdf$/i.test(att.filename || "") ? "application/pdf" : "image/jpeg"),
+          });
+        }
+      } catch (e: any) {
+        extractError = e.message || "인식 실패";
+      }
+
+      bills.push({ ...base, fileName: att.filename || "attachment", statement, extractError });
     }
   } catch (e: any) {
     return NextResponse.json({ error: "메일 조회 실패: " + (e.message || "").slice(0, 200) }, { status: 500 });
   }
 
-  return NextResponse.json({ bills, sender, days });
+  return NextResponse.json({ bills, matched, sender, days });
 }
