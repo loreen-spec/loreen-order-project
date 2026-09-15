@@ -20,6 +20,9 @@ const V = "#836CE0";
 const VD = "#5B44C4";
 type Screen = "home" | "create" | "vendors" | "recurring" | "history";
 
+// 메일/외부에서 넘어온 명세서를 '새 기안서 작성' 2단계로 넘기는 임시 전달용
+let incomingStatement: Statement | null = null;
+
 // ── '기안 대기'(초안) 목록을 확장프로그램으로 동기화 ──────────────
 // 초안 상태 문서들의 하이웍스 입력용 payload를 localStorage에 저장하고
 // 확장(content-app.js)에 갱신 신호를 보낸다. 확장은 이를 하이웍스 패널에 리스트로 표시.
@@ -59,7 +62,7 @@ export default function GianMate() {
         {screen === "home" && <HomeScreen go={setScreen} />}
         {screen === "create" && <CreateScreen go={setScreen} />}
         {screen === "vendors" && <VendorsScreen />}
-        {screen === "recurring" && <RecurringScreen />}
+        {screen === "recurring" && <RecurringScreen go={setScreen} />}
         {screen === "history" && <HistoryScreen />}
       </main>
     </div>
@@ -209,6 +212,15 @@ function CreateScreen({ go }: { go: (s: Screen) => void }) {
   const [st, setSt] = useState<Statement | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // 메일에서 넘어온 청구서를 바로 인식결과(2단계)로 로드
+  useEffect(() => {
+    if (incomingStatement) {
+      const s = recalcTotals(incomingStatement);
+      incomingStatement = null;
+      setSt(s); setVendor(matchVendor(s.vendor)); setStep(2);
+    }
+  }, []);
 
   // 예시 미리보기: 주소 끝에 #demo 를 붙이면 샘플 명세서로 흐름을 확인할 수 있어요.
   useEffect(() => {
@@ -656,7 +668,7 @@ function VendorModal({ v, onClose, onSave }: { v: Vendor; onClose: () => void; o
 }
 
 // ─────────────────────────────────────────────── 정기결제
-function RecurringScreen() {
+function RecurringScreen({ go }: { go: (s: Screen) => void }) {
   const [list, setList] = useState<Recurring[]>([]);
   const [adding, setAdding] = useState(false);
   useEffect(() => setList(getRecurring()), []);
@@ -668,8 +680,11 @@ function RecurringScreen() {
 
   return (
     <>
-      <Header title="정기결제" sub="매월 반복되는 결제를 등록해두세요. (자동 생성은 다음 단계에서 연결됩니다)"
+      <Header title="정기결제" sub="메일로 온 청구서를 자동으로 읽어와 기안 대기로 만들 수 있어요."
         action={<Btn onClick={() => setAdding(true)}><Plus size={16} /> 정기결제 등록</Btn>} />
+
+      <MailBills go={go} />
+
       <div className="grid grid-cols-3 gap-3.5 mb-5">
         <Stat k="등록된 정기결제" v={`${list.length}건`} dot={V} />
         <Stat k="월 정기 결제액" v={`₩${won(total)}`} dot={VD} />
@@ -695,6 +710,107 @@ function RecurringScreen() {
     </>
   );
 }
+
+// ── 받은 청구서 (Gmail) ──────────────────────────────────────
+type Bill = { id: string; date: string; subject: string; from: string; fileName: string; statement: Statement | null; extractError?: string };
+function MailBills({ go }: { go: (s: Screen) => void }) {
+  const [sender, setSender] = useState("");
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    const s = (() => { try { return localStorage.getItem("gm_bill_sender") || ""; } catch { return ""; } })();
+    setSender(s);
+    if (s) fetchBills(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function processedIds(): string[] {
+    try { return JSON.parse(localStorage.getItem("gm_processed_bills") || "[]"); } catch { return []; }
+  }
+  function markProcessed(id: string) {
+    try { localStorage.setItem("gm_processed_bills", JSON.stringify([...processedIds(), id].slice(-200))); } catch {}
+  }
+
+  async function fetchBills(s: string) {
+    if (!s) { setErr("발신처(업체 이름 또는 이메일 일부)를 입력하세요."); return; }
+    setLoading(true); setErr(""); setChecked(true);
+    try { localStorage.setItem("gm_bill_sender", s); } catch {}
+    try {
+      const res = await fetch(`/api/gian/email-sync?sender=${encodeURIComponent(s)}&days=45&limit=6`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "메일 조회 실패");
+      const done = new Set(processedIds());
+      setBills((data.bills || []).filter((b: Bill) => !done.has(b.id)));
+    } catch (e: any) {
+      setErr(e.message || "메일 조회 중 오류");
+    } finally { setLoading(false); }
+  }
+
+  function writeGian(b: Bill) {
+    if (!b.statement) return;
+    incomingStatement = b.statement;
+    markProcessed(b.id);
+    go("create");
+  }
+  function ignore(b: Bill) {
+    markProcessed(b.id);
+    setBills((prev) => prev.filter((x) => x.id !== b.id));
+  }
+
+  return (
+    <Card className="p-5 mb-5">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h3 className="font-extrabold text-[15px] flex items-center gap-2">📧 받은 청구서 <span className="text-[12px] font-semibold text-gray-400">(메일 자동 읽기)</span></h3>
+        {bills.length > 0 && <Pill tone="warn">새 청구서 {bills.length}건</Pill>}
+      </div>
+      <div className="flex gap-2 mb-3 flex-wrap">
+        <input className="gm-inp flex-1" style={{ minWidth: 200 }} value={sender}
+          onChange={(e) => setSender(e.target.value)}
+          placeholder="발신처 (예: ADC항운, 재무팀, @adc.co.kr 등 일부)" />
+        <Btn onClick={() => fetchBills(sender)} disabled={loading}>
+          {loading ? <><RefreshCw size={15} className="animate-spin" /> 확인 중…</> : <><RefreshCw size={15} /> 메일 확인</>}
+        </Btn>
+      </div>
+      {err && <div className="text-[12.5px] rounded-lg px-3 py-2 mb-2 flex items-center gap-1.5" style={{ background: "#FBF0DF", color: "#B45309" }}><AlertTriangle size={14} /> {err}</div>}
+
+      {!err && checked && bills.length === 0 && !loading && (
+        <Empty text="새로 온 청구서가 없어요. (이미 처리했거나, 발신처와 일치하는 메일 없음)" />
+      )}
+
+      <div className="space-y-2.5">
+        {bills.map((b) => (
+          <div key={b.id} className="border rounded-xl p-3.5" style={{ borderColor: "#E9E5F2" }}>
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-[13.5px] truncate">{b.subject}</div>
+                <div className="text-[12px] text-gray-400 mt-0.5">{b.from} · {new Date(b.date).toLocaleDateString("ko-KR")} · {b.fileName}</div>
+                {b.statement ? (
+                  <div className="text-[13px] mt-1.5">
+                    <b>{b.statement.vendor || "거래처 미상"}</b> · <span className="tabular-nums font-extrabold" style={{ color: VD }}>₩{won(b.statement.grandTotal)}</span>
+                    <span className="text-gray-400"> · 품목 {b.statement.items.length}건</span>
+                  </div>
+                ) : (
+                  <div className="text-[12px] mt-1.5" style={{ color: "#D97706" }}>⚠️ 첨부 인식 실패{b.extractError ? ` (${b.extractError})` : ""} — 직접 업로드해주세요</div>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Btn onClick={() => writeGian(b)} disabled={!b.statement} style={{ flex: 1 }}><ArrowRight size={15} /> 기안서 작성</Btn>
+              <Btn kind="ghost" onClick={() => ignore(b)}>무시</Btn>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11.5px] text-gray-400 mt-3 leading-relaxed">
+        💡 <b>Gmail 앱 비밀번호</b>를 Vercel 환경변수(<code>GMAIL_USER</code>, <code>GMAIL_APP_PASSWORD</code>)에 넣으면 작동해요. 발신처는 위 칸에 저장됩니다.
+      </p>
+    </Card>
+  );
+}
+
 function RecurringModal({ vendors, onClose, onSave }: { vendors: Vendor[]; onClose: () => void; onSave: (r: Recurring) => void }) {
   const [f, setF] = useState<Recurring>({ id: uid(), name: "", vendorId: "", vendorName: "", dayOfMonth: 5, amount: 0, active: true });
   const set = (k: keyof Recurring, v: any) => setF({ ...f, [k]: v });
