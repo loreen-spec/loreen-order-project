@@ -114,56 +114,51 @@
       (i) => i.offsetParent !== null && /클릭 후 입력|이름 입력|참조/.test(i.placeholder || "")
     ) || null;
   }
-  function approvalText() {
-    const h = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && (e.textContent || "").trim() === "결재선");
-    const box = h ? h.closest("table,section,div,form") : null;
-    return (box || document.body).textContent || "";
-  }
   const norm = (s) => (s || "").replace(/\s/g, "");
+  // 참조 줄의 현재 텍스트(우리 패널 #gm-panel 제외)
+  function refRowText() {
+    const inp = refInput();
+    if (!inp) return "";
+    const row = inp.closest("tr") || inp.parentElement?.parentElement || inp.parentElement || document;
+    return row.textContent || "";
+  }
   // typeStr(예: "sunny") 입력 → 자동완성 대기 → matchStr(예: "sunny김진선") 항목 클릭
   async function addRefByTyping(typeStr, matchStr) {
     const inp = refInput();
     if (!inp) return "no-input";
     inp.focus();
-    setInputValue(inp, typeStr);
-    // 자동완성 트리거용 키 이벤트
+    setInputValue(inp, "");       // 잔여 텍스트 제거
+    setInputValue(inp, typeStr);  // 검색어 입력
     for (const t of ["keydown", "keypress", "input", "keyup"]) {
       inp.dispatchEvent(t === "input" ? new Event("input", { bubbles: true })
         : new KeyboardEvent(t, { key: typeStr.slice(-1), bubbles: true }));
     }
-    // 자동완성(AJAX) 대기하며 후보 탐색 (최대 ~2초)
     const want = norm(matchStr);
     for (let i = 0; i < 8; i++) {
       await wait(280);
-      const cand = [...document.querySelectorAll("li,a,div,td,span,p,tr")].filter(
-        (e) => e !== inp && e.offsetParent !== null && e.offsetHeight > 0 && e.offsetHeight < 70 && e.offsetWidth < 520 && norm(e.textContent).includes(want)
+      const cand = [...document.querySelectorAll("li,a,td,div,span,p")].filter(
+        (e) => e !== inp && !e.closest("#gm-panel") && e.offsetParent !== null &&
+          e.offsetHeight > 0 && e.offsetHeight < 70 && e.offsetWidth < 520 && norm(e.textContent).includes(want)
       );
       if (cand.length) {
-        cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight); // 가장 안쪽 항목
+        cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight);
         cand[0].click();
         await wait(300);
         return "clicked";
       }
     }
-    // 폴백: Enter
-    for (const t of ["keydown", "keyup"]) inp.dispatchEvent(new KeyboardEvent(t, { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true }));
-    await wait(300);
-    return "enter";
+    // 후보 못 찾음 → 입력칸 비워서 오작동 방지
+    setInputValue(inp, "");
+    return "no-suggestion";
   }
-  // 참조에 필요한 사람(예: sunny)을 없으면 추가
+  // 참조에 sunny김진선 자동 추가 (없을 때만). 나머지 기본 참조는 건드리지 않음.
   async function ensureReferences(doc) {
     const refs = (doc.approval && doc.approval.references) || [];
-    const added = [];
-    for (const r of refs) {
-      const nm = r.name || "";
-      const korean = nm.replace(/[A-Za-z0-9]/g, ""); // 한글 이름부분
-      if (korean && approvalText().includes(korean)) continue; // 이미 있음
-      // 검색어: 영문이 앞이면 영문부분(사용자가 'sunny'로 검색), 아니면 한글이름
-      const typeStr = /^[A-Za-z]/.test(nm) ? (nm.match(/^[A-Za-z]+/) || [nm])[0] : (korean || nm);
-      const res = await addRefByTyping(typeStr, nm);
-      if (res === "clicked") added.push(nm);
-    }
-    return added;
+    const sunny = refs.find((r) => /sunny|김진선/i.test(r.name || ""));
+    if (!sunny) return [];
+    if (refRowText().includes("김진선")) return []; // 이미 있음
+    const res = await addRefByTyping("sunny", "sunny김진선");
+    return res === "clicked" ? ["sunny김진선"] : [];
   }
 
   async function fill(doc) {
