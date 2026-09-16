@@ -195,10 +195,29 @@
     const table = approvalTable(); if (!table) return "no-table";
     const refIn = refInput();
     const refTop = refIn ? refIn.getBoundingClientRect().top : 99999;
-    // 신청측(왼쪽 위) "+" 선택
-    const plus = [...table.querySelectorAll("*")].filter(
-      (e) => e.children.length === 0 && (e.textContent || "").trim() === "+" && e.offsetParent !== null && e.getBoundingClientRect().top < refTop - 10
-    ).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+
+    // 신청측 "+" 찾기 — 1) 텍스트/속성 2) '신청' 칸 바로 위 좌표로 elementFromPoint
+    let plus = [...table.querySelectorAll("a,button,span,div,td,i,img")].filter((e) => {
+      if (e.offsetParent === null) return false;
+      const r = e.getBoundingClientRect();
+      if (r.top >= refTop - 10) return false;
+      const txt = (e.textContent || "").trim();
+      const meta = ((e.getAttribute("title") || "") + (e.getAttribute("aria-label") || "") + (e.className || "") + (e.id || "")).toLowerCase();
+      return txt === "+" || /add|plus|추가/.test(meta);
+    }).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+
+    if (!plus) {
+      const sinchung = [...table.querySelectorAll("td,th,div,span")].find((e) => (e.textContent || "").trim() === "신청" && e.offsetParent !== null);
+      const trect = table.getBoundingClientRect();
+      if (sinchung) {
+        const s = sinchung.getBoundingClientRect();
+        // 신청 칸 x중앙, 표 상단 근처(=+ 위치) 몇 지점 시도
+        for (const dy of [14, 20, 26, 10]) {
+          const el = document.elementFromPoint(s.left + s.width / 2, trect.top + dy);
+          if (el && table.contains(el) && el.getBoundingClientRect().top < refTop - 10) { plus = el; break; }
+        }
+      }
+    }
     if (!plus) return "no-plus";
     fireMouse(plus.closest("button,a,td,div") || plus);
 
