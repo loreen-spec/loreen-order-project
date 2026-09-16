@@ -190,52 +190,59 @@
     if (del) { fireMouse(del); return true; }
     return false;
   }
+  // 모달(신청 설정) 감지: 확인/취소 버튼 + 입력칸을 가진 컨테이너
+  async function detectModal(tries) {
+    for (let i = 0; i < (tries || 6); i++) {
+      await wait(180);
+      const t = [...document.querySelectorAll("*")].find(
+        (e) => e.offsetParent !== null && /신청 설정|처리 설정|결재선 설정/.test(e.textContent || "") && (e.textContent || "").length < 30
+      );
+      if (t) { let m = t.closest("div,section,form"); while (m && !m.querySelector("input")) m = m.parentElement; if (m && m.querySelector("input")) return m; }
+      const ok = [...document.querySelectorAll("button,a,input[type='button'],input[type='submit']")].find(
+        (b) => b.offsetParent !== null && /^(확인|저장|적용|등록)$/.test((b.textContent || b.value || "").trim())
+      );
+      if (ok) { let m = ok.closest("div,section,form"), d = 0; while (m && d < 6) { if (m.querySelector("input")) return m; m = m.parentElement; d++; } }
+    }
+    return null;
+  }
+
   // 신청측 "+" 클릭 → "신청 설정" 모달 → 검색 입력 → 후보 클릭 → 확인
   async function addApprover(typeStr, matchKor) {
     const table = approvalTable(); if (!table) return "no-table";
     const refIn = refInput();
     const refTop = refIn ? refIn.getBoundingClientRect().top : 99999;
 
-    // 신청측 "+" 찾기 — 1) 텍스트/속성 2) '신청' 칸 바로 위 좌표로 elementFromPoint
-    let plus = [...table.querySelectorAll("a,button,span,div,td,i,img")].filter((e) => {
-      if (e.offsetParent === null) return false;
+    // "+" 후보 모으기: 텍스트/속성 + 좌표(신청 칸 위)
+    const cands = [];
+    [...table.querySelectorAll("a,button,span,div,td,i,img")].forEach((e) => {
+      if (e.offsetParent === null) return;
       const r = e.getBoundingClientRect();
-      if (r.top >= refTop - 10) return false;
+      if (r.top >= refTop - 10) return;
       const txt = (e.textContent || "").trim();
       const meta = ((e.getAttribute("title") || "") + (e.getAttribute("aria-label") || "") + (e.className || "") + (e.id || "")).toLowerCase();
-      return txt === "+" || /add|plus|추가/.test(meta);
-    }).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
-
-    if (!plus) {
-      const sinchung = [...table.querySelectorAll("td,th,div,span")].find((e) => (e.textContent || "").trim() === "신청" && e.offsetParent !== null);
-      const trect = table.getBoundingClientRect();
-      if (sinchung) {
-        const s = sinchung.getBoundingClientRect();
-        // 신청 칸 x중앙, 표 상단 근처(=+ 위치) 몇 지점 시도
-        for (const dy of [14, 20, 26, 10]) {
-          const el = document.elementFromPoint(s.left + s.width / 2, trect.top + dy);
-          if (el && table.contains(el) && el.getBoundingClientRect().top < refTop - 10) { plus = el; break; }
-        }
+      if (txt === "+" || /add|plus|추가/.test(meta)) cands.push(e);
+    });
+    const sinchung = [...table.querySelectorAll("td,th,div,span")].find((e) => (e.textContent || "").trim() === "신청" && e.offsetParent !== null);
+    const trect = table.getBoundingClientRect();
+    if (sinchung) {
+      const s = sinchung.getBoundingClientRect();
+      for (const dy of [12, 16, 20, 24]) {
+        const el = document.elementFromPoint(s.left + s.width / 2, trect.top + dy);
+        if (el && table.contains(el) && el.getBoundingClientRect().top < refTop - 10 && !cands.includes(el)) cands.push(el);
       }
     }
-    if (!plus) return "no-plus";
-    fireMouse(plus.closest("button,a,td,div") || plus);
+    cands.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    if (!cands.length) return "no-plus";
 
-    // "신청 설정" 모달 대기
+    // 후보를 하나씩 눌러 모달이 뜨는지 확인
     let modal = null;
-    for (let i = 0; i < 15; i++) {
-      await wait(200);
-      const t = [...document.querySelectorAll("*")].find(
-        (e) => e.offsetParent !== null && /신청 설정|결재자|처리 설정/.test((e.textContent || "")) && (e.textContent || "").length < 30
-      );
-      if (t) {
-        modal = t.closest("div,section,form") || t.parentElement;
-        // 입력칸을 가진 상위 컨테이너까지 올라감
-        while (modal && !modal.querySelector("input")) modal = modal.parentElement;
-        if (modal && modal.querySelector("input")) break;
-      }
+    for (const c of cands) {
+      fireMouse(c.closest("button,a,td,div") || c);
+      modal = await detectModal(5);
+      if (modal) break;
     }
     if (!modal) return "no-modal";
+
     const inp = [...modal.querySelectorAll("input")].find(
       (i) => i.offsetParent !== null && i.type !== "checkbox" && i.type !== "radio" && i.type !== "hidden"
     );
@@ -275,10 +282,15 @@
       ((doc.approval && doc.approval.approvers) || []).some((a) => /최철용|Hans/i.test(a.name || ""));
     if (!ceo) return null;
     const steps = [];
-    if (removeReference("최철용")) steps.push("참조Hans삭제"); else steps.push("참조Hans삭제실패");
-    await wait(500);
+    // 안전: 결재자 추가가 성공한 뒤에만 참조에서 Hans 삭제
     const res = await addApprover("hans", "최철용");
-    steps.push(res === "added" ? "결재자Hans추가" : "결재자Hans추가실패(" + res + ")");
+    if (res === "added") {
+      steps.push("결재자Hans추가");
+      await wait(400);
+      steps.push(removeReference("최철용") ? "참조Hans삭제" : "참조Hans삭제실패");
+    } else {
+      steps.push("결재자Hans추가실패(" + res + ")");
+    }
     return steps;
   }
 
