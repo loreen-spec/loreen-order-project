@@ -912,9 +912,9 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
               {/* 작성여부 신호등 (빨강 미작성 → 초록 작성완료) */}
               <button onClick={() => toggleDone(b.id)} title="클릭해서 작성여부 표시"
                 className="flex flex-col items-center gap-1 shrink-0" style={{ width: 54 }}>
-                <span className="w-6 h-6 rounded-full grid place-items-center transition-all"
+                <span className="w-7 h-7 rounded-full grid place-items-center transition-all"
                   style={{ background: isDone ? "#16A34A" : "#DC2626", boxShadow: `0 0 0 4px ${isDone ? "#E7F5EC" : "#FBE9E9"}` }}>
-                  {isDone ? <Check size={14} color="#fff" /> : <span style={{ width: 6, height: 6, borderRadius: 9, background: "#fff" }} />}
+                  {isDone && <Check size={16} color="#fff" strokeWidth={3} />}
                 </span>
                 <span className="text-[10px] font-extrabold" style={{ color: isDone ? "#16A34A" : "#DC2626" }}>{isDone ? "작성완료" : "미작성"}</span>
               </button>
