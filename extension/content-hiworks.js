@@ -107,6 +107,53 @@
     return "notfound";
   }
 
+  // ── 결재선: 참조 입력칸에 이름 타이핑해서 추가 ──
+  // 하이웍스 결재선은 "클릭 후 입력" 칸에 이름을 치면 자동 추가되는 방식.
+  function refInput() {
+    return [...document.querySelectorAll("input")].find(
+      (i) => i.offsetParent !== null && /클릭 후 입력|이름 입력|참조/.test(i.placeholder || "")
+    ) || null;
+  }
+  function approvalText() {
+    const h = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && (e.textContent || "").trim() === "결재선");
+    const box = h ? h.closest("table,section,div,form") : null;
+    return (box || document.body).textContent || "";
+  }
+  async function addRefByTyping(name) {
+    const inp = refInput();
+    if (!inp) return false;
+    inp.focus();
+    setInputValue(inp, name);
+    await wait(500); // 자동완성 뜰 시간
+    // 1) 자동완성 후보가 뜨면 첫 항목 클릭 시도
+    const opt = [...document.querySelectorAll("li,div,a,td")].find(
+      (e) => e.offsetParent !== null && (e.textContent || "").trim().includes(name) && e.offsetWidth < 400 && e.offsetHeight < 80
+    );
+    if (opt && opt !== inp) { opt.click(); await wait(200); return true; }
+    // 2) Enter 로 추가 시도
+    for (const t of ["keydown", "keypress", "keyup"]) {
+      inp.dispatchEvent(new KeyboardEvent(t, { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true }));
+    }
+    await wait(200);
+    return true;
+  }
+  // 참조에 필요한 사람(예: sunny)을 없으면 추가
+  async function ensureReferences(doc) {
+    const refs = (doc.approval && doc.approval.references) || [];
+    const before = approvalText();
+    const added = [];
+    for (const r of refs) {
+      const nm = r.name || "";
+      const korean = nm.replace(/[A-Za-z0-9]/g, ""); // 한글 이름부분
+      if (korean && before.includes(korean)) continue; // 이미 있음
+      // sunny 처럼 영문+한글이면 영문으로 먼저 시도(사용자가 'sunny'로 친다고 함)
+      const typed = /^[A-Za-z]/.test(nm) ? nm.replace(/[가-힣].*$/, "") || nm : nm;
+      const okAdd = await addRefByTyping(typed || nm);
+      if (okAdd) added.push(nm);
+    }
+    return added;
+  }
+
   async function fill(doc) {
     const ok = [];
     const fail = [];
@@ -139,6 +186,12 @@
         ok.push("본문(직접·" + r.method + ")");
       } else fail.push("본문");
     }
+
+    // 3) 결재선: 참조에 빠진 사람(sunny 등) 자동 추가 (best-effort)
+    try {
+      const added = await ensureReferences(doc);
+      if (added.length) ok.push("참조+" + added.join(","));
+    } catch (e) { /* ignore */ }
 
     return { ok, fail, diag: diagStr };
   }
