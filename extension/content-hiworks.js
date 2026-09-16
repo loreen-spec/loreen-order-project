@@ -115,12 +115,11 @@
     ) || null;
   }
   const norm = (s) => (s || "").replace(/\s/g, "");
-  // 참조 줄의 현재 텍스트(우리 패널 #gm-panel 제외)
+  // 결재선 표 전체 텍스트 (우리 패널 제외). "김진선"은 sunny만 가지므로 존재확인에 사용.
   function refRowText() {
     const inp = refInput();
-    if (!inp) return "";
-    const row = inp.closest("tr") || inp.parentElement?.parentElement || inp.parentElement || document;
-    return row.textContent || "";
+    const scope = (inp && inp.closest("table")) || document;
+    return scope.textContent || "";
   }
   // 자동완성 항목은 click만으론 선택 안 되는 경우가 많아 마우스 시퀀스로 선택
   function fireMouse(el) {
@@ -139,28 +138,24 @@
     inp.dispatchEvent(new KeyboardEvent("keyup", { key: typeStr.slice(-1), bubbles: true }));
 
     const want = norm(matchStr);
-    // 자동완성이 잠깐 떴다 사라지므로 빠르게 폴링(150ms) 후 즉시 마우스다운
+    // 자동완성이 잠깐 떴다 사라지므로 빠르게 폴링. 뜨면 "한 번만" 선택.
     for (let i = 0; i < 20; i++) {
       await wait(150);
-      const cand = [...document.querySelectorAll("li,a,td,tr,div,span,p")].filter(
-        (e) => e !== inp && !e.closest("#gm-panel") && e.offsetParent !== null &&
-          e.offsetHeight > 4 && e.offsetHeight < 80 && e.offsetWidth < 560 && norm(e.textContent).includes(want)
-      );
-      if (cand.length) {
-        cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight);
-        const target = cand[0];
-        fireMouse(target);                                  // 후보 자체
-        const li = target.closest("li,a,tr,[role='option']");
-        if (li && li !== target) fireMouse(li);             // 클릭 핸들러가 상위에 있을 수도
-        await wait(250);
-        // 추가 확인: 참조 줄에 이름이 들어갔으면 성공
-        if (norm(refRowText()).includes(want)) return "clicked";
-        // 아직이면 Enter로도 시도
-        inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", keyCode: 13, which: 13, bubbles: true }));
-        await wait(200);
-        if (norm(refRowText()).includes(want)) return "clicked";
-        return "clicked-unconfirmed";
-      }
+      // 입력칸 아래에 뜬 후보 항목만(참조에 이미 있는 칩과 구분: 입력칸보다 y가 아래)
+      const inpBottom = inp.getBoundingClientRect().bottom;
+      const cand = [...document.querySelectorAll("li,tr,div,a,td,span,p")].filter((e) => {
+        if (e === inp || e.closest("#gm-panel")) return false;
+        if (!norm(e.textContent).includes(want)) return false;
+        const r = e.getBoundingClientRect();
+        return r.height > 4 && r.height < 90 && r.width < 600 && r.top >= inpBottom - 4; // 입력칸 아래(=드롭다운)
+      });
+      if (!cand.length) continue;
+      cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight);
+      // 클릭 대상: 후보를 감싸는 실제 항목(li/tr/option) 하나만
+      const target = cand[0].closest("li,tr,[role='option'],a") || cand[0];
+      fireMouse(target); // ← 딱 한 번
+      await wait(350);
+      return norm(refRowText()).includes(want) ? "clicked" : "clicked-unconfirmed";
     }
     setInputValue(inp, "");
     return "no-suggestion";
