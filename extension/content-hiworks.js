@@ -170,6 +170,78 @@
     return res.startsWith("clicked") ? ["sunny김진선"] : [];
   }
 
+  // ── 100만원↑: 참조에서 Hans 삭제 + 결재자로 Hans 추가 ──
+  function approvalTable() { const inp = refInput(); return (inp && inp.closest("table")) || null; }
+  // 참조에서 특정 이름(한글)의 칩을 찾아 × 삭제
+  function removeReference(nameKor) {
+    const table = approvalTable(); if (!table) return false;
+    // 이름을 담은 가장 안쪽 요소
+    const nodes = [...table.querySelectorAll("span,td,div,li,a")].filter(
+      (e) => e.offsetParent !== null && (e.textContent || "").includes(nameKor) && (e.textContent || "").trim().length < 14
+    );
+    nodes.sort((a, b) => (a.textContent || "").length - (b.textContent || "").length);
+    const chip = nodes[0]; if (!chip) return false;
+    chip.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    const scope = chip.closest("td,li,span,div") || chip;
+    // 칩 내부/주변의 × 또는 삭제 컨트롤
+    const del = [...scope.querySelectorAll("*")].find(
+      (e) => e.offsetParent !== null && (/^[×✕✖xX]$/.test((e.textContent || "").trim()) || /del|remove|close|삭제/i.test((e.className || "") + (e.getAttribute && e.getAttribute("class") || "")))
+    );
+    if (del) { fireMouse(del); return true; }
+    return false;
+  }
+  // 결재자 "+" 눌러 슬롯 만들고 이름 입력해 추가
+  async function addApprover(typeStr, matchKor) {
+    const table = approvalTable(); if (!table) return "no-table";
+    const refIn = refInput();
+    const refTop = refIn ? refIn.getBoundingClientRect().top : 99999;
+    // "+" 후보 중 참조 입력칸보다 위(=결재자쪽), 왼쪽 우선
+    const plus = [...table.querySelectorAll("*")].filter(
+      (e) => e.children.length === 0 && (e.textContent || "").trim() === "+" && e.offsetParent !== null && e.getBoundingClientRect().top < refTop - 10
+    ).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+    if (plus) { fireMouse(plus.closest("button,a,td,div") || plus); await wait(500); }
+    // 새로 생긴 결재자 입력칸(참조 입력칸이 아닌, 위쪽의 '클릭 후 입력')
+    const inputs = [...document.querySelectorAll("input")].filter(
+      (i) => i.offsetParent !== null && /클릭 후 입력|이름 입력/.test(i.placeholder || "") && i !== refIn
+    ).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    const inp = inputs[0];
+    if (!inp) return "no-input";
+    inp.focus(); setInputValue(inp, ""); setInputValue(inp, typeStr);
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    inp.dispatchEvent(new KeyboardEvent("keyup", { key: typeStr.slice(-1), bubbles: true }));
+    const want = norm(matchKor);
+    for (let i = 0; i < 20; i++) {
+      await wait(150);
+      const bottom = inp.getBoundingClientRect().bottom;
+      const cand = [...document.querySelectorAll("li,tr,div,a,td,span,p")].filter((e) => {
+        if (e === inp || e.closest("#gm-panel")) return false;
+        if (!norm(e.textContent).includes(want)) return false;
+        const r = e.getBoundingClientRect();
+        return r.height > 4 && r.height < 90 && r.width < 600 && r.top >= bottom - 4;
+      });
+      if (cand.length) {
+        cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight);
+        fireMouse(cand[0].closest("li,tr,[role='option'],a") || cand[0]);
+        await wait(350);
+        return "added";
+      }
+    }
+    setInputValue(inp, "");
+    return "no-suggestion";
+  }
+  // 100만원 이상이면 Hans 승격 (참조 삭제 → 결재자 추가)
+  async function promoteCeoIfNeeded(doc) {
+    const ceo = (doc.grandTotal || 0) >= 1000000 ||
+      ((doc.approval && doc.approval.approvers) || []).some((a) => /최철용|Hans/i.test(a.name || ""));
+    if (!ceo) return null;
+    const steps = [];
+    if (removeReference("최철용")) steps.push("참조Hans삭제"); else steps.push("참조Hans삭제실패");
+    await wait(500);
+    const res = await addApprover("hans", "최철용");
+    steps.push(res === "added" ? "결재자Hans추가" : "결재자Hans추가실패(" + res + ")");
+    return steps;
+  }
+
   async function fill(doc) {
     const ok = [];
     const fail = [];
@@ -203,10 +275,16 @@
       } else fail.push("본문");
     }
 
-    // 3) 결재선: 참조에 빠진 사람(sunny 등) 자동 추가 (best-effort)
+    // 3) 결재선: 참조에 sunny 자동 추가
     try {
       const added = await ensureReferences(doc);
       if (added.length) ok.push("참조+" + added.join(","));
+    } catch (e) { /* ignore */ }
+
+    // 4) 100만원↑: Hans 참조삭제 + 결재자 승격
+    try {
+      const steps = await promoteCeoIfNeeded(doc);
+      if (steps) ok.push(steps.join("·"));
     } catch (e) { /* ignore */ }
 
     return { ok, fail, diag: diagStr };
@@ -242,7 +320,10 @@
     const rows = list.length
       ? list.map((d, i) => `
         <div class="gm-item" data-i="${i}" style="border:1px solid #E9E5F2;border-radius:10px;padding:10px 11px;margin-bottom:8px">
-          <div style="font-size:12.5px;font-weight:700;line-height:1.35;margin-bottom:6px">${escapeHtml(String(d.title || "").replace(/^\[지출결의서\]\s*/, ""))}</div>
+          <div style="display:flex;align-items:start;gap:6px;margin-bottom:6px">
+            <div style="flex:1;font-size:12.5px;font-weight:700;line-height:1.35">${escapeHtml(String(d.title || "").replace(/^\[지출결의서\]\s*/, ""))}</div>
+            <button class="gm-del-one" data-i="${i}" title="목록에서 삭제" style="flex:none;background:none;border:none;color:#C9C2DA;font-size:16px;line-height:1;cursor:pointer;padding:0 2px">×</button>
+          </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:14px;font-weight:800;color:${VD};font-variant-numeric:tabular-nums">₩${won(d.grandTotal)}</span>
             <button class="gm-fill-one" data-i="${i}" style="margin-left:auto;background:${V};color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit">채우기</button>
@@ -266,6 +347,15 @@
 
     const msg = wrap.querySelector("#gm-msg");
     wrap.querySelector("#gm-close").onclick = () => wrap.remove();
+
+    // 목록에서 항목 삭제 (중복 등)
+    wrap.querySelectorAll(".gm-del-one").forEach((btn) => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.i;
+        const next = list.filter((_, i) => i !== idx);
+        chrome.storage.local.set({ pendingList: next }, () => renderPanel(next));
+      };
+    });
 
     wrap.querySelectorAll(".gm-fill-one").forEach((btn) => {
       btn.onclick = async () => {
