@@ -60,7 +60,8 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const sender = url.searchParams.get("sender") || process.env.GIAN_BILL_SENDER || "";
   const days = Math.min(Number(url.searchParams.get("days")) || 45, 400);
-  const after = url.searchParams.get("after") || ""; // YYYY-MM-DD 이후 전체
+  const after = url.searchParams.get("after") || "";  // YYYY-MM-DD 이후
+  const before = url.searchParams.get("before") || ""; // YYYY-MM-DD 이전 (선택 월 제한용)
   const limit = Math.min(Number(url.searchParams.get("limit")) || 5, 25);
 
   if (!hasOAuthCreds()) {
@@ -80,76 +81,62 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 
-  const bills: any[] = [];
+  // 메일 1건 처리 (병렬 실행용)
+  async function processMessage(id: string) {
+    const msg = await gmail.users.messages.get({ userId: "me", id, format: "full" });
+    const payload = msg.data.payload;
+    const headers = payload?.headers || [];
+    const att = findAttachmentPart(payload);
+    const base = {
+      id: getHeader(headers, "Message-ID") || id,
+      gmailId: id,
+      date: new Date(Number(msg.data.internalDate) || Date.now()).toISOString(),
+      subject: getHeader(headers, "Subject") || "(제목 없음)",
+      from: getHeader(headers, "From") || "",
+    };
+    if (!att) {
+      const names = collectAttachments(payload).map((a) => a.filename).filter(Boolean).join(", ");
+      return { ...base, fileName: names || "(첨부 없음)", statement: null,
+        extractError: names ? `PDF/이미지/엑셀이 아닌 첨부(${names})` : "첨부 파일 없음" };
+    }
+    const attData = await gmail.users.messages.attachments.get({ userId: "me", messageId: id, id: att.body.attachmentId });
+    const buf = Buffer.from(attData.data.data, "base64url");
+    let statement: any = null, extractError = "";
+    try {
+      if (isExcelPart(att)) {
+        const wb = XLSX.read(buf, { type: "buffer" });
+        const chunks: string[] = [];
+        for (const name of wb.SheetNames) {
+          const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name], { blankrows: false });
+          if (csv.trim()) chunks.push(`[시트: ${name}]\n${csv}`);
+        }
+        statement = await extractStatement({ text: chunks.join("\n\n").slice(0, 20000) });
+      } else {
+        statement = await extractStatement({
+          imageBase64: buf.toString("base64"),
+          mimeType: att.mimeType || (/\.pdf$/i.test(att.filename || "") ? "application/pdf" : "image/jpeg"),
+        });
+      }
+    } catch (e: any) { extractError = e.message || "인식 실패"; }
+    return { ...base, fileName: att.filename || "attachment", statement, extractError };
+  }
+
+  let bills: any[] = [];
   let matched = 0;
   try {
-    // has:attachment 를 빼서 발신처 매칭 자체를 먼저 확인(진단), 첨부 유무는 각 메일에서 판단
-    const q = after
-      ? `from:(${sender}) after:${after.replace(/-/g, "/")}`
-      : `from:(${sender}) newer_than:${days}d`;
+    let q = `from:(${sender})`;
+    if (after) q += ` after:${after.replace(/-/g, "/")}`;
+    if (before) q += ` before:${before.replace(/-/g, "/")}`;
+    if (!after && !before) q += ` newer_than:${days}d`;
     const list = await gmail.users.messages.list({ userId: "me", q, maxResults: limit });
     const ids = (list.data.messages || []).map((m: any) => m.id);
     matched = ids.length;
-
-    for (const id of ids) {
-      const msg = await gmail.users.messages.get({ userId: "me", id, format: "full" });
-      const payload = msg.data.payload;
-      const headers = payload?.headers || [];
-      const allAtts = collectAttachments(payload);
-      const att = findAttachmentPart(payload); // PDF/이미지 우선
-
-      const base = {
-        id: getHeader(headers, "Message-ID") || id,
-        gmailId: id,
-        date: new Date(Number(msg.data.internalDate) || Date.now()).toISOString(),
-        subject: getHeader(headers, "Subject") || "(제목 없음)",
-        from: getHeader(headers, "From") || "",
-      };
-
-      if (!att) {
-        // PDF/이미지 첨부 없음 → 진단용으로 목록엔 포함(인식은 불가)
-        const names = allAtts.map((a) => a.filename).filter(Boolean).join(", ");
-        bills.push({
-          ...base,
-          fileName: names || "(첨부 없음)",
-          statement: null,
-          extractError: names ? `PDF/이미지가 아닌 첨부(${names}) — 자동인식 불가` : "첨부 파일 없음",
-        });
-        continue;
-      }
-
-      const attData = await gmail.users.messages.attachments.get({
-        userId: "me", messageId: id, id: att.body.attachmentId,
-      });
-      const buf = Buffer.from(attData.data.data, "base64url");
-
-      let statement: any = null;
-      let extractError = "";
-      try {
-        if (isExcelPart(att)) {
-          // 엑셀 → 텍스트(CSV)로 변환 후 인식
-          const wb = XLSX.read(buf, { type: "buffer" });
-          const chunks: string[] = [];
-          for (const name of wb.SheetNames) {
-            const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name], { blankrows: false });
-            if (csv.trim()) chunks.push(`[시트: ${name}]\n${csv}`);
-          }
-          statement = await extractStatement({ text: chunks.join("\n\n").slice(0, 20000) });
-        } else {
-          statement = await extractStatement({
-            imageBase64: buf.toString("base64"),
-            mimeType: att.mimeType || (/\.pdf$/i.test(att.filename || "") ? "application/pdf" : "image/jpeg"),
-          });
-        }
-      } catch (e: any) {
-        extractError = e.message || "인식 실패";
-      }
-
-      bills.push({ ...base, fileName: att.filename || "attachment", statement, extractError });
-    }
+    // 병렬 처리로 속도 향상
+    bills = await Promise.all(ids.map((id: string) => processMessage(id)));
+    bills.sort((a, b) => (a.date < b.date ? 1 : -1)); // 최신 먼저
   } catch (e: any) {
     return NextResponse.json({ error: "메일 조회 실패: " + (e.message || "").slice(0, 200) }, { status: 500 });
   }
 
-  return NextResponse.json({ bills, matched, sender, days });
+  return NextResponse.json({ bills, matched, sender });
 }

@@ -728,6 +728,13 @@ function monthsFrom(start: string): string[] {
   return out;
 }
 const monthLabel = (k: string) => { const [y, m] = k.split("-"); return `${y.slice(2)}.${m}`; };
+// 선택 월의 조회 범위 (after ~ before) — 받은 시점 기준, 다음달 초 며칠 여유.
+function monthRange(k: string) {
+  const [y, m] = k.split("-").map(Number);
+  const before = new Date(y, m, 5); // 다음달 5일까지
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { after: `${k}-01`, before: fmt(before) };
+}
 
 type BillSender = { name: string; q: string };
 const SEED_SENDERS: BillSender[] = [
@@ -753,7 +760,11 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     let map: Record<string, Bill[]> = {};
     try { map = JSON.parse(localStorage.getItem("gm_bills_map") || "{}"); } catch {}
     setSenders(list); setBillsMap(map);
-    if (list[0]) { setActiveQ(list[0].q); if (map[list[0].q]) setChecked(true); else fetchBills(list[0].q); }
+    if (list[0]) {
+      setActiveQ(list[0].q);
+      const key = `${list[0].q}::${months[0]}`;
+      if (map[key]) setChecked(true); else fetchMonth(list[0].q, months[0]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -767,7 +778,7 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     const q = window.prompt("메일 검색 키워드 (보낸사람 이름 또는 이메일 일부)", name)?.trim();
     if (!q) return;
     const list = [...senders, { name, q }];
-    saveSenders(list); setActiveQ(q); fetchBills(q);
+    saveSenders(list); setActiveQ(q); fetchMonth(q, selMonth);
   }
   function delSender(q: string) {
     if (!confirm("이 거래처를 목록에서 뺄까요?")) return;
@@ -783,11 +794,13 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     try { localStorage.setItem("gm_processed_bills", JSON.stringify([...processedIds(), id].slice(-300))); } catch {}
   }
 
-  async function fetchBills(q: string) {
+  // 선택한 거래처 + 선택한 달만 조회 (빠름)
+  async function fetchMonth(q: string, month: string) {
     if (!q) return;
-    setActiveQ(q); setLoading(true); setErr(""); setChecked(true); setMatched(null);
+    setActiveQ(q); setSelMonth(month); setLoading(true); setErr(""); setChecked(true); setMatched(null);
     try {
-      const res = await fetch(`/api/gian/email-sync?sender=${encodeURIComponent(q)}&after=${BILL_START}-01&limit=25`);
+      const { after, before } = monthRange(month);
+      const res = await fetch(`/api/gian/email-sync?sender=${encodeURIComponent(q)}&after=${after}&before=${before}&limit=8`);
       const data = await res.json();
       if (!res.ok) {
         if (data.needConnect) { setNeedConnect(true); setErr(""); return; }
@@ -796,12 +809,19 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
       setNeedConnect(false);
       setMatched(typeof data.matched === "number" ? data.matched : null);
       const list: Bill[] = data.bills || [];
-      const nextMap = { ...billsMap, [q]: list };
-      setBillsMap(nextMap);
-      try { localStorage.setItem("gm_bills_map", JSON.stringify(nextMap)); } catch {}
+      setBillsMap((prev) => {
+        const next = { ...prev, [`${q}::${month}`]: list };
+        try { localStorage.setItem("gm_bills_map", JSON.stringify(next)); } catch {}
+        return next;
+      });
     } catch (e: any) {
       setErr(e.message || "메일 조회 중 오류");
     } finally { setLoading(false); }
+  }
+  // 캐시 있으면 그대로, 없으면 조회
+  function openMonth(q: string, month: string) {
+    setActiveQ(q); setSelMonth(month);
+    if (!billsMap[`${q}::${month}`]) fetchMonth(q, month);
   }
 
   function writeGian(b: Bill) {
@@ -812,7 +832,7 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
   }
 
   const done = new Set(processedIds());
-  const bills = billsMap[activeQ] || [];
+  const bills = billsMap[`${activeQ}::${selMonth}`] || [];
   const monthBills = bills.filter((b) => monthKey(b.date) === selMonth);
   const activeName = senders.find((s) => s.q === activeQ)?.name || activeQ;
 
@@ -829,7 +849,7 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
           return (
             <span key={s.q} className="inline-flex items-center rounded-full border overflow-hidden"
               style={on ? { borderColor: V } : { borderColor: "#E9E5F2" }}>
-              <button onClick={() => fetchBills(s.q)}
+              <button onClick={() => openMonth(s.q, selMonth)}
                 className="px-3 py-1.5 text-[12.5px] font-bold"
                 style={on ? { background: V, color: "#fff" } : { background: "#fff", color: "#6B6579" }}>
                 {s.name}
@@ -845,16 +865,15 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
       {/* 조회 버튼 + 월 선택 */}
       {!needConnect && (
         <div className="flex gap-2 mb-3 flex-wrap items-center">
-          <Btn onClick={() => fetchBills(activeQ)} disabled={loading || !activeQ}>
-            {loading ? <><RefreshCw size={15} className="animate-spin" /> 확인 중…</> : <><RefreshCw size={15} /> {activeName} 메일 확인</>}
-          </Btn>
-          <select className="gm-inp" style={{ width: "auto", minWidth: 120 }} value={selMonth} onChange={(e) => setSelMonth(e.target.value)}>
+          <select className="gm-inp" style={{ width: "auto", minWidth: 130 }} value={selMonth} onChange={(e) => openMonth(activeQ, e.target.value)}>
             {months.map((k) => {
-              const c = bills.filter((b) => monthKey(b.date) === k).length;
               const [y, m] = k.split("-");
-              return <option key={k} value={k}>{y}년 {Number(m)}월{c ? ` (${c})` : ""}</option>;
+              return <option key={k} value={k}>{y}년 {Number(m)}월</option>;
             })}
           </select>
+          <Btn onClick={() => fetchMonth(activeQ, selMonth)} disabled={loading || !activeQ}>
+            {loading ? <><RefreshCw size={15} className="animate-spin" /> 확인 중…</> : <><RefreshCw size={15} /> 새로고침</>}
+          </Btn>
         </div>
       )}
 
