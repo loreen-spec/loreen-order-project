@@ -787,11 +787,20 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     if (activeQ === q) setActiveQ(list[0]?.q || "");
   }
 
-  function processedIds(): string[] {
+  const [doneVer, setDoneVer] = useState(0); // 체크 상태 리렌더용
+  function doneIds(): string[] {
     try { return JSON.parse(localStorage.getItem("gm_processed_bills") || "[]"); } catch { return []; }
   }
   function markProcessed(id: string) {
-    try { localStorage.setItem("gm_processed_bills", JSON.stringify([...processedIds(), id].slice(-300))); } catch {}
+    const s = new Set(doneIds()); s.add(id);
+    try { localStorage.setItem("gm_processed_bills", JSON.stringify([...s].slice(-400))); } catch {}
+    setDoneVer((v) => v + 1);
+  }
+  function toggleDone(id: string) {
+    const s = new Set(doneIds());
+    if (s.has(id)) s.delete(id); else s.add(id);
+    try { localStorage.setItem("gm_processed_bills", JSON.stringify([...s].slice(-400))); } catch {}
+    setDoneVer((v) => v + 1);
   }
 
   // 선택한 거래처 + 선택한 달만 조회 (빠름)
@@ -831,19 +840,34 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
     go("create");
   }
 
-  const done = new Set(processedIds());
+  void doneVer; // 체크 토글 시 리렌더
+  const done = new Set(doneIds());
   const bills = billsMap[`${activeQ}::${selMonth}`] || [];
   const monthBills = bills.filter((b) => monthKey(b.date) === selMonth);
   const activeName = senders.find((s) => s.q === activeQ)?.name || activeQ;
 
   return (
     <Card className="p-5 mb-5">
+      {/* 헤더: 제목 + (월 선택·새로고침) */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 className="font-extrabold text-[15px] flex items-center gap-2">📧 받은 청구서 <span className="text-[12px] font-semibold text-gray-400">(거래처 메일 자동 읽기)</span></h3>
+        {!needConnect && (
+          <div className="flex gap-2 items-center">
+            <select className="gm-inp" style={{ width: "auto", minWidth: 120, paddingTop: 7, paddingBottom: 7 }} value={selMonth} onChange={(e) => openMonth(activeQ, e.target.value)}>
+              {months.map((k) => { const [y, m] = k.split("-"); return <option key={k} value={k}>{y}년 {Number(m)}월</option>; })}
+            </select>
+            <button onClick={() => fetchMonth(activeQ, selMonth)} disabled={loading || !activeQ}
+              title="최신 메일 다시 불러오기"
+              className="w-9 h-9 rounded-[10px] grid place-items-center border shrink-0 disabled:opacity-50"
+              style={{ borderColor: "#DDD7EC", color: VD, background: "#fff" }}>
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 등록된 거래처 칩 */}
-      <div className="flex gap-1.5 flex-wrap mb-3">
+      <div className="flex gap-1.5 flex-wrap mb-3 pb-3 border-b" style={{ borderColor: "#F0EDF7" }}>
         {senders.map((s) => {
           const on = s.q === activeQ;
           return (
@@ -862,21 +886,6 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
         <button onClick={addSender} className="px-3 py-1.5 rounded-full border text-[12.5px] font-bold" style={{ borderColor: "#DDD7EC", color: VD }}>+ 거래처 추가</button>
       </div>
 
-      {/* 조회 버튼 + 월 선택 */}
-      {!needConnect && (
-        <div className="flex gap-2 mb-3 flex-wrap items-center">
-          <select className="gm-inp" style={{ width: "auto", minWidth: 130 }} value={selMonth} onChange={(e) => openMonth(activeQ, e.target.value)}>
-            {months.map((k) => {
-              const [y, m] = k.split("-");
-              return <option key={k} value={k}>{y}년 {Number(m)}월</option>;
-            })}
-          </select>
-          <Btn onClick={() => fetchMonth(activeQ, selMonth)} disabled={loading || !activeQ}>
-            {loading ? <><RefreshCw size={15} className="animate-spin" /> 확인 중…</> : <><RefreshCw size={15} /> 새로고침</>}
-          </Btn>
-        </div>
-      )}
-
       {err && <div className="text-[12.5px] rounded-lg px-3 py-2 mb-2 flex items-center gap-1.5" style={{ background: "#FBF0DF", color: "#B45309" }}><AlertTriangle size={14} /> {err}</div>}
 
       {needConnect && (
@@ -894,31 +903,40 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
         } />
       )}
 
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         {monthBills.map((b) => {
           const isDone = done.has(b.id);
           return (
-            <div key={b.id} className="border rounded-xl p-3.5" style={{ borderColor: "#E9E5F2" }}>
-              <div className="flex items-start gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-[13.5px] truncate">{b.subject}</div>
-                  <div className="text-[12px] text-gray-400 mt-0.5">{new Date(b.date).toLocaleDateString("ko-KR")} · {b.fileName}</div>
-                  {b.statement ? (
-                    <div className="text-[13px] mt-1.5">
-                      <b>{b.statement.vendor || "거래처 미상"}</b> · <span className="tabular-nums font-extrabold" style={{ color: VD }}>₩{won(b.statement.grandTotal)}</span>
-                      <span className="text-gray-400"> · 품목 {b.statement.items.length}건</span>
-                    </div>
-                  ) : (
-                    <div className="text-[12px] mt-1.5" style={{ color: "#D97706" }}>⚠️ 첨부 인식 실패{b.extractError ? ` (${b.extractError})` : ""} — 직접 업로드해주세요</div>
-                  )}
-                </div>
-                {isDone && <Pill tone="ok">작성함</Pill>}
+            <div key={b.id} className="flex items-center gap-3 border rounded-2xl px-4 py-3 flex-wrap"
+              style={{ borderColor: isDone ? "#CDEBD6" : "#E9E5F2", background: isDone ? "#F6FBF8" : "#fff" }}>
+              {/* 작성여부 신호등 (빨강 미작성 → 초록 작성완료) */}
+              <button onClick={() => toggleDone(b.id)} title="클릭해서 작성여부 표시"
+                className="flex flex-col items-center gap-1 shrink-0" style={{ width: 54 }}>
+                <span className="w-6 h-6 rounded-full grid place-items-center transition-all"
+                  style={{ background: isDone ? "#16A34A" : "#DC2626", boxShadow: `0 0 0 4px ${isDone ? "#E7F5EC" : "#FBE9E9"}` }}>
+                  {isDone ? <Check size={14} color="#fff" /> : <span style={{ width: 6, height: 6, borderRadius: 9, background: "#fff" }} />}
+                </span>
+                <span className="text-[10px] font-extrabold" style={{ color: isDone ? "#16A34A" : "#DC2626" }}>{isDone ? "작성완료" : "미작성"}</span>
+              </button>
+
+              {/* 내용 */}
+              <div className="flex-1 min-w-0" style={{ minWidth: 180 }}>
+                <div className="font-bold text-[13.5px] truncate">{b.subject}</div>
+                <div className="text-[11.5px] text-gray-400 mt-0.5 truncate">{new Date(b.date).toLocaleDateString("ko-KR")} · {b.fileName}</div>
+                {b.statement ? (
+                  <div className="text-[13px] mt-1">
+                    <b>{b.statement.vendor || "거래처 미상"}</b> · <span className="tabular-nums font-extrabold" style={{ color: VD }}>₩{won(b.statement.grandTotal)}</span>
+                    <span className="text-gray-400"> · 품목 {b.statement.items.length}건</span>
+                  </div>
+                ) : (
+                  <div className="text-[12px] mt-1" style={{ color: "#D97706" }}>⚠️ 인식 실패{b.extractError ? ` · ${b.extractError}` : ""}</div>
+                )}
               </div>
-              <div className="mt-3">
-                <Btn onClick={() => writeGian(b)} disabled={!b.statement} style={{ width: "100%" }}>
-                  <ArrowRight size={15} /> {isDone ? "다시 기안서 작성" : "기안서 작성"}
-                </Btn>
-              </div>
+
+              {/* 작성 버튼 */}
+              <Btn kind={isDone ? "ghost" : "pri"} onClick={() => writeGian(b)} disabled={!b.statement} style={{ whiteSpace: "nowrap" }}>
+                <ArrowRight size={15} /> {isDone ? "다시 작성" : "기안서 작성"}
+              </Btn>
             </div>
           );
         })}
