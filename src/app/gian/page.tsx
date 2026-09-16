@@ -872,14 +872,14 @@ function MailBills({ go }: { go: (s: Screen) => void }) {
           const on = s.q === activeQ;
           return (
             <span key={s.q} className="inline-flex items-center rounded-full border overflow-hidden"
-              style={on ? { borderColor: V } : { borderColor: "#E9E5F2" }}>
+              style={on ? { background: V, borderColor: V } : { background: "#fff", borderColor: "#E9E5F2" }}>
               <button onClick={() => openMonth(s.q, selMonth)}
-                className="px-3 py-1.5 text-[12.5px] font-bold"
-                style={on ? { background: V, color: "#fff" } : { background: "#fff", color: "#6B6579" }}>
+                className="pl-3 pr-1.5 py-1.5 text-[12.5px] font-bold bg-transparent"
+                style={{ color: on ? "#fff" : "#6B6579" }}>
                 {s.name}
               </button>
-              <button onClick={() => delSender(s.q)} className="px-1.5 text-[12px]"
-                style={on ? { background: V, color: "rgba(255,255,255,.7)" } : { background: "#fff", color: "#C9C2DA" }}>×</button>
+              <button onClick={() => delSender(s.q)} className="pr-2.5 pl-0.5 py-1.5 text-[13px] leading-none bg-transparent"
+                style={{ color: on ? "rgba(255,255,255,.8)" : "#C9C2DA" }}>×</button>
             </span>
           );
         })}
