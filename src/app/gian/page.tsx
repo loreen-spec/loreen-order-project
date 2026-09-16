@@ -82,8 +82,8 @@ function Side({ screen, setScreen }: { screen: Screen; setScreen: (s: Screen) =>
     <aside className="w-[220px] shrink-0 border-r bg-white px-3 py-5 sticky top-0 h-screen flex flex-col"
       style={{ borderColor: "#E9E5F2" }}>
       <div className="flex items-center gap-2.5 px-2 pb-4">
-        <div className="w-8 h-8 rounded-lg grid place-items-center text-white font-extrabold"
-          style={{ background: `linear-gradient(135deg,${V},${VD})` }}>기</div>
+        <div className="w-8 h-8 rounded-lg grid place-items-center text-[18px]"
+          style={{ background: `linear-gradient(135deg,${V},${VD})` }}>🧾</div>
         <div>
           <div className="font-extrabold text-[15px] leading-tight">openhan GianMate</div>
           <div className="text-[11px] text-gray-400 font-semibold">거래명세서 → 기안서</div>

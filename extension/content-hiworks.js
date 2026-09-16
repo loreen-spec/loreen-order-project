@@ -183,7 +183,7 @@
 
     wrap.innerHTML = `
       <div style="background:linear-gradient(135deg,${V},${VD});color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px;flex:none">
-        <div style="width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-weight:800">기</div>
+        <div style="width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:15px">🧾</div>
         <b style="font-size:14px;flex:1">GianMate 기안 대기${list.length ? ` (${list.length})` : ""}</b>
         <span id="gm-close" style="cursor:pointer;opacity:.85;font-size:18px;line-height:1">×</span>
       </div>
