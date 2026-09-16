@@ -119,37 +119,49 @@
     const box = h ? h.closest("table,section,div,form") : null;
     return (box || document.body).textContent || "";
   }
-  async function addRefByTyping(name) {
+  const norm = (s) => (s || "").replace(/\s/g, "");
+  // typeStr(예: "sunny") 입력 → 자동완성 대기 → matchStr(예: "sunny김진선") 항목 클릭
+  async function addRefByTyping(typeStr, matchStr) {
     const inp = refInput();
-    if (!inp) return false;
+    if (!inp) return "no-input";
     inp.focus();
-    setInputValue(inp, name);
-    await wait(500); // 자동완성 뜰 시간
-    // 1) 자동완성 후보가 뜨면 첫 항목 클릭 시도
-    const opt = [...document.querySelectorAll("li,div,a,td")].find(
-      (e) => e.offsetParent !== null && (e.textContent || "").trim().includes(name) && e.offsetWidth < 400 && e.offsetHeight < 80
-    );
-    if (opt && opt !== inp) { opt.click(); await wait(200); return true; }
-    // 2) Enter 로 추가 시도
-    for (const t of ["keydown", "keypress", "keyup"]) {
-      inp.dispatchEvent(new KeyboardEvent(t, { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true }));
+    setInputValue(inp, typeStr);
+    // 자동완성 트리거용 키 이벤트
+    for (const t of ["keydown", "keypress", "input", "keyup"]) {
+      inp.dispatchEvent(t === "input" ? new Event("input", { bubbles: true })
+        : new KeyboardEvent(t, { key: typeStr.slice(-1), bubbles: true }));
     }
-    await wait(200);
-    return true;
+    // 자동완성(AJAX) 대기하며 후보 탐색 (최대 ~2초)
+    const want = norm(matchStr);
+    for (let i = 0; i < 8; i++) {
+      await wait(280);
+      const cand = [...document.querySelectorAll("li,a,div,td,span,p,tr")].filter(
+        (e) => e !== inp && e.offsetParent !== null && e.offsetHeight > 0 && e.offsetHeight < 70 && e.offsetWidth < 520 && norm(e.textContent).includes(want)
+      );
+      if (cand.length) {
+        cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight); // 가장 안쪽 항목
+        cand[0].click();
+        await wait(300);
+        return "clicked";
+      }
+    }
+    // 폴백: Enter
+    for (const t of ["keydown", "keyup"]) inp.dispatchEvent(new KeyboardEvent(t, { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true }));
+    await wait(300);
+    return "enter";
   }
   // 참조에 필요한 사람(예: sunny)을 없으면 추가
   async function ensureReferences(doc) {
     const refs = (doc.approval && doc.approval.references) || [];
-    const before = approvalText();
     const added = [];
     for (const r of refs) {
       const nm = r.name || "";
       const korean = nm.replace(/[A-Za-z0-9]/g, ""); // 한글 이름부분
-      if (korean && before.includes(korean)) continue; // 이미 있음
-      // sunny 처럼 영문+한글이면 영문으로 먼저 시도(사용자가 'sunny'로 친다고 함)
-      const typed = /^[A-Za-z]/.test(nm) ? nm.replace(/[가-힣].*$/, "") || nm : nm;
-      const okAdd = await addRefByTyping(typed || nm);
-      if (okAdd) added.push(nm);
+      if (korean && approvalText().includes(korean)) continue; // 이미 있음
+      // 검색어: 영문이 앞이면 영문부분(사용자가 'sunny'로 검색), 아니면 한글이름
+      const typeStr = /^[A-Za-z]/.test(nm) ? (nm.match(/^[A-Za-z]+/) || [nm])[0] : (korean || nm);
+      const res = await addRefByTyping(typeStr, nm);
+      if (res === "clicked") added.push(nm);
     }
     return added;
   }
