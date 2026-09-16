@@ -190,44 +190,65 @@
     if (del) { fireMouse(del); return true; }
     return false;
   }
-  // 결재자 "+" 눌러 슬롯 만들고 이름 입력해 추가
+  // 신청측 "+" 클릭 → "신청 설정" 모달 → 검색 입력 → 후보 클릭 → 확인
   async function addApprover(typeStr, matchKor) {
     const table = approvalTable(); if (!table) return "no-table";
     const refIn = refInput();
     const refTop = refIn ? refIn.getBoundingClientRect().top : 99999;
-    // "+" 후보 중 참조 입력칸보다 위(=결재자쪽), 왼쪽 우선
+    // 신청측(왼쪽 위) "+" 선택
     const plus = [...table.querySelectorAll("*")].filter(
       (e) => e.children.length === 0 && (e.textContent || "").trim() === "+" && e.offsetParent !== null && e.getBoundingClientRect().top < refTop - 10
     ).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
-    if (plus) { fireMouse(plus.closest("button,a,td,div") || plus); await wait(500); }
-    // 새로 생긴 결재자 입력칸(참조 입력칸이 아닌, 위쪽의 '클릭 후 입력')
-    const inputs = [...document.querySelectorAll("input")].filter(
-      (i) => i.offsetParent !== null && /클릭 후 입력|이름 입력/.test(i.placeholder || "") && i !== refIn
-    ).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-    const inp = inputs[0];
+    if (!plus) return "no-plus";
+    fireMouse(plus.closest("button,a,td,div") || plus);
+
+    // "신청 설정" 모달 대기
+    let modal = null;
+    for (let i = 0; i < 15; i++) {
+      await wait(200);
+      const t = [...document.querySelectorAll("*")].find(
+        (e) => e.offsetParent !== null && /신청 설정|결재자|처리 설정/.test((e.textContent || "")) && (e.textContent || "").length < 30
+      );
+      if (t) {
+        modal = t.closest("div,section,form") || t.parentElement;
+        // 입력칸을 가진 상위 컨테이너까지 올라감
+        while (modal && !modal.querySelector("input")) modal = modal.parentElement;
+        if (modal && modal.querySelector("input")) break;
+      }
+    }
+    if (!modal) return "no-modal";
+    const inp = [...modal.querySelectorAll("input")].find(
+      (i) => i.offsetParent !== null && i.type !== "checkbox" && i.type !== "radio" && i.type !== "hidden"
+    );
     if (!inp) return "no-input";
     inp.focus(); setInputValue(inp, ""); setInputValue(inp, typeStr);
     inp.dispatchEvent(new Event("input", { bubbles: true }));
     inp.dispatchEvent(new KeyboardEvent("keyup", { key: typeStr.slice(-1), bubbles: true }));
+
     const want = norm(matchKor);
+    let picked = false;
     for (let i = 0; i < 20; i++) {
       await wait(150);
-      const bottom = inp.getBoundingClientRect().bottom;
-      const cand = [...document.querySelectorAll("li,tr,div,a,td,span,p")].filter((e) => {
-        if (e === inp || e.closest("#gm-panel")) return false;
-        if (!norm(e.textContent).includes(want)) return false;
+      const cand = [...modal.querySelectorAll("li,div,a,td,span,p,tr")].filter((e) => {
+        if (e === inp || !norm(e.textContent).includes(want)) return false;
         const r = e.getBoundingClientRect();
-        return r.height > 4 && r.height < 90 && r.width < 600 && r.top >= bottom - 4;
+        return r.height > 4 && r.height < 70 && r.width < 500;
       });
       if (cand.length) {
         cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight);
         fireMouse(cand[0].closest("li,tr,[role='option'],a") || cand[0]);
-        await wait(350);
-        return "added";
+        await wait(300);
+        picked = true;
+        break;
       }
     }
-    setInputValue(inp, "");
-    return "no-suggestion";
+    if (!picked) return "no-suggestion";
+    // 확인 버튼
+    const okBtn = [...modal.querySelectorAll("button,a,input[type='button'],input[type='submit']")].find(
+      (b) => b.offsetParent !== null && /확인|저장|적용|등록/.test((b.textContent || b.value || ""))
+    );
+    if (okBtn) { fireMouse(okBtn); await wait(300); }
+    return "added";
   }
   // 100만원 이상이면 Hans 승격 (참조 삭제 → 결재자 추가)
   async function promoteCeoIfNeeded(doc) {
