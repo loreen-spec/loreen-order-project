@@ -122,32 +122,46 @@
     const row = inp.closest("tr") || inp.parentElement?.parentElement || inp.parentElement || document;
     return row.textContent || "";
   }
-  // typeStr(예: "sunny") 입력 → 자동완성 대기 → matchStr(예: "sunny김진선") 항목 클릭
+  // 자동완성 항목은 click만으론 선택 안 되는 경우가 많아 마우스 시퀀스로 선택
+  function fireMouse(el) {
+    for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+      try { el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window })); } catch (e) {}
+    }
+  }
+  // typeStr(예: "sunny") 입력 → 자동완성 대기 → matchStr(예: "김진선") 항목 선택
   async function addRefByTyping(typeStr, matchStr) {
     const inp = refInput();
     if (!inp) return "no-input";
     inp.focus();
-    setInputValue(inp, "");       // 잔여 텍스트 제거
-    setInputValue(inp, typeStr);  // 검색어 입력
-    for (const t of ["keydown", "keypress", "input", "keyup"]) {
-      inp.dispatchEvent(t === "input" ? new Event("input", { bubbles: true })
-        : new KeyboardEvent(t, { key: typeStr.slice(-1), bubbles: true }));
-    }
+    setInputValue(inp, "");
+    setInputValue(inp, typeStr);
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    inp.dispatchEvent(new KeyboardEvent("keyup", { key: typeStr.slice(-1), bubbles: true }));
+
     const want = norm(matchStr);
-    for (let i = 0; i < 8; i++) {
-      await wait(280);
-      const cand = [...document.querySelectorAll("li,a,td,div,span,p")].filter(
+    // 자동완성이 잠깐 떴다 사라지므로 빠르게 폴링(150ms) 후 즉시 마우스다운
+    for (let i = 0; i < 20; i++) {
+      await wait(150);
+      const cand = [...document.querySelectorAll("li,a,td,tr,div,span,p")].filter(
         (e) => e !== inp && !e.closest("#gm-panel") && e.offsetParent !== null &&
-          e.offsetHeight > 0 && e.offsetHeight < 70 && e.offsetWidth < 520 && norm(e.textContent).includes(want)
+          e.offsetHeight > 4 && e.offsetHeight < 80 && e.offsetWidth < 560 && norm(e.textContent).includes(want)
       );
       if (cand.length) {
         cand.sort((a, b) => a.offsetWidth * a.offsetHeight - b.offsetWidth * b.offsetHeight);
-        cand[0].click();
-        await wait(300);
-        return "clicked";
+        const target = cand[0];
+        fireMouse(target);                                  // 후보 자체
+        const li = target.closest("li,a,tr,[role='option']");
+        if (li && li !== target) fireMouse(li);             // 클릭 핸들러가 상위에 있을 수도
+        await wait(250);
+        // 추가 확인: 참조 줄에 이름이 들어갔으면 성공
+        if (norm(refRowText()).includes(want)) return "clicked";
+        // 아직이면 Enter로도 시도
+        inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", keyCode: 13, which: 13, bubbles: true }));
+        await wait(200);
+        if (norm(refRowText()).includes(want)) return "clicked";
+        return "clicked-unconfirmed";
       }
     }
-    // 후보 못 찾음 → 입력칸 비워서 오작동 방지
     setInputValue(inp, "");
     return "no-suggestion";
   }
@@ -157,8 +171,8 @@
     const sunny = refs.find((r) => /sunny|김진선/i.test(r.name || ""));
     if (!sunny) return [];
     if (refRowText().includes("김진선")) return []; // 이미 있음
-    const res = await addRefByTyping("sunny", "sunny김진선");
-    return res === "clicked" ? ["sunny김진선"] : [];
+    const res = await addRefByTyping("sunny", "김진선"); // 검색은 sunny, 매칭은 김진선(더 확실)
+    return res.startsWith("clicked") ? ["sunny김진선"] : [];
   }
 
   async function fill(doc) {
