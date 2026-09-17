@@ -110,11 +110,13 @@ function esc(s: string): string {
 
 // ── 합계 재계산 유틸 (사용자가 표를 수정했을 때) ────────────────
 export function recalcTotals(st: Statement): Statement {
-  const supplyTotal = st.items.reduce((a, b) => a + (Number(b.supply) || 0), 0);
-  const vatTotal = st.items.reduce((a, b) => a + (Number(b.vat) || 0), 0);
-  const grandTotal = st.items.reduce(
-    (a, b) => a + (Number(b.total) || Number(b.supply) + Number(b.vat) || 0),
-    0
-  );
-  return { ...st, supplyTotal, vatTotal, grandTotal: grandTotal || supplyTotal + vatTotal };
+  const items = st.items.map((b) => {
+    const supply = Number(b.supply) || 0;
+    const vat = Number(b.vat) || 0;
+    return { ...b, total: supply + vat }; // 행 총금액 = 공급가액 + 세액
+  });
+  const supplyTotal = items.reduce((a, b) => a + b.supply, 0);
+  const vatTotal = items.reduce((a, b) => a + b.vat, 0);
+  const grandTotal = supplyTotal + vatTotal; // 부가세 포함 = 공급가액 + 세액
+  return { ...st, items, supplyTotal, vatTotal, grandTotal };
 }
