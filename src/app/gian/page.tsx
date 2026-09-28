@@ -58,7 +58,7 @@ export default function GianMate() {
   return (
     <div className="flex min-h-screen" style={{ background: "#FAF9FC" }}>
       <Side screen={screen} setScreen={setScreen} />
-      <main className="flex-1 min-w-0 px-6 lg:px-8 py-7 max-w-[1120px]">
+      <main className="flex-1 min-w-0 px-6 lg:px-10 py-7 max-w-[1560px]">
         {screen === "home" && <HomeScreen go={setScreen} />}
         {screen === "create" && <CreateScreen go={setScreen} />}
         {screen === "vendors" && <VendorsScreen />}
@@ -375,7 +375,7 @@ function ReviewStep({ st, setSt, vendor, setVendor, onNext, imgUrl, fileName }: 
   const vatLow = (conf.vat ?? 1) < 0.7;
 
   return (
-    <div className="grid lg:grid-cols-[1fr_1.1fr] gap-4.5" style={{ gap: 18 }}>
+    <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-4.5" style={{ gap: 20 }}>
       <div>
         {imgUrl ? (
           <Card className="overflow-hidden mb-3">
@@ -412,12 +412,12 @@ function ReviewStep({ st, setSt, vendor, setVendor, onNext, imgUrl, fileName }: 
           <Pill tone="gray">자동 채움</Pill>
         </div>
         <div className="overflow-x-auto -mx-1">
-          <table className="w-full text-[12.5px]" style={{ minWidth: 460 }}>
+          <table className="w-full text-[13px]" style={{ minWidth: 560 }}>
             <thead><Tr head cells={["항목", "단가", "수량", "공급가액", "세액", ""]} align={["l", "r", "r", "r", "r", "l"]} /></thead>
             <tbody>
               {st.items.map((it, i) => (
                 <tr key={i}>
-                  <td className="py-1 pr-1"><input className="gm-inp !py-1.5" value={it.name} onChange={(e) => setItem(i, "name", e.target.value)} /></td>
+                  <td className="py-1 pr-2" style={{ minWidth: 200 }}><input className="gm-inp !py-2" value={it.name} onChange={(e) => setItem(i, "name", e.target.value)} /></td>
                   <td className="py-1 px-1"><input className="gm-inp !py-1.5 text-right tabular-nums w-[80px]" value={it.unitPrice} onChange={(e) => setItem(i, "unitPrice", Number(e.target.value.replace(/[^\d]/g, "")))} /></td>
                   <td className="py-1 px-1"><input className="gm-inp !py-1.5 text-right w-[52px]" value={it.qty} onChange={(e) => setItem(i, "qty", Number(e.target.value.replace(/[^\d]/g, "")))} /></td>
                   <td className="py-1 px-1"><input className="gm-inp !py-1.5 text-right tabular-nums w-[90px]" value={it.supply} onChange={(e) => setItem(i, "supply", Number(e.target.value.replace(/[^\d]/g, "")))} /></td>
