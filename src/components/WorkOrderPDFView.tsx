@@ -129,11 +129,15 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     clone.removeAttribute("style");
     // 부자재(원단 이미지·링크 QR) 자료 페이지 — 작지 본문 뒤에 붙임
     const attachHTML = await buildAttachmentHTML(wo);
+    // 첨부 페이지가 있으면 body 높이 제한(210mm/overflow:hidden)을 풀어 2페이지 내용이 잘리지 않게
+    const multiPageOverride = attachHTML
+      ? `html,body{height:auto !important;overflow:visible !important}`
+      : "";
     win.document.open();
     win.document.write(`<!DOCTYPE html><html lang="ko"><head>
       <meta charset="UTF-8"/>
       <title>작업지시서 — ${wo.styleNo} ${wo.productName} ${wo.orderCount}차</title>
-      <style>${PRINT_CSS}${ATTACH_CSS}</style>
+      <style>${PRINT_CSS}${ATTACH_CSS}${multiPageOverride}</style>
     </head><body>${clone.outerHTML}${attachHTML}</body></html>`);
     win.document.close();
     setTimeout(() => win.print(), attachHTML ? 1000 : 700);
