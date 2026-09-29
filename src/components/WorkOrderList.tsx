@@ -736,9 +736,9 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl border border-violet-300 text-violet-600 hover:bg-violet-50 transition-colors"
-            title="기존 엑셀 작업지시서 가져오기"
+            title="기존 작업지시서 가져오기 (엑셀 파일 또는 구글시트 링크)"
           >
-            <Upload size={14} />엑셀 가져오기
+            <Upload size={14} />작업지시서 가져오기
           </button>
           <button
             onClick={onNew}

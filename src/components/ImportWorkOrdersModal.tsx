@@ -140,8 +140,8 @@ export default function ImportWorkOrdersModal({
         {/* 헤더 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <div className="font-bold text-gray-900">엑셀에서 작업지시서 가져오기</div>
-            <div className="text-xs text-gray-400">기존 엑셀 작업지시서(오즈키즈 템플릿)를 읽어 목록으로 저장합니다</div>
+            <div className="font-bold text-gray-900">작업지시서 가져오기</div>
+            <div className="text-xs text-gray-400">기존 작업지시서를 <b>엑셀 파일</b> 또는 <b>구글시트 링크</b>로 읽어 목록으로 저장합니다 (오즈키즈 템플릿)</div>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500"><X size={18} /></button>
         </div>
