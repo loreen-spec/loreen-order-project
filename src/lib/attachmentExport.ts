@@ -17,17 +17,20 @@ export const ATTACH_CSS = `
     font-family: 'Noto Sans KR','Malgun Gothic',sans-serif; background:#fff; color:#111; }
   .attach-title { font-size: 14pt; font-weight: 800; margin-bottom: 6mm;
     border-bottom: 2px solid #333; padding-bottom: 3mm; }
-  .attach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; }
-  .att-card { border: 1px solid #ccc; border-radius: 6px; padding: 4mm; text-align: center;
-    break-inside: avoid; display: flex; flex-direction: column; align-items: center; }
-  .att-label { font-size: 9pt; font-weight: 700; margin-bottom: 3mm; color: #222; word-break: break-all; }
-  .att-img { max-width: 100%; max-height: 50mm; object-fit: contain; }
-  .att-qr { width: 38mm; height: 38mm; }
-  .att-url { font-size: 7pt; color: #1a56db; word-break: break-all; margin-top: 2mm; }
-  .att-memo { font-size: 7.5pt; color: #666; margin-top: 2mm; white-space: pre-wrap; }
+  .attach-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6mm; }
+  .att-card { border: 1px solid #ccc; border-radius: 6px; padding: 5mm;
+    break-inside: avoid; }
+  .att-label { font-size: 10pt; font-weight: 800; margin-bottom: 4mm; color: #222;
+    word-break: break-all; text-align: center; }
+  .att-body { display: flex; flex-wrap: wrap; gap: 5mm; justify-content: center; align-items: flex-start; }
+  .att-item { display: flex; flex-direction: column; align-items: center; max-width: 48%; }
+  .att-img { max-width: 100%; max-height: 55mm; object-fit: contain; }
+  .att-qr { width: 36mm; height: 36mm; }
+  .att-url { font-size: 6.5pt; color: #1a56db; word-break: break-all; margin-top: 1.5mm; max-width: 46mm; text-align: center; }
+  .att-memo { font-size: 7.5pt; color: #666; margin-top: 1.5mm; white-space: pre-wrap; text-align: center; }
 `;
 
-// 부자재(원단 이미지·링크) → HTML 문자열. 링크는 QR코드 + 주소 텍스트.
+// 부자재(원단 이미지·링크) → HTML 문자열. 같은 자재의 이미지+링크QR을 한 칸에 묶음.
 export async function buildAttachmentHTML(wo: WorkOrder): Promise<string> {
   const atts = wo.attachments ?? [];
   if (!atts.length) return "";
@@ -35,27 +38,40 @@ export async function buildAttachmentHTML(wo: WorkOrder): Promise<string> {
     const m = (wo.materials ?? []).find((x) => x.id === materialId);
     return m ? [m.category, m.name].filter(Boolean).join(" ") : "";
   };
-  const cards: string[] = [];
+  // 자재별로 그룹핑 (같은 원부자재 항목 = 한 칸)
+  const order: string[] = [];
+  const groups = new Map<string, typeof atts>();
   for (const a of atts) {
-    const label = [matLabel(a.materialId), a.name].filter(Boolean).join(" · ");
-    if (a.type === "image") {
-      cards.push(
-        `<div class="att-card"><div class="att-label">${escapeHtml(label)}</div>` +
-        `<img class="att-img" src="${a.value}" crossorigin="anonymous" />` +
-        (a.memo ? `<div class="att-memo">${escapeHtml(a.memo)}</div>` : "") +
-        `</div>`
-      );
-    } else {
-      let qr = "";
-      try { qr = await QRCode.toDataURL(a.value, { width: 160, margin: 1 }); } catch { /* ignore */ }
-      cards.push(
-        `<div class="att-card"><div class="att-label">${escapeHtml(label)}</div>` +
-        (qr ? `<img class="att-qr" src="${qr}" />` : "") +
-        `<div class="att-url">${escapeHtml(a.value)}</div>` +
-        (a.memo ? `<div class="att-memo">${escapeHtml(a.memo)}</div>` : "") +
-        `</div>`
-      );
+    const key = a.materialId || a.id;
+    if (!groups.has(key)) { groups.set(key, []); order.push(key); }
+    groups.get(key)!.push(a);
+  }
+
+  const cards: string[] = [];
+  for (const key of order) {
+    const list = groups.get(key)!;
+    const label = matLabel(key) || list[0]?.name || "부자재";
+    const items: string[] = [];
+    for (const a of list) {
+      if (a.type === "image") {
+        items.push(
+          `<div class="att-item"><img class="att-img" src="${a.value}" crossorigin="anonymous" />` +
+          (a.memo ? `<div class="att-memo">${escapeHtml(a.memo)}</div>` : "") +
+          `</div>`
+        );
+      } else {
+        let qr = "";
+        try { qr = await QRCode.toDataURL(a.value, { width: 160, margin: 1 }); } catch { /* ignore */ }
+        items.push(
+          `<div class="att-item">` +
+          (qr ? `<img class="att-qr" src="${qr}" />` : "") +
+          `<div class="att-url">${escapeHtml(a.value)}</div>` +
+          (a.memo ? `<div class="att-memo">${escapeHtml(a.memo)}</div>` : "") +
+          `</div>`
+        );
+      }
     }
+    cards.push(`<div class="att-card"><div class="att-label">${escapeHtml(label)}</div><div class="att-body">${items.join("")}</div></div>`);
   }
   return `<div class="attach-page"><div class="attach-title">부자재 자료 — ${escapeHtml(wo.styleNo || "")} ${escapeHtml(wo.productName || "")}</div><div class="attach-grid">${cards.join("")}</div></div>`;
 }
