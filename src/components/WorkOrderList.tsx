@@ -9,6 +9,24 @@ import {
 import type { WorkOrder } from "@/types";
 import ImportWorkOrdersModal from "./ImportWorkOrdersModal";
 
+// 디자이너(담당) 이름 정규화 — 영문/한글/한글(영문)이 같은 사람이면 한글 이름 하나로 통합
+const DESIGNER_ALIASES: Record<string, string> = {
+  "로린": "박정은", "loreen": "박정은",
+  "써니": "김진선", "sunny": "김진선",
+  "실버": "박가은", "silver": "박가은",
+  "안나": "임은영", "anna": "임은영",
+  "제시카": "유가현", "jessica": "유가현",
+  "에린": "에린", "erin": "에린",
+};
+function canonDesigner(name?: string): string {
+  const t = (name || "").trim();
+  if (!t) return "";
+  const m = t.match(/^([가-힣]+)\s*[(（]/);        // "박정은(LOREEN)" → "박정은"
+  if (m) return m[1];
+  if (/^[가-힣]+$/.test(t)) return DESIGNER_ALIASES[t] ?? t; // 순수 한글: 별칭이면 매핑
+  return DESIGNER_ALIASES[t.toLowerCase()] ?? t;             // 영문 등: 별칭 매핑
+}
+
 const STATUS_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
   draft:           { label: "작성중",   bg: "bg-gray-100",   text: "text-gray-500",   dot: "bg-gray-400"   },
   pending_confirm: { label: "컨펌대기", bg: "bg-violet-50",  text: "text-violet-600", dot: "bg-violet-400"  },
@@ -465,7 +483,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
 
   // 드롭다운 옵션 동적 생성
   const yearOptions  = ["전체", ...Array.from(new Set(orders.map(o => o.year).filter(Boolean))).sort((a,b) => b.localeCompare(a))];
-  const managerOpts  = ["전체", ...Array.from(new Set(orders.map(o => o.manager).filter(Boolean))).sort()];
+  const managerOpts  = ["전체", ...Array.from(new Set(orders.map(o => canonDesigner(o.manager)).filter(Boolean))).sort()];
   const vendorOpts   = ["전체", ...Array.from(new Set(orders.map(o => o.vendor).filter(Boolean))).sort()];
 
   const activeFilterCount = [yearFilter, seasonFilter, statusFilter, managerFilter, vendorFilter].filter(v => v !== "전체").length;
@@ -480,7 +498,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
     const matchYear    = yearFilter    === "전체" || o.year    === yearFilter;
     const matchSeason  = seasonFilter  === "전체" || o.season  === seasonFilter;
     const matchStatus  = statusFilter  === "전체" || o.status  === statusFilter;
-    const matchManager  = managerFilter  === "전체" || o.manager === managerFilter;
+    const matchManager  = managerFilter  === "전체" || canonDesigner(o.manager) === managerFilter;
     const matchVendor   = vendorFilter   === "전체" || o.vendor  === vendorFilter;
     const matchCategory = categoryFilter === "전체" || getCategoryGroup(o) === categoryFilter;
     return matchQ && matchYear && matchSeason && matchStatus && matchManager && matchVendor && matchCategory;
