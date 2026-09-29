@@ -3031,7 +3031,7 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
           <div className="space-y-4">
             <SectionCard
               title="원부자재별 첨부파일"
-              sub="원부자재 탭에서 입력한 각 항목별로 스와치 사진·링크를 첨부하세요 (PDF에는 포함되지 않음)"
+              sub="원부자재 탭에서 입력한 각 항목별로 스와치 사진·링크를 첨부하세요. 미리보기의 인쇄/PDF·이미지 저장 시 '부자재 자료' 페이지로 함께 출력됩니다(링크는 QR코드)."
             >
               {(
                 <MaterialAttachList
