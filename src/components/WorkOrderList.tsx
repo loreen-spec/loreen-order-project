@@ -988,7 +988,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                       </button>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{o.manager}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{canonDesigner(o.manager) || o.manager}</td>
                     {/* 미리보기 */}
                     <td className="px-4 py-3 text-center">
                       <button onClick={() => onPreview(o)}
