@@ -158,6 +158,14 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     color: "#111",
   };
 
+  /* 제품사진: 노션 대표이미지는 임시(S3 만료) 주소라, 노션 페이지ID가 있으면
+     서버 프록시(매번 새 주소로 이미지 바이트 반환)로 표시 → 다른 컴퓨터/시간에도 항상 보임.
+     절대주소를 써서 인쇄 창(about:blank)에서도 로드됨. */
+  const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+  const productImgSrc = wo.notionProductId
+    ? `${ORIGIN}/api/notion-image?pageId=${encodeURIComponent(wo.notionProductId)}&raw=1`
+    : wo.productImage;
+
   /* 원부자재 행 계산 — 25줄 초과 시 행 간격 자동 축소 */
   const matCount   = wo.materials.length;
   const compact    = matCount > MAT_MIN_ROWS;
@@ -663,8 +671,10 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                   <div style={{ ...S.cell, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
                     <div style={{ ...S.lbl, padding: "1.5px 4px", flexShrink: 0, textAlign: "left" }}>{t("제품사진", "PRODUCT PHOTO", "产品照片")}</div>
                     <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa" }}>
-                      {wo.productImage
-                        ? <img src={wo.productImage} alt="제품사진" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      {productImgSrc
+                        ? <img src={productImgSrc} alt="제품사진"
+                            onError={(e) => { if (wo.productImage && e.currentTarget.src !== wo.productImage) e.currentTarget.src = wo.productImage; }}
+                            style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                         : <span style={{ fontSize: "7pt", color: "#ccc" }}>{t("제품사진", "PRODUCT PHOTO", "产品照片")}</span>
                       }
                     </div>
