@@ -28,6 +28,7 @@ const PRINT_CSS = `
     width:287mm;height:200mm;
     display:flex;flex-direction:column;gap:2px;
     overflow:hidden;
+    border:1.5pt solid #111;   /* 작업지시서 전체 바깥 테두리 — 이 밖으로는 아무것도 안 나옴 */
   }
   table{border-collapse:collapse;width:100%}
   td,th{border:.3pt solid #888;padding:1.5pt 2.5pt;vertical-align:middle;text-align:center;font-size:8pt;line-height:1.25}
@@ -543,6 +544,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             padding: "10px 12px",
             display: "flex", flexDirection: "column", gap: "2px",
             overflow: "hidden",
+            border: "1.5px solid #111",   /* 작업지시서 전체를 감싸는 바깥 테두리 */
             ...BASE,
           }}>
 
