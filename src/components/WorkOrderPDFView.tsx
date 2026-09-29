@@ -4,6 +4,7 @@ import { X, Printer, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import type { WorkOrder } from "@/types";
 import ZoomPanViewport from "./ZoomPanViewport";
 import { exportNodeAsPng, exportWorkOrderXlsx } from "@/lib/exportWorkOrder";
+import { buildAttachmentHTML, ATTACH_CSS, hasAttachments, exportAttachmentsPng } from "@/lib/attachmentExport";
 
 interface Props { wo: WorkOrder; onClose: () => void; }
 
@@ -115,22 +116,27 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
       .catch(() => {});
   }, [wo.labelDiagramSelected]);
 
-  function handlePrint() {
+  async function handlePrint() {
     const node = sheetRef.current;
     if (!node) return;
+    // 팝업 차단 방지 위해 클릭 즉시(동기) 창부터 연다
     const win = window.open("", "_blank", "width=1500,height=1000");
     if (!win) return;
+    win.document.write("<!DOCTYPE html><html><body style='font-family:sans-serif;padding:20px'>인쇄 준비 중…</body></html>");
     // sheet 클래스 부여해서 인쇄 시 A4 정확히 맞춤
     const clone = node.cloneNode(true) as HTMLElement;
     clone.className = "sheet";
     clone.removeAttribute("style");
+    // 부자재(원단 이미지·링크 QR) 자료 페이지 — 작지 본문 뒤에 붙임
+    const attachHTML = await buildAttachmentHTML(wo);
+    win.document.open();
     win.document.write(`<!DOCTYPE html><html lang="ko"><head>
       <meta charset="UTF-8"/>
       <title>작업지시서 — ${wo.styleNo} ${wo.productName} ${wo.orderCount}차</title>
-      <style>${PRINT_CSS}</style>
-    </head><body>${clone.outerHTML}</body></html>`);
+      <style>${PRINT_CSS}${ATTACH_CSS}</style>
+    </head><body>${clone.outerHTML}${attachHTML}</body></html>`);
     win.document.close();
-    setTimeout(() => win.print(), 700);
+    setTimeout(() => win.print(), attachHTML ? 1000 : 700);
   }
 
   const FIXED_LABELS: [keyof WorkOrder["labels"], string][] = [
@@ -492,9 +498,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
                 {savingI18n === "saving" ? "저장 중..." : savingI18n === "saved" ? "✓ 저장됨" : "💾 수정 저장"}
               </button>
             )}
-            <button onClick={async () => { if (sheetRef.current) await exportNodeAsPng(sheetRef.current, `${wo.styleNo || wo.productName || "작업지시서"}${lang !== "ko" ? `_${lang}` : ""}`); }}
+            <button onClick={async () => {
+                const base = `${wo.styleNo || wo.productName || "작업지시서"}${lang !== "ko" ? `_${lang}` : ""}`;
+                if (sheetRef.current) await exportNodeAsPng(sheetRef.current, base);
+                if (hasAttachments(wo)) await exportAttachmentsPng(wo, `${base}_부자재`);
+              }}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-              title="현재 언어 화면을 이미지(PNG)로 저장 — 위챗/카톡 전송용">
+              title="현재 언어 화면을 이미지(PNG)로 저장 — 부자재 있으면 자료 이미지도 함께 저장 (위챗/카톡 전송용)">
               <ImageIcon size={14} />이미지
             </button>
             <button onClick={() => exportWorkOrderXlsx(wo)}
