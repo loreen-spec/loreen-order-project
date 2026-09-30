@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { WorkOrder, WorkOrderMaterial, WorkOrderMeasurement, WorkOrderColorSize, WorkOrderFormType } from "@/types";
 import { WORK_ORDER_FORM_OPTIONS } from "@/types";
+import { compressImageFile } from "@/lib/imageCompress";
 
 // ─── 기본 측정 항목 (아동복 기준) ──────────────────────────
 const DEFAULT_MEASUREMENTS: WorkOrderMeasurement[] = [
@@ -325,11 +326,9 @@ function MaterialAttachList({
     const arr = Array.from(files);
     const readers: Promise<{ preview: string; name: string }>[] = [];
     arr.forEach((f, idx) => {
-      readers.push(new Promise(resolve => {
-        const r = new FileReader();
-        r.onload = (ev) => resolve({ preview: ev.target?.result as string, name: f.name || `붙여넣기_${idx + 1}.png` });
-        r.readAsDataURL(f);
-      }));
+      readers.push(
+        compressImageFile(f).then((preview) => ({ preview, name: f.name || `붙여넣기_${idx + 1}.png` }))
+      );
     });
     Promise.all(readers).then(results => {
       setDraft(matId, {
@@ -828,12 +827,11 @@ function LabelDiagramSection({
                         </span>
                         <input type="file" accept="image/*" className="hidden"
                           ref={el => { fileRefs.current[preset.id] = el; }}
-                          onChange={e => {
+                          onChange={async e => {
                             const f = e.target.files?.[0];
                             if (!f) return;
-                            const reader = new FileReader();
-                            reader.onload = ev => updatePresetImage(preset.id, ev.target?.result as string);
-                            reader.readAsDataURL(f);
+                            const dataUrl = await compressImageFile(f);
+                            updatePresetImage(preset.id, dataUrl);
                             e.target.value = "";
                           }}
                         />
@@ -1770,14 +1768,10 @@ export default function WorkOrderForm({ initial, onSave, onCancel, onPreview }: 
   }
 
   // ─── 이미지 업로드 ────────────────────────────────────
-  function handleImageUpload(field: "sketchImage" | "sketchImageEn" | "sketchImageZh" | "productImage" | "labelImage", file: File) {
+  async function handleImageUpload(field: "sketchImage" | "sketchImageEn" | "sketchImageZh" | "productImage" | "labelImage", file: File) {
     if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      set(field, dataUrl);
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await compressImageFile(file); // 축소·압축 (저장 용량 4.5MB 초과 방지)
+    set(field, dataUrl);
   }
 
   // ─── 도식화 라벨 (위치 %저장, 미리보기에서 언어 자동번역) ───

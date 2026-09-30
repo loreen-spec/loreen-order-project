@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Plus, Trash2, Save, Eye, Upload } from "lucide-react";
 import type { ShoeWorkOrder, ShoeColorSizeRow, ShoeSpec } from "@/types";
+import { compressImageFile } from "@/lib/imageCompress";
 
 // ── 기본값 상수 ─────────────────────────────────────────────
 const DEFAULT_SIZES = ["150", "160", "170", "180", "190", "200"];
@@ -271,23 +272,19 @@ export default function ShoeWorkOrderForm({ initial, onSave, onCancel, onPreview
   }
 
   // ── 이미지 업로드 ──────────────────────────────────────────
-  function handleImageFile(file: File, field: "productImage" | "detailImage" = "productImage") {
-    const reader = new FileReader();
-    reader.onload = (e) => set(field, e.target?.result as string ?? "");
-    reader.readAsDataURL(file);
+  async function handleImageFile(file: File, field: "productImage" | "detailImage" = "productImage") {
+    if (!file.type.startsWith("image/")) return;
+    const url = await compressImageFile(file); // 축소·압축 (저장 용량 초과 방지)
+    set(field, url);
   }
 
   // ── 오즈키즈 제공 부자재 첨부 사진 (여러 장) ──
   function addSuppliedImages(files: FileList | File[]) {
     Array.from(files)
       .filter((f) => f.type.startsWith("image/"))
-      .forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const url = (e.target?.result as string) ?? "";
-          if (url) setWo((w) => ({ ...w, suppliedImages: [...(w.suppliedImages ?? []), url] }));
-        };
-        reader.readAsDataURL(file);
+      .forEach(async (file) => {
+        const url = await compressImageFile(file);
+        if (url) setWo((w) => ({ ...w, suppliedImages: [...(w.suppliedImages ?? []), url] }));
       });
   }
   function removeSuppliedImage(idx: number) {

@@ -65,13 +65,34 @@ function WorkOrderFullPage({
 
   /* ── Supabase 저장 로직 유지 ── */
   async function handleSave(wo: WorkOrder | ShoeWorkOrder) {
-    const res = await fetch("/api/work-orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(wo),
-    });
+    const body = JSON.stringify(wo);
+    // Vercel 요청 본문 4.5MB 제한 — 초과 시 저장 불가. 미리 안내.
+    const sizeMB = body.length / (1024 * 1024);
+    if (sizeMB > 4.2) {
+      alert(
+        `저장 용량이 너무 큽니다 (약 ${sizeMB.toFixed(1)}MB / 최대 4.5MB).\n` +
+        `첨부한 이미지(도식화·제품사진·원단 스와치)가 너무 많거나 큽니다.\n` +
+        `이미지 일부를 삭제하거나, 큰 원단 사진은 링크로 대체해주세요.`
+      );
+      return;
+    }
+    let res: Response;
+    try {
+      res = await fetch("/api/work-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+    } catch {
+      alert("저장 실패 (네트워크). 잠시 후 다시 시도해주세요.");
+      return;
+    }
     if (!res.ok) {
-      alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      if (res.status === 413) {
+        alert("이미지 용량이 커서 저장할 수 없습니다 (최대 4.5MB). 이미지를 줄이거나 링크로 대체해주세요.");
+      } else {
+        alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      }
       return;
     }
     setActiveTab("작업지시서목록");
