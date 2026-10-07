@@ -3,7 +3,8 @@ import { useRef, useState, useEffect } from "react";
 import { X, Printer, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import type { WorkOrder } from "@/types";
 import ZoomPanViewport from "./ZoomPanViewport";
-import { exportNodeAsPng, exportWorkOrderXlsx } from "@/lib/exportWorkOrder";
+import { exportNodeAsPng } from "@/lib/exportWorkOrder";
+import { exportWorkOrderXlsxRich } from "@/lib/exportWorkOrderRich";
 import { buildAttachmentHTML, ATTACH_CSS, hasAttachments, exportAttachmentsPng } from "@/lib/attachmentExport";
 
 interface Props { wo: WorkOrder; onClose: () => void; }
@@ -520,9 +521,9 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               title="현재 언어 화면을 이미지(PNG)로 저장 — 부자재 있으면 자료 이미지도 함께 저장 (위챗/카톡 전송용)">
               <ImageIcon size={14} />이미지
             </button>
-            <button onClick={() => exportWorkOrderXlsx(wo)}
+            <button onClick={() => exportWorkOrderXlsxRich(wo)}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-              title="엑셀(.xlsx)로 내보내기">
+              title="편집·메모용 엑셀(.xlsx)로 내보내기 — 이미지 포함">
               <FileSpreadsheet size={14} />엑셀
             </button>
             <button onClick={handlePrint}
