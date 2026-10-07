@@ -39,7 +39,8 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         "Content-Type": imgRes.headers.get("content-type") || "image/jpeg",
-        "Cache-Control": "public, max-age=600",
+        // 브라우저 10분 + Vercel CDN 엣지 7일 캐시 → 재방문·여러 사용자 모두 빠르게
+        "Cache-Control": "public, max-age=600, s-maxage=604800, stale-while-revalidate=604800",
       },
     });
   } catch {

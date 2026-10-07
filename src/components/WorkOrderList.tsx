@@ -942,19 +942,22 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                       <div className="text-xs text-gray-400">{[o.year ? `${o.year}년` : "", o.season].filter(Boolean).join(" ")}</div>
                     </td>
                     <td className="px-4 py-3">
-                      {o.productImage ? (
+                      {(o.notionProductId || o.productImage) ? (
                         <img
-                          src={o.productImage}
+                          src={o.notionProductId
+                            ? `/api/notion-image?pageId=${encodeURIComponent(o.notionProductId)}&raw=1`
+                            : o.productImage}
                           alt={o.productName}
-                          className="w-10 h-12 object-cover rounded-lg border border-gray-100"
+                          loading="lazy"
+                          decoding="async"
+                          className="w-10 h-12 object-cover rounded-lg border border-gray-100 bg-gray-50"
                           onError={(e) => {
+                            // 프록시 실패 시 저장된 원본 URL로 폴백
                             const img = e.currentTarget;
-                            if (!o.notionProductId || img.dataset.retried) return;
-                            img.dataset.retried = "1";
-                            fetch(`/api/notion-image?pageId=${o.notionProductId}`)
-                              .then(r => r.json())
-                              .then(({ url }) => { if (url) img.src = url; })
-                              .catch(() => {});
+                            if (o.productImage && img.src !== o.productImage && !img.dataset.retried) {
+                              img.dataset.retried = "1";
+                              img.src = o.productImage;
+                            }
                           }}
                         />
                       ) : (
