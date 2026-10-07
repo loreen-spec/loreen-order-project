@@ -177,6 +177,7 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [zoomImg, setZoomImg] = useState<{ src: string; name: string } | null>(null);
 
   useEffect(() => {
     // localStorage 캐시로 즉시 표시 (로딩 중 빈 화면 방지)
@@ -517,6 +518,24 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
           onClose={() => setShowImport(false)}
           onImported={() => { resyncFromServer(); }}
         />
+      )}
+
+      {/* ── 이미지 확대 (클릭하면 크게, 바깥 클릭 시 닫힘) ── */}
+      {zoomImg && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setZoomImg(null)}
+        >
+          <div className="relative max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+            <img src={zoomImg.src} alt={zoomImg.name}
+              className="w-full rounded-2xl shadow-2xl object-contain max-h-[85vh] bg-white" />
+            <div className="mt-3 text-center text-white text-sm font-semibold drop-shadow">{zoomImg.name}</div>
+            <button onClick={() => setZoomImg(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg text-gray-600 hover:text-gray-900">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
       )}
       {/* ── 발주 DB 차수 선택 모달 ─────────────────────────── */}
       {batchPopup && (
@@ -950,7 +969,9 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                           alt={o.productName}
                           loading="lazy"
                           decoding="async"
-                          className="w-10 h-12 object-cover rounded-lg border border-gray-100 bg-gray-50"
+                          onClick={(e) => setZoomImg({ src: (e.currentTarget as HTMLImageElement).src, name: o.productName })}
+                          className="w-10 h-12 object-cover rounded-lg border border-gray-100 bg-gray-50 cursor-zoom-in hover:ring-2 hover:ring-violet-300 transition"
+                          title="클릭하면 크게 보기"
                           onError={(e) => {
                             // 프록시 실패 시 저장된 원본 URL로 폴백
                             const img = e.currentTarget;
