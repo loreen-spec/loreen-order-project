@@ -167,6 +167,27 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
     ? `${ORIGIN}/api/notion-image?pageId=${encodeURIComponent(wo.notionProductId)}&raw=1`
     : wo.productImage;
 
+  /* 최종 승인 도장 (APPROVAL) — 생산 마무리 후 최종 확정 시 1회 찍음 */
+  const [approvedAt, setApprovedAt] = useState<string | undefined>(wo.approvedAt);
+  const [savingApproval, setSavingApproval] = useState(false);
+  const approvalStamp = approvedAt ? approvedAt.slice(2).replace(/-/g, ".") : ""; // YYYY-MM-DD → YY.MM.DD
+  async function toggleApproval() {
+    const next = approvedAt ? "" : new Date().toISOString().slice(0, 10);
+    if (approvedAt && !confirm("승인 도장을 해제할까요?")) return;
+    setSavingApproval(true);
+    setApprovedAt(next || undefined);
+    try {
+      await fetch(`/api/work-orders/${encodeURIComponent(wo.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvedAt: next, updatedAt: new Date().toISOString() }),
+      });
+    } catch {
+      alert("승인 저장 실패 (네트워크). 다시 시도해주세요.");
+    }
+    setSavingApproval(false);
+  }
+
   /* 원부자재 행 계산 — 25줄 초과 시 행 간격 자동 축소 */
   const matCount   = wo.materials.length;
   const compact    = matCount > MAT_MIN_ROWS;
@@ -526,6 +547,13 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
               title="편집·메모용 엑셀(.xlsx)로 내보내기 — 이미지 포함">
               <FileSpreadsheet size={14} />엑셀
             </button>
+            <button onClick={toggleApproval} disabled={savingApproval}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors disabled:opacity-60 ${
+                approvedAt ? "border-red-300 text-red-600 bg-red-50" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+              }`}
+              title={approvedAt ? "승인 도장 해제" : "최종 승인 도장 찍기 (생산 확정 시)"}>
+              {approvedAt ? `✓ 승인됨 ${approvalStamp}` : "승인 도장"}
+            </button>
             <button onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors"
               style={{ background: "#836CE0" }} onMouseOver={e=>(e.currentTarget.style.background="#7c3aed")} onMouseOut={e=>(e.currentTarget.style.background="#836CE0")}>
@@ -551,11 +579,26 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
           <div ref={sheetRef} style={{
             width: "100%", height: "100%",
             padding: "10px 12px",
+            position: "relative",         /* 승인 도장 절대배치 기준 */
             display: "flex", flexDirection: "column", gap: "2px",
             overflow: "hidden",
             border: "1.5px solid #111",   /* 작업지시서 전체를 감싸는 바깥 테두리 */
             ...BASE,
           }}>
+            {/* ── 최종 승인 도장 (APPROVAL) ── */}
+            {approvedAt && (
+              <div style={{
+                position: "absolute", top: "57%", left: "50%",
+                transform: "translate(-50%,-50%) rotate(-13deg)",
+                pointerEvents: "none", zIndex: 20,
+                border: "3px solid #e02424", borderRadius: "8px",
+                padding: "4px 20px", textAlign: "center", color: "#e02424",
+                background: "rgba(255,255,255,0.15)",
+              }}>
+                <div style={{ fontSize: "26pt", fontWeight: 900, letterSpacing: "3px", lineHeight: 1.1 }}>APPROVAL</div>
+                <div style={{ fontSize: "12pt", fontWeight: 800, letterSpacing: "1px" }}>{approvalStamp}</div>
+              </div>
+            )}
 
             {/* ══ ROW 1: 타이틀 ══ */}
             <div style={{

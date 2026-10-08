@@ -118,6 +118,7 @@ export interface WorkOrder {
   status: "draft" | "pending_confirm" | "completed" | "custom";
   customStatus?: string; // status === "custom" 일 때 직접 입력 텍스트
   directorApproved?: boolean;   // 실장 승인 여부
+  approvedAt?: string;          // 최종 승인 도장 날짜(YYYY-MM-DD). 있으면 APPROVAL 도장 표시
   notionProductId?: string;
 
   // 차수별 원가 (발주 DB 차수 선택 팝업에서 입력) — 키: 차수번호 문자열
