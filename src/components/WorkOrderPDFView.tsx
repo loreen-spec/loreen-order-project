@@ -588,7 +588,7 @@ export default function WorkOrderPDFView({ wo, onClose }: Props) {
             {/* ── 최종 승인 도장 (APPROVAL) ── */}
             {approvedAt && (
               <div style={{
-                position: "absolute", top: "57%", left: "50%",
+                position: "absolute", top: "61%", left: "79%",
                 transform: "translate(-50%,-50%) rotate(-13deg)",
                 pointerEvents: "none", zIndex: 20,
                 border: "3px solid #e02424", borderRadius: "8px",
