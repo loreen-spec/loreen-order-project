@@ -38,7 +38,8 @@ const zhBase = (dict: Record<string, string>, s: string): string => {
   for (const k of Object.keys(dict)) if (t.startsWith(k)) return dict[k];
   return "";
 };
-const bi = (ko: string, zh?: string) => (zh ? `${ko}\n${zh}` : ko);
+// 중문 자동 병기 제거 — 공장이 직접 수정하므로 한국어만 사용
+const bi = (ko: string, _zh?: string) => ko;
 
 export async function exportWorkOrderXlsxRich(wo: WorkOrder) {
   const ExcelJS = (await import("exceljs")).default;
@@ -78,22 +79,22 @@ export async function exportWorkOrderXlsxRich(wo: WorkOrder) {
   const version = "v1";
   ws.mergeCells(r, 1, r, COLS);
   const tc = ws.getCell(r, 1);
-  tc.value = "작 업 지 시 서  工艺单";
+  tc.value = "작 업 지 시 서";
   tc.font = { size: 18, bold: true };
   tc.alignment = { horizontal: "center", vertical: "middle" };
   ws.getRow(r).height = 30; r++;
   ws.mergeCells(r, 1, r, COLS);
   const vc = ws.getCell(r, 1);
-  vc.value = `${version} · 발행일 发行日 ${issued}`;
+  vc.value = `${version} · 발행일 ${issued}`;
   vc.font = { size: 9, color: { argb: "FF888888" } };
   vc.alignment = { horizontal: "right", vertical: "middle" }; r += 2;
 
   // ── 기본 정보 ──
   const info: [string, string][][] = [
-    [["STYLE NO", wo.styleNo], ["상품명 品名", wo.productName], ["작업처 工厂", wo.vendor]],
-    [["담당 负责人", wo.manager], ["실장", wo.director], ["차수 批次", `${wo.orderCount}차`]],
-    [["작성일 制定日", wo.issueDate], ["납품예정일 交货日", wo.deliveryDate], ["시즌 季节", `${wo.year} ${wo.season}`]],
-    [["SAMPLE NO.", wo.sampleNo], ["품종 品类", wo.category], ["", ""]],
+    [["STYLE NO", wo.styleNo], ["상품명", wo.productName], ["작업처", wo.vendor]],
+    [["담당", wo.manager], ["실장", wo.director], ["차수", `${wo.orderCount}차`]],
+    [["작성일", wo.issueDate], ["납품예정일", wo.deliveryDate], ["시즌", `${wo.year} ${wo.season}`]],
+    [["SAMPLE NO.", wo.sampleNo], ["품종", wo.category], ["", ""]],
   ];
   for (const row of info) {
     row.forEach(([label, val], i) => {
