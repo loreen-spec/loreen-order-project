@@ -182,9 +182,20 @@ export async function GET() {
       return { ...info, rows, totalQuantity: rows.reduce((s, r) => s + r.quantity, 0), latestBatch };
     });
 
+    // ⑤ ozkiz-order-auto 병행 데이터 가져오기
+    const ozkizProducts = await fetchOzkizOrders();
+
+    // ⑥ 노션에 없는 제품만 ozkiz에서 추가 (제품명 기준 중복 제거)
+    const notionNames = new Set(result.map((p) => normalizeName(p.name)));
+    for (const op of ozkizProducts) {
+      if (!notionNames.has(normalizeName(op.name))) {
+        result.push(op);
+      }
+    }
+
     result.sort((a, b) => {
       const bo = (boardOrder[a.board] ?? 9) - (boardOrder[b.board] ?? 9);
-      return bo !== 0 ? bo : (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
+      return bo !== 0 ? bo : (a.name < b.name ? -1 : 1);
     });
 
     setCache(result);
@@ -192,7 +203,90 @@ export async function GET() {
   } catch (error: any) {
     console.error("Orders API Error:", error?.message ?? error);
     const stale = getCache();
-    if (stale) return NextResponse.json(stale.data); // 에러 시 이전 캐시 반환
+    if (stale) return NextResponse.json(stale.data);
     return NextResponse.json([], { status: 200 });
+  }
+}
+
+// ── ozkiz-order-auto API 연동 ─────────────────────────────
+function normalizeName(name: string) {
+  return name.replace(/[☆★\s]/g, "").toLowerCase();
+}
+
+async function fetchOzkizOrders(): Promise<OrderProduct[]> {
+  try {
+    const res = await fetch("https://ozkiz-order-auto.vercel.app/api/orders", {
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return [];
+    const records: any[] = await res.json();
+
+    // 미입고 or 최근 6개월 이내 발주만 필터
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    // productName 기준으로 그룹핑
+    const grouped = new Map<string, { info: Omit<OrderProduct, "rows" | "totalQuantity" | "latestBatch">; rows: OrderRow[] }>();
+
+    for (const rec of records) {
+      const name: string = rec.productName ?? "";
+      const orderDate: string = rec.orderDate ?? "";
+      if (!name) continue;
+
+      // 6개월보다 오래된 발주는 스킵
+      if (orderDate && new Date(orderDate) < sixMonthsAgo) continue;
+
+      const board = rec.productCategory === "슈즈" ? "슈즈" : "의류";
+      const key = normalizeName(name);
+
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          info: {
+            id:          `ozkiz-${key}`,
+            name,
+            board,
+            status:      "생산 요청(해외)",
+            vendor:      rec.factory ?? "",
+            arrivalDate: rec.actualArrivalDate ?? "",
+            category:    rec.subtype ?? "",
+            imageUrl:    undefined,
+            latestBatch: undefined,
+          },
+          rows: [],
+        });
+      }
+
+      const entry = grouped.get(key)!;
+      entry.rows.push({
+        id:            rec.id ?? `ozkiz-row-${Math.random()}`,
+        colorSize:     rec.option ?? "",
+        quantity:      rec.orderQty ?? 0,
+        batch:         rec.round ?? "",
+        orderDate,
+        productPageId: `ozkiz-${key}`,
+      });
+    }
+
+    return [...grouped.values()].map(({ info, rows }) => {
+      // 최신 차수
+      const batchList = rows
+        .map((r) => r.batch?.trim())
+        .filter(Boolean)
+        .map((b) => ({ raw: b, num: parseInt(b!.replace(/[^0-9]/g, "")) || 0 }));
+      const latestBatch = batchList.length > 0
+        ? batchList.sort((a, b) => b.num - a.num)[0].raw
+        : undefined;
+
+      return {
+        ...info,
+        latestBatch,
+        rows,
+        totalQuantity: rows.reduce((s, r) => s + r.quantity, 0),
+      };
+    });
+  } catch (e) {
+    console.error("ozkiz fetch error:", e);
+    return [];
   }
 }

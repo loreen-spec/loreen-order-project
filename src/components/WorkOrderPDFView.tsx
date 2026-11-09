@@ -7,7 +7,7 @@ import { exportNodeAsPng } from "@/lib/exportWorkOrder";
 import { exportWorkOrderXlsxRich } from "@/lib/exportWorkOrderRich";
 import { buildAttachmentHTML, ATTACH_CSS, hasAttachments, exportAttachmentsPng } from "@/lib/attachmentExport";
 
-interface Props { wo: WorkOrder; onClose: () => void; }
+interface Props { wo: WorkOrder; onClose: () => void; embed?: boolean; }
 
 /* ─────────────────────────────────────────────────────
    A4 가로: 297mm × 210mm  여백 5mm

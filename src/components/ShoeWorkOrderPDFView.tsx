@@ -5,7 +5,7 @@ import { exportNodeAsPng, exportShoeXlsx } from "@/lib/exportWorkOrder";
 import type { ShoeWorkOrder } from "@/types";
 import ZoomPanViewport from "./ZoomPanViewport";
 
-interface Props { wo: ShoeWorkOrder; onClose: () => void; }
+interface Props { wo: ShoeWorkOrder; onClose: () => void; embed?: boolean; }
 
 /* ─────────────────────────────────────────────────────────
    A4 가로: 297mm × 210mm  여백 5mm  — 슈즈 전용

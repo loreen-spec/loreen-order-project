@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 10h16M10 10v10"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>작업지시서 자동입력</h1>
+        <button id="conn" class="pill" type="button" disabled>확인 중</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- 입력할 시트 -->
+    <section class="target">
+      <label for="targetUrl">입력할 작업지시서</label>
+      <input id="targetUrl" placeholder="구글 시트 링크를 붙여넣으세요" spellcheck="false">
+      <div id="targetCard" class="target-card" hidden>
+        <div class="sheet-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M8 13h8M8 17h8M12 11v8"/></svg>
+        </div>
+        <div class="target-text">
+          <strong id="targetFile">확인 중</strong>
+          <span id="targetTab"></span>
+        </div>
+        <button id="openTarget" class="icon-btn sm" type="button" title="시트 열기" aria-label="시트 열기">
+          <svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg>
+        </button>
+        <button id="clearTarget" class="icon-btn sm" type="button" title="다른 시트로 바꾸기" aria-label="다른 시트로 바꾸기">
+          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="targetTabs" class="chips" hidden></div>
+      <div id="recent" class="recent" hidden></div>
+      <p id="targetHint" class="hint">비워두면 지금 크롬에서 열려 있는 시트에 입력돼요</p>
+    </section>
+
+    <!-- 상품 검색 -->
+    <section class="search">
+      <label for="productName">상품명</label>
+      <div class="search-row">
+        <input id="productName" placeholder="예: 상의-비비스타" spellcheck="false">
+        <button id="load" class="btn btn-dark" type="button">
+          <span class="label">불러오기</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+      </div>
+      <p id="hint" class="hint">시트 C5에 상품명이 있으면 자동으로 읽어와요</p>
+      <div id="candidates" class="candidates" hidden></div>
+    </section>
+
+    <!-- 불러온 결과 -->
+    <section id="result" hidden>
+      <a id="productLink" class="product" target="_blank">
+        <span id="productTitle"></span>
+        <svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg>
+      </a>
+
+      <div class="group">
+        <label class="row">
+          <input type="checkbox" id="useName" checked>
+          <span class="row-label">상품명</span>
+          <span id="nameValue" class="row-value"></span>
+          <span class="cell" data-cell="productName"></span>
+        </label>
+        <label class="row">
+          <input type="checkbox" id="useManager" checked>
+          <span class="row-label">담당자</span>
+          <span id="manager" class="row-value"></span>
+          <span class="cell" data-cell="manager"></span>
+        </label>
+        <label class="row">
+          <input type="checkbox" id="useFactory" checked>
+          <span class="row-label">작업처</span>
+          <span id="factory" class="row-value"></span>
+          <span class="cell" data-cell="factory"></span>
+        </label>
+      </div>
+
+      <div class="group">
+        <label class="row head">
+          <input type="checkbox" id="useOrders" checked>
+          <span class="row-label">발주수량</span>
+          <span id="orderTotal" class="row-value"></span>
+          <span class="cell" data-cell="orders"></span>
+        </label>
+        <div id="rounds" class="chips" hidden></div>
+        <div class="table-wrap"><table id="orderTable"></table></div>
+      </div>
+
+      <ul id="warnings" class="warnings" hidden></ul>
+    </section>
+
+    <!-- 사이즈 스펙 엑셀 -->
+    <section class="spec">
+      <span class="field-label">사이즈 스펙</span>
+      <label id="dropZone" class="drop">
+        <input type="file" id="specFile" accept=".xlsx,.xls,.csv" hidden>
+        <svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>
+        <strong>엑셀 파일을 끌어다 놓거나 클릭</strong>
+        <span>사이즈 스펙 표를 자동으로 찾아요</span>
+      </label>
+      <div id="specResult" class="group" hidden>
+        <div class="row head">
+          <input type="checkbox" id="useSpec" checked aria-label="사이즈 스펙 입력">
+          <span class="row-label">스펙</span>
+          <span id="specName" class="row-value"></span>
+          <span class="cell" data-cell="spec"></span>
+          <button id="clearSpec" class="icon-btn sm" type="button" title="파일 빼기" aria-label="파일 빼기">
+            <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="table-wrap"><table id="specTable"></table></div>
+        <ul id="specWarnings" class="warnings" hidden></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <button id="submit" class="btn btn-primary" type="button" disabled>
+      <span class="label">시트에 입력</span>
+      <svg class="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      <span class="spinner" aria-hidden="true"></span>
+    </button>
+  </footer>
+
+  <script src="lib/xlsx.full.min.js"></script>
+  <script src="config.js"></script>
+  <script src="spec.js"></script>
+  <script src="api.js"></script>
+  <script src="sheets.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

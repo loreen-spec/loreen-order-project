@@ -4,7 +4,7 @@ import {
   Search, Plus, FileText, PenLine,
   ChevronDown, Edit3, Trash2,
   CheckCircle2, Clock, Settings2, Check, X,
-  ExternalLink, Loader2, SlidersHorizontal, Upload
+  ExternalLink, Loader2, SlidersHorizontal, Upload, Link2
 } from "lucide-react";
 import type { WorkOrder } from "@/types";
 import ImportWorkOrdersModal from "./ImportWorkOrdersModal";
@@ -1013,12 +1013,24 @@ export default function WorkOrderList({ onNew, onEdit, onPreview, categoryFilter
                     </td>
                     <td className="px-4 py-3 text-gray-600">{o.vendor}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{canonDesigner(o.manager) || o.manager}</td>
-                    {/* 미리보기 */}
+                    {/* 미리보기 + 공유링크 */}
                     <td className="px-4 py-3 text-center">
-                      <button onClick={() => onPreview(o)}
-                        className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition-colors"
-                        title="작업지시서 미리보기 / PDF"
-                      ><FileText size={15} /></button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => onPreview(o)}
+                          className="p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition-colors"
+                          title="작업지시서 미리보기 / PDF"
+                        ><FileText size={15} /></button>
+                        <button
+                          title="공유 링크 복사 (ohlab 삽입용)"
+                          onClick={() => {
+                            const url = `${window.location.origin}/share/${o.id}`;
+                            navigator.clipboard.writeText(url).then(() => {
+                              alert(`링크 복사 완료!\n${url}\n\nohlab 작업지시서 탭에 iframe으로 넣어주세요.`);
+                            });
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition-colors"
+                        ><Link2 size={15} /></button>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="relative group/status">

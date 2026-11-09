@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "작업지시서 자동입력",
+  "version": "0.2.0",
+  "description": "노션 제품DB의 담당자·생산공장·발주수량을 작업지시서 구글 시트에 자동으로 채워줍니다.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxpdCjLj0u7VgC0pORXbJRyX1ojIn8evlcX06BxcblQpV+1DSmKhL+eCnS9iKFZJD+JXTsYFxNwWTet/B/l2T8vPuF1b79NA1iyKSLNcBnmznJzbNMYUXtkU+PpUXOSKGlYT/8kI/eh8+fLbl5rWr3QA1qveDugJHXoipGvxMLBeev9DC+R81iNOJbjJj8JVLpGrsxgxhA/NRmLvA7yE6bJy7AOrOuHle8q+X3mESXPK4np/6h58lhjmCANRSJOOTHWdazkY0wOAHY2VSZgWS+9zTkFWxLZv7LOtBiIT1F9PDLmhx9XFSzu4xKg31Ekvtszq/QUrc2NNVWRcbH0v2IQIDAQAB",
+  "permissions": ["storage", "identity", "sidePanel", "tabs"],
+  "host_permissions": [
+    "https://*.vercel.app/*",
+    "http://localhost:3000/*",
+    "https://sheets.googleapis.com/*",
+    "https://docs.google.com/spreadsheets/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "panel.html" },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "작업지시서 자동입력",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  }
+}
